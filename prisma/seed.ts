@@ -1,5 +1,5 @@
-import { PrismaClient } from '@prisma/client'
-import bcrypt from 'bcryptjs'
+import { PrismaClient, ModuleType } from '@prisma/client'
+import { hashPassword } from '../lib/auth'
 
 const prisma = new PrismaClient()
 
@@ -28,30 +28,46 @@ async function main() {
           access: true,
           submit: true,
           viewAll: true,
+          viewOwn: true,
+          edit: true,
+          delete: true,
           export: true,
+          approve: true,
         },
         iceOperations: {
           access: true,
           submit: true,
           viewAll: true,
+          viewOwn: true,
+          edit: true,
+          delete: true,
           export: true,
         },
         refrigeration: {
           access: true,
           submit: true,
           viewAll: true,
+          viewOwn: true,
+          edit: true,
+          delete: true,
           export: true,
         },
         airQuality: {
           access: true,
           submit: true,
           viewAll: true,
+          viewOwn: true,
+          edit: true,
+          delete: true,
           export: true,
         },
         incidents: {
           access: true,
           submit: true,
           viewAll: true,
+          viewOwn: true,
+          edit: true,
+          delete: true,
           export: true,
           approve: true,
         },
@@ -337,7 +353,7 @@ async function main() {
   // Create demo users
   console.log('Creating demo users...')
 
-  const passwordHash = await bcrypt.hash('password123', 10)
+  const passwordHash = await hashPassword('password123')
 
   await prisma.user.upsert({
     where: { email: 'gm@demo.com' },
@@ -399,12 +415,82 @@ async function main() {
     },
   })
 
+  // Create form templates
+  console.log('Creating form templates...')
+
+  const iceMakeForm = await prisma.formTemplate.upsert({
+    where: { id: 'form-ice-make-v1' },
+    update: {},
+    create: {
+      id: 'form-ice-make-v1',
+      facilityId: facility.id,
+      moduleType: ModuleType.ICE_OPERATIONS,
+      name: 'Ice Make Report',
+      description: 'Track water usage, temperature, and ice quality during ice making',
+      version: 1,
+      isActive: true,
+      isLocked: false,
+      createdBy: generalManagerRole.id,
+      schema: {
+        header: {
+          includeUser: true,
+          includeFacility: true,
+          includeRink: true,
+          includeDateTime: true,
+          includeOutsideTemp: true,
+        },
+        sections: [
+          {
+            id: 'water-section',
+            title: 'Water & Temperature',
+            order: 1,
+            fields: [
+              { id: 'water-used', type: 'number', label: 'Water Used', required: true, min: 0, max: 500, order: 1 },
+              { id: 'water-type', type: 'dropdown', label: 'Water Type', required: true, options: ['Hot Water', 'Cold Water', 'Mixed'], order: 2 },
+              { id: 'ice-temp-before', type: 'temperature', label: 'Ice Temperature (Before)', required: true, min: -20, max: 40, unit: 'F', order: 3 },
+              { id: 'ice-temp-after', type: 'temperature', label: 'Ice Temperature (After)', required: false, min: -20, max: 40, unit: 'F', order: 4 },
+            ],
+          },
+          {
+            id: 'surface-section',
+            title: 'Surface Condition',
+            order: 2,
+            fields: [
+              { id: 'snow-removed', type: 'number', label: 'Snow Removed', required: false, min: 0, max: 50, order: 1 },
+              { id: 'surface-quality', type: 'dropdown', label: 'Surface Quality', required: true, options: ['Excellent', 'Good', 'Fair', 'Poor'], order: 2 },
+              { id: 'has-issues', type: 'toggle', label: 'Surface Issues Present', required: false, defaultValue: false, order: 3 },
+              { id: 'notes', type: 'textarea', label: 'Notes', required: false, rows: 4, maxLength: 500, order: 4 },
+            ],
+          },
+        ],
+      },
+      conditionalRules: {
+        rules: [
+          {
+            id: 'rule-require-notes',
+            conditions: [{ fieldId: 'has-issues', operator: 'equals', value: true }],
+            conditionLogic: 'AND',
+            actions: [{ type: 'require', targetFieldId: 'notes' }],
+          },
+        ],
+      },
+    },
+  })
+
   console.log('✅ Database seeded successfully!')
   console.log('\n🔑 Demo accounts created:')
   console.log('  General Manager: gm@demo.com / password123')
   console.log('  Facility Manager: manager@demo.com / password123')
   console.log('  Supervisor: supervisor@demo.com / password123')
   console.log('  Operator: operator@demo.com / password123')
+  console.log('\n📋 Form templates created:')
+  console.log('  - Ice Make Report (Ice Operations)')
+  console.log('\n🚀 Next steps:')
+  console.log('  1. Run: npm run dev')
+  console.log('  2. Visit: http://localhost:3000/login')
+  console.log('  3. Try logging in with any demo account')
+  console.log('  4. Navigate to Ice Operations and submit a form')
+  console.log('  5. View data in Prisma Studio: npx prisma studio')
 }
 
 main()
