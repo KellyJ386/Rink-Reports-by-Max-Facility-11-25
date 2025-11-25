@@ -68,8 +68,10 @@ export default function SubmissionsPage() {
     offset: 0,
     hasMore: false,
   })
+  const [draftCount, setDraftCount] = useState(0)
 
   // Filters
+  const [activeView, setActiveView] = useState<'all' | 'drafts'>('all')
   const [moduleType, setModuleType] = useState<string>('')
   const [startDate, setStartDate] = useState<string>('')
   const [endDate, setEndDate] = useState<string>('')
@@ -78,7 +80,26 @@ export default function SubmissionsPage() {
 
   useEffect(() => {
     fetchSubmissions()
-  }, [pagination.offset, moduleType, startDate, endDate, status])
+    fetchDraftCount()
+  }, [pagination.offset, moduleType, startDate, endDate, status, activeView])
+
+  const fetchDraftCount = async () => {
+    try {
+      const params = new URLSearchParams({
+        status: 'DRAFT',
+        limit: '1',
+        offset: '0',
+      })
+
+      const response = await fetch(`/api/submissions?${params.toString()}`)
+      if (response.ok) {
+        const data = await response.json()
+        setDraftCount(data.pagination.total)
+      }
+    } catch (error) {
+      console.error('Error fetching draft count:', error)
+    }
+  }
 
   const fetchSubmissions = async () => {
     setLoading(true)
@@ -88,10 +109,16 @@ export default function SubmissionsPage() {
         offset: pagination.offset.toString(),
       })
 
+      // If viewing drafts, override status filter
+      if (activeView === 'drafts') {
+        params.append('status', 'DRAFT')
+      } else if (status) {
+        params.append('status', status)
+      }
+
       if (moduleType) params.append('moduleType', moduleType)
       if (startDate) params.append('startDate', startDate)
       if (endDate) params.append('endDate', endDate)
-      if (status) params.append('status', status)
 
       const response = await fetch(`/api/submissions?${params.toString()}`)
 
@@ -172,6 +199,49 @@ export default function SubmissionsPage() {
           {pagination.total} total submission{pagination.total !== 1 ? 's' : ''}
         </div>
       </div>
+
+      {/* View Toggle */}
+      <Card className="p-4">
+        <div className="flex items-center gap-4">
+          <div className="text-sm font-medium text-navy-700">View:</div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                setActiveView('all')
+                setPagination((prev) => ({ ...prev, offset: 0 }))
+              }}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                activeView === 'all'
+                  ? 'bg-action-green-500 text-white'
+                  : 'bg-wolf-100 text-wolf-700 hover:bg-wolf-200'
+              }`}
+            >
+              All Submissions
+            </button>
+            <button
+              onClick={() => {
+                setActiveView('drafts')
+                setPagination((prev) => ({ ...prev, offset: 0 }))
+              }}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                activeView === 'drafts'
+                  ? 'bg-action-green-500 text-white'
+                  : 'bg-wolf-100 text-wolf-700 hover:bg-wolf-200'
+              }`}
+            >
+              My Drafts
+              {draftCount > 0 && (
+                <Badge
+                  variant={activeView === 'drafts' ? 'default' : 'warning'}
+                  className="ml-1"
+                >
+                  {draftCount}
+                </Badge>
+              )}
+            </button>
+          </div>
+        </div>
+      </Card>
 
       {/* Filters */}
       <Card className="p-6">
@@ -261,19 +331,26 @@ export default function SubmissionsPage() {
                 Status
               </label>
               <select
-                className="w-full px-3 py-2 border border-wolf-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-action-green-500"
+                className="w-full px-3 py-2 border border-wolf-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-action-green-500 disabled:bg-wolf-100 disabled:cursor-not-allowed"
                 value={status}
+                disabled={activeView === 'drafts'}
                 onChange={(e) => {
                   setStatus(e.target.value)
                   setPagination((prev) => ({ ...prev, offset: 0 }))
                 }}
               >
-                <option value="">All Statuses</option>
-                <option value="DRAFT">Draft</option>
-                <option value="SUBMITTED">Submitted</option>
-                <option value="PENDING_REVIEW">Pending Review</option>
-                <option value="APPROVED">Approved</option>
-                <option value="REJECTED">Rejected</option>
+                {activeView === 'drafts' ? (
+                  <option value="DRAFT">Draft</option>
+                ) : (
+                  <>
+                    <option value="">All Statuses</option>
+                    <option value="DRAFT">Draft</option>
+                    <option value="SUBMITTED">Submitted</option>
+                    <option value="PENDING_REVIEW">Pending Review</option>
+                    <option value="APPROVED">Approved</option>
+                    <option value="REJECTED">Rejected</option>
+                  </>
+                )}
               </select>
             </div>
           </div>
@@ -288,15 +365,29 @@ export default function SubmissionsPage() {
           </div>
         ) : filteredSubmissions.length === 0 ? (
           <div className="p-12 text-center">
-            <div className="text-wolf-400 text-5xl mb-4">📋</div>
+            <div className="text-wolf-400 text-5xl mb-4">
+              {activeView === 'drafts' ? '📝' : '📋'}
+            </div>
             <h3 className="text-lg font-semibold text-navy-900 mb-2">
-              No submissions found
+              {activeView === 'drafts'
+                ? 'No drafts found'
+                : 'No submissions found'}
             </h3>
-            <p className="text-wolf-600">
+            <p className="text-wolf-600 mb-4">
               {searchTerm || moduleType || startDate || endDate || status
                 ? 'Try adjusting your filters'
+                : activeView === 'drafts'
+                ? 'Save a form as draft to see it here'
                 : 'Submit your first form to see it here'}
             </p>
+            {activeView === 'drafts' && (
+              <Button
+                variant="primary"
+                onClick={() => router.push('/dashboard/ice-operations')}
+              >
+                Create New Form
+              </Button>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -374,16 +465,42 @@ export default function SubmissionsPage() {
                       </Badge>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          router.push(`/dashboard/submissions/${submission.id}`)
-                        }}
-                      >
-                        View
-                      </Button>
+                      {submission.status === 'DRAFT' ? (
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            // Determine module route based on form template moduleType
+                            const moduleRoutes: Record<string, string> = {
+                              ICE_OPERATIONS: '/dashboard/ice-operations',
+                              ICE_DEPTH: '/dashboard/ice-depth',
+                              REFRIGERATION: '/dashboard/refrigeration',
+                              AIR_QUALITY: '/dashboard/air-quality',
+                              INCIDENT: '/dashboard/incidents',
+                              SCHEDULE: '/dashboard/schedule',
+                              DAILY_CHECKLIST: '/dashboard/checklists',
+                            }
+                            const route =
+                              moduleRoutes[submission.formTemplate.moduleType] ||
+                              '/dashboard/ice-operations'
+                            router.push(`${route}?draft=${submission.id}`)
+                          }}
+                        >
+                          ✏️ Edit
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            router.push(`/dashboard/submissions/${submission.id}`)
+                          }}
+                        >
+                          View
+                        </Button>
+                      )}
                     </td>
                   </tr>
                 ))}
