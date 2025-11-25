@@ -92,11 +92,11 @@ export default function Sidebar({ user }: SidebarProps) {
   const visibleItems = navItems.filter((item) => item.show)
 
   return (
-    <div className="w-64 bg-gray-900 text-white flex flex-col h-screen">
+    <div className="w-64 bg-navy text-white flex flex-col h-screen fixed left-0 top-0">
       {/* Header */}
-      <div className="p-6 border-b border-gray-800">
-        <h1 className="text-2xl font-bold">MFO</h1>
-        <p className="text-xs text-gray-400 mt-1">{user.facility.name}</p>
+      <div className="p-6 border-b border-navy-600">
+        <h1 className="text-2xl font-bold text-white">MFO</h1>
+        <p className="text-xs text-wolf-300 mt-1">{user.facility.name}</p>
       </div>
 
       {/* Navigation */}
@@ -110,8 +110,8 @@ export default function Sidebar({ user }: SidebarProps) {
                   href={item.href}
                   className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${
                     isActive
-                      ? 'bg-blue-600 text-white'
-                      : 'text-gray-300 hover:bg-gray-800'
+                      ? 'bg-action text-white font-semibold'
+                      : 'text-wolf-200 hover:bg-navy-600 hover:text-white'
                   }`}
                 >
                   <span className="text-xl">{item.icon}</span>
@@ -124,17 +124,17 @@ export default function Sidebar({ user }: SidebarProps) {
       </nav>
 
       {/* User Info */}
-      <div className="p-4 border-t border-gray-800">
+      <div className="p-4 border-t border-navy-600">
         <div className="mb-3">
-          <p className="text-sm font-medium">
+          <p className="text-sm font-medium text-white">
             {user.firstName} {user.lastName}
           </p>
-          <p className="text-xs text-gray-400">{user.role.name}</p>
+          <p className="text-xs text-wolf-300">{user.role.name}</p>
         </div>
         <button
           onClick={handleLogout}
           disabled={isLoggingOut}
-          className="w-full px-4 py-2 text-sm bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
+          className="w-full px-4 py-2 text-sm bg-navy-600 hover:bg-navy-500 text-white rounded-lg transition-colors disabled:opacity-50"
         >
           {isLoggingOut ? 'Signing out...' : 'Sign Out'}
         </button>
