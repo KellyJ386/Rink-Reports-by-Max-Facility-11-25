@@ -1,0 +1,427 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== CORE ENTITIES ====================
+
+model Facility {
+  id        String   @id @default(cuid())
+  name      String
+  address   String
+  city      String
+  state     String
+  zipCode   String
+  country   String   @default("US")
+  timezone  String   @default("America/New_York")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  rinks          Rink[]
+  users          User[]
+  formTemplates  FormTemplate[]
+  shifts         ShiftDefinition[]
+  settings       FacilitySettings?
+  notifications  Notification[]
+  smsLogs        SMSLog[]
+
+  @@map("facilities")
+}
+
+model FacilitySettings {
+  id         String   @id @default(cuid())
+  facilityId String   @unique
+  facility   Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+
+  // Retention settings (days) - 0 means indefinite
+  iceDepthRetention      Int @default(1095) // 3 years
+  iceOpsRetention        Int @default(1095)
+  refrigerationRetention Int @default(1095)
+  airQualityRetention    Int @default(1095)
+  incidentRetention      Int @default(2555) // 7 years
+  scheduleRetention      Int @default(1095)
+  checklistRetention     Int @default(1095)
+
+  // Air quality thresholds (customizable per facility)
+  coWarningPpm           Float   @default(20)
+  coEvacuationPpm        Float   @default(83)
+  no2WarningPpm          Float   @default(0.3)
+  no2EvacuationPpm       Float   @default(2.0)
+  enableAirQualityAlerts Boolean @default(true)
+
+  // SMS Settings
+  smsEnabled         Boolean @default(false)
+  smsProvider        String? // 'twilio', 'messagebird', 'vonage'
+  smsAccountSid      String? // Encrypted
+  smsAuthToken       String? // Encrypted
+  smsFromNumber      String? // Facility's SMS number
+  smsQuietHoursStart String? // "22:00" - no non-critical SMS after this
+  smsQuietHoursEnd   String? // "07:00" - resume SMS after this
+  smsCriticalOverride Boolean @default(true) // Critical alerts ignore quiet hours
+
+  @@map("facility_settings")
+}
+
+model Rink {
+  id          String   @id @default(cuid())
+  facilityId  String
+  facility    Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  name        String // "Rink A", "Main Rink", "Studio"
+  dimensions  String? // "200x85", "Olympic", custom
+  surfaceType String   @default("ice") // ice, inline
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  // Ice depth diagram configuration
+  iceDepthConfig Json? // Stores measurement point positions
+
+  // Relations
+  submissions           Submission[]
+  iceDepthConfiguration IceDepthConfiguration?
+
+  @@map("rinks")
+}
+
+// ==================== USER & AUTHENTICATION ====================
+
+model User {
+  id               String          @id @default(cuid())
+  email            String          @unique
+  passwordHash     String
+  firstName        String
+  lastName         String
+  phone            String?
+  phoneVerified    Boolean         @default(false)
+  smsOptIn         Boolean         @default(false)
+  smsPreference    SMSPreference   @default(CRITICAL_ONLY)
+  facilityId       String
+  facility         Facility        @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  roleId           String
+  role             Role            @relation(fields: [roleId], references: [id])
+  isActive         Boolean         @default(true)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  lastLoginAt      DateTime?
+
+  // Custom permission overrides (JSON allows per-module tweaks)
+  permissionOverrides Json?
+
+  // Relations
+  submissions     Submission[]
+  auditLogs       AuditLog[]
+  scheduleEntries ScheduleEntry[]
+
+  @@map("users")
+}
+
+enum SMSPreference {
+  ALL           // Receive all SMS notifications
+  CRITICAL_ONLY // Only ambulance, evacuation, emergency coverage
+  NONE          // No SMS (email only)
+}
+
+model Role {
+  id              String  @id @default(cuid())
+  facilityId      String? // null = system default role
+  name            String // "General Manager", "Operator", etc.
+  description     String?
+  isSystemDefault Boolean @default(false)
+
+  // Module-level permissions
+  permissions Json // See Permission Structure in spec
+
+  users User[]
+
+  @@map("roles")
+}
+
+// ==================== FORM BUILDER ====================
+
+model FormTemplate {
+  id          String     @id @default(cuid())
+  facilityId  String
+  facility    Facility   @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  moduleType  ModuleType
+  name        String
+  description String?
+  version     Int        @default(1)
+  isActive    Boolean    @default(true)
+  isLocked    Boolean    @default(false) // Compliance fields can't be edited
+
+  // The form schema
+  schema Json
+
+  // Conditional logic rules
+  conditionalRules Json?
+
+  // Calculated field definitions
+  calculatedFields Json?
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  createdBy         String
+
+  // Relations
+  submissions       Submission[]
+  previousVersionId String?
+  previousVersion   FormTemplate?  @relation("FormVersions", fields: [previousVersionId], references: [id])
+  nextVersions      FormTemplate[] @relation("FormVersions")
+
+  @@map("form_templates")
+}
+
+enum ModuleType {
+  ICE_DEPTH
+  ICE_OPERATIONS
+  REFRIGERATION
+  AIR_QUALITY
+  INCIDENT
+  SCHEDULE
+  DAILY_CHECKLIST
+}
+
+// ==================== SUBMISSIONS ====================
+
+model Submission {
+  id                      String           @id @default(cuid())
+  formTemplateId          String
+  formTemplate            FormTemplate     @relation(fields: [formTemplateId], references: [id])
+  formVersionAtSubmission Int // Captures which version was used
+
+  rinkId String
+  rink   Rink   @relation(fields: [rinkId], references: [id])
+
+  submittedById String
+  submittedBy   User   @relation(fields: [submittedById], references: [id])
+
+  // Universal header data
+  submittedAt     DateTime @default(now())
+  outsideTemp     Float?
+  outsideTempUnit String   @default("F")
+
+  // The actual form data
+  data Json
+
+  // For incidents requiring approval
+  status       SubmissionStatus @default(SUBMITTED)
+  reviewedById String?
+  reviewedAt   DateTime?
+  reviewNotes  String?
+
+  // Offline sync tracking
+  clientId String? // UUID generated on client for dedup
+  syncedAt DateTime?
+
+  // Soft delete for archival
+  archivedAt DateTime?
+
+  // Relations
+  attachments Attachment[]
+  auditLogs   AuditLog[]
+
+  @@map("submissions")
+}
+
+enum SubmissionStatus {
+  DRAFT
+  SUBMITTED
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+}
+
+model Attachment {
+  id           String         @id @default(cuid())
+  submissionId String
+  submission   Submission     @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  fieldId      String // Which form field this belongs to
+  type         AttachmentType
+  fileName     String
+  fileSize     Int
+  mimeType     String
+  storageKey   String // Path in file storage
+  createdAt    DateTime       @default(now())
+
+  @@map("attachments")
+}
+
+enum AttachmentType {
+  PHOTO
+  SIGNATURE
+  DOCUMENT
+}
+
+// ==================== SCHEDULE ====================
+
+model ShiftDefinition {
+  id         String   @id @default(cuid())
+  facilityId String
+  facility   Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  rinkId     String? // null = facility-wide, or specific rink
+  name       String // "Morning", "Evening", "Overnight"
+  startTime  String // "06:00" (24hr format)
+  endTime    String // "14:00"
+  color      String? // For UI display
+  isActive   Boolean  @default(true)
+
+  @@map("shift_definitions")
+}
+
+model ScheduleEntry {
+  id            String         @id @default(cuid())
+  userId        String
+  user          User           @relation(fields: [userId], references: [id])
+  shiftId       String?
+  rinkId        String?
+  date          DateTime       @db.Date
+  startTime     String
+  endTime       String
+  isOpenShift   Boolean        @default(false)
+  isEmergency   Boolean        @default(false)
+  status        ScheduleStatus @default(DRAFT)
+  waitlistUsers Json? // Array of user IDs in order
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  createdById   String
+  publishedAt   DateTime?
+  publishedById String?
+
+  @@map("schedule_entries")
+}
+
+enum ScheduleStatus {
+  DRAFT
+  PUBLISHED
+  FILLED
+  CANCELLED
+}
+
+// ==================== AUDIT & NOTIFICATIONS ====================
+
+model AuditLog {
+  id            String      @id @default(cuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id])
+  action        AuditAction
+  entityType    String // "Submission", "FormTemplate", etc.
+  entityId      String
+  previousValue Json?
+  newValue      Json?
+  ipAddress     String?
+  userAgent     String?
+  createdAt     DateTime    @default(now())
+
+  submissionId String?
+  submission   Submission? @relation(fields: [submissionId], references: [id])
+
+  @@map("audit_logs")
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  ARCHIVE
+  APPROVE
+  REJECT
+  LOGIN
+  LOGOUT
+}
+
+model Notification {
+  id                String           @id @default(cuid())
+  facilityId        String
+  facility          Facility         @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  recipientUserId   String? // null = broadcast to role
+  recipientRoleId   String?
+  type              NotificationType
+  title             String
+  message           String
+  relatedEntityType String?
+  relatedEntityId   String?
+  isRead            Boolean          @default(false)
+  sentAt            DateTime         @default(now())
+  readAt            DateTime?
+
+  // Email tracking
+  emailSent   Boolean   @default(false)
+  emailSentAt DateTime?
+
+  @@map("notifications")
+}
+
+enum NotificationType {
+  INCIDENT_SUBMITTED
+  INCIDENT_AMBULANCE
+  AIR_QUALITY_WARNING
+  AIR_QUALITY_EVACUATION
+  SCHEDULE_PUBLISHED
+  SHIFT_OPEN
+  SHIFT_EMERGENCY
+  REPORT_REMINDER
+  SYSTEM
+}
+
+model SMSLog {
+  id             String           @id @default(cuid())
+  facilityId     String
+  facility       Facility         @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  userId         String?
+  phoneNumber    String
+  messageType    NotificationType
+  messageBody    String
+
+  // Twilio tracking
+  providerMessageId String?
+  status            SMSStatus @default(QUEUED)
+  statusUpdatedAt   DateTime?
+  errorCode         String?
+  errorMessage      String?
+
+  // Two-way SMS
+  isIncoming Boolean @default(false)
+  inReplyTo  String? // Links response to original message
+
+  sentAt      DateTime  @default(now())
+  deliveredAt DateTime?
+
+  @@map("sms_logs")
+}
+
+enum SMSStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  FAILED
+  UNDELIVERED
+}
+
+// ==================== ICE DEPTH SPECIFIC ====================
+
+model IceDepthConfiguration {
+  id                String          @id @default(cuid())
+  rinkId            String          @unique
+  rink              Rink            @relation(fields: [rinkId], references: [id], onDelete: Cascade)
+  presetType        IceDepthPreset? // RINK_25, RINK_35, RINK_47, CUSTOM
+  measurementPoints Json // Array of {id, x, y, label}
+  backgroundImage   String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@map("ice_depth_configurations")
+}
+
+enum IceDepthPreset {
+  RINK_25 // 25 measurement points
+  RINK_35 // 35 measurement points
+  RINK_47 // 47 measurement points
+  CUSTOM // Fully custom (up to 5 additional points)
+}
