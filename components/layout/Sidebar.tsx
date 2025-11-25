@@ -40,6 +40,12 @@ export default function Sidebar({ user }: SidebarProps) {
       show: true,
     },
     {
+      label: 'Submissions',
+      href: '/dashboard/submissions',
+      icon: '📋',
+      show: true, // All users can view submissions (permissions checked in API)
+    },
+    {
       label: 'Ice Depth',
       href: '/dashboard/ice-depth',
       icon: '📏',
