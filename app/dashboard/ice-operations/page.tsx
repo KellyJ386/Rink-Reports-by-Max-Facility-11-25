@@ -41,21 +41,37 @@ export default function IceOperationsPage() {
     setIsSubmitting(true)
 
     try {
-      // In production, this would call the submissions API
-      // POST /api/submissions
-      console.log('Form Data:', data)
-      console.log('Header Data:', headerData)
+      // Call the submissions API
+      const response = await fetch('/api/submissions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          formTemplateId: iceMakeFormSchema.id,
+          rinkId: headerData.rinkId,
+          headerData,
+          formData: data,
+          status: 'SUBMITTED',
+        }),
+      })
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to submit form')
+      }
 
       // Show success message
       alert('Form submitted successfully!')
 
-      // In production, would redirect or refresh
+      // In production, would redirect to submission detail or list
+      console.log('Submission created:', result.submission)
     } catch (error) {
       console.error('Submit error:', error)
-      alert('Error submitting form. Please try again.')
+      const errorMessage =
+        error instanceof Error ? error.message : 'Error submitting form'
+      alert(`${errorMessage}. Please try again.`)
     } finally {
       setIsSubmitting(false)
     }
