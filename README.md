@@ -21,8 +21,15 @@ MFO is a comprehensive ice rink management platform designed to digitize daily o
 ✅ Form template CRUD API routes
 ✅ Form preview mode with validation
 
+**Phase 3: Form Builder Advanced - COMPLETE**
+
+✅ Conditional logic builder (show/hide/require/disable based on field values)
+✅ Calculated fields with formula support
+✅ Ice depth grid specialized field (25, 35, 47 point presets)
+✅ Body diagram specialized field for incident reports
+✅ Form versioning system with version history
+
 **Coming Next:**
-- Phase 3: Form Builder Advanced
 - Phase 4: Report Modules
 
 ## 🏗️ Tech Stack
@@ -233,6 +240,8 @@ npm run prisma:seed      # Seed database
 - `GET /api/form-templates/[id]` - Get single template
 - `PUT /api/form-templates/[id]` - Update template
 - `DELETE /api/form-templates/[id]` - Delete/deactivate template
+- `GET /api/form-templates/[id]/versions` - Get version history
+- `POST /api/form-templates/[id]/versions` - Create new version
 
 ## 🚧 Roadmap
 
@@ -243,11 +252,12 @@ npm run prisma:seed      # Seed database
 - [x] Form template CRUD API routes
 - [x] Form preview mode with validation
 
-### Phase 3: Form Builder Advanced (Next)
-- [ ] Conditional logic builder
-- [ ] Calculated fields
-- [ ] Specialized fields (ice depth grid, body diagram)
-- [ ] Form versioning
+### Phase 3: Form Builder Advanced - COMPLETE
+- [x] Conditional logic builder (show/hide/require/disable actions)
+- [x] Calculated fields with formula evaluation
+- [x] Ice depth grid specialized field (25, 35, 47 point presets)
+- [x] Body diagram specialized field for incident reports
+- [x] Form versioning system with version history UI
 
 ### Phase 4: Report Modules
 - [ ] Universal header component

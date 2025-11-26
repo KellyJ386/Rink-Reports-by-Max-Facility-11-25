@@ -1,17 +1,29 @@
 'use client'
 
 import { useState } from 'react'
-import { FormField, SelectOption, ValidationRule } from '@/types/form-builder'
+import {
+  FormField,
+  SelectOption,
+  ValidationRule,
+  ConditionalLogic,
+  CalculatedFieldConfig,
+  IceDepthGridConfig,
+  BodyDiagramConfig,
+  getDefaultIceDepthPoints,
+} from '@/types/form-builder'
 import { getFieldIcon } from './fields'
+import ConditionalLogicBuilder from './ConditionalLogicBuilder'
 
 interface FieldConfigPanelProps {
   field: FormField | null
+  allFields: FormField[]
   onUpdate: (field: FormField) => void
   onClose: () => void
 }
 
 export default function FieldConfigPanel({
   field,
+  allFields,
   onUpdate,
   onClose,
 }: FieldConfigPanelProps) {
@@ -33,7 +45,9 @@ export default function FieldConfigPanel({
   }
 
   const hasOptions = ['select', 'multiselect', 'radio'].includes(field.type)
-  const hasValidation = !['section', 'divider'].includes(field.type)
+  const hasValidation = !['section', 'divider', 'ice_depth_grid', 'body_diagram', 'calculated'].includes(field.type)
+  const hasConditionalLogic = !['section', 'divider'].includes(field.type)
+  const isSpecialized = ['ice_depth_grid', 'body_diagram', 'calculated'].includes(field.type)
 
   return (
     <div className="w-80 bg-gray-50 border-l border-gray-200 overflow-y-auto">
@@ -155,6 +169,40 @@ export default function FieldConfigPanel({
             fieldType={field.type}
             validation={field.validation || []}
             onChange={(validation) => updateField({ validation })}
+          />
+        )}
+
+        {/* Conditional Logic */}
+        {hasConditionalLogic && (
+          <ConditionalLogicBuilder
+            logic={field.conditionalLogic}
+            availableFields={allFields}
+            currentFieldId={field.id}
+            onChange={(logic) => updateField({ conditionalLogic: logic })}
+          />
+        )}
+
+        {/* Specialized Field Configuration */}
+        {field.type === 'ice_depth_grid' && field.iceDepthGridConfig && (
+          <IceDepthGridConfigEditor
+            config={field.iceDepthGridConfig}
+            onChange={(config) => updateField({ iceDepthGridConfig: config })}
+          />
+        )}
+
+        {field.type === 'body_diagram' && field.bodyDiagramConfig && (
+          <BodyDiagramConfigEditor
+            config={field.bodyDiagramConfig}
+            onChange={(config) => updateField({ bodyDiagramConfig: config })}
+          />
+        )}
+
+        {field.type === 'calculated' && field.calculatedConfig && (
+          <CalculatedFieldConfigEditor
+            config={field.calculatedConfig}
+            allFields={allFields}
+            currentFieldId={field.id}
+            onChange={(config) => updateField({ calculatedConfig: config })}
           />
         )}
 
@@ -373,6 +421,441 @@ function ValidationEditor({
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+// Ice Depth Grid Config Editor
+interface IceDepthGridConfigEditorProps {
+  config: IceDepthGridConfig
+  onChange: (config: IceDepthGridConfig) => void
+}
+
+function IceDepthGridConfigEditor({ config, onChange }: IceDepthGridConfigEditorProps) {
+  const handlePresetChange = (preset: IceDepthGridConfig['preset']) => {
+    onChange({
+      ...config,
+      preset,
+      points: getDefaultIceDepthPoints(preset),
+    })
+  }
+
+  return (
+    <div>
+      <h4 className="text-xs font-medium text-gray-500 uppercase mb-2">
+        Ice Depth Grid
+      </h4>
+
+      <div className="space-y-3">
+        <div>
+          <label className="block text-xs text-gray-600 mb-1">Preset</label>
+          <select
+            value={config.preset}
+            onChange={(e) => handlePresetChange(e.target.value as IceDepthGridConfig['preset'])}
+            className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="RINK_25">25 Points (5x5)</option>
+            <option value="RINK_35">35 Points (7x5)</option>
+            <option value="RINK_47">47 Points (Full)</option>
+            <option value="CUSTOM">Custom</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-xs text-gray-600 mb-1">Unit</label>
+          <select
+            value={config.unit}
+            onChange={(e) => onChange({ ...config, unit: e.target.value as 'inches' | 'mm' })}
+            className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="inches">Inches</option>
+            <option value="mm">Millimeters</option>
+          </select>
+        </div>
+
+        <div className="flex gap-2">
+          <div className="flex-1">
+            <label className="block text-xs text-gray-600 mb-1">Min Depth</label>
+            <input
+              type="number"
+              step="0.01"
+              value={config.minValue ?? ''}
+              onChange={(e) => onChange({ ...config, minValue: parseFloat(e.target.value) || undefined })}
+              className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+          <div className="flex-1">
+            <label className="block text-xs text-gray-600 mb-1">Target</label>
+            <input
+              type="number"
+              step="0.01"
+              value={config.targetValue ?? ''}
+              onChange={(e) => onChange({ ...config, targetValue: parseFloat(e.target.value) || undefined })}
+              className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+          <div className="flex-1">
+            <label className="block text-xs text-gray-600 mb-1">Max Depth</label>
+            <input
+              type="number"
+              step="0.01"
+              value={config.maxValue ?? ''}
+              onChange={(e) => onChange({ ...config, maxValue: parseFloat(e.target.value) || undefined })}
+              className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+        </div>
+
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={config.showRinkOutline}
+            onChange={(e) => onChange({ ...config, showRinkOutline: e.target.checked })}
+            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+          />
+          <span className="text-sm text-gray-700">Show rink outline</span>
+        </label>
+
+        <p className="text-xs text-gray-500">
+          {config.points.length} measurement points
+        </p>
+      </div>
+    </div>
+  )
+}
+
+// Body Diagram Config Editor
+interface BodyDiagramConfigEditorProps {
+  config: BodyDiagramConfig
+  onChange: (config: BodyDiagramConfig) => void
+}
+
+function BodyDiagramConfigEditor({ config, onChange }: BodyDiagramConfigEditorProps) {
+  return (
+    <div>
+      <h4 className="text-xs font-medium text-gray-500 uppercase mb-2">
+        Body Diagram
+      </h4>
+
+      <div className="space-y-3">
+        <div>
+          <label className="block text-xs text-gray-600 mb-1">View</label>
+          <select
+            value={config.view}
+            onChange={(e) => onChange({ ...config, view: e.target.value as 'front' | 'back' | 'both' })}
+            className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="front">Front Only</option>
+            <option value="back">Back Only</option>
+            <option value="both">Both Views</option>
+          </select>
+        </div>
+
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={config.allowMultipleMarkers}
+            onChange={(e) => onChange({ ...config, allowMultipleMarkers: e.target.checked })}
+            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+          />
+          <span className="text-sm text-gray-700">Allow multiple markers</span>
+        </label>
+
+        <div>
+          <label className="block text-xs text-gray-600 mb-1">Marker Types</label>
+          <div className="space-y-1">
+            {config.markerTypes.map((marker, index) => (
+              <div key={marker.id} className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={marker.color}
+                  onChange={(e) => {
+                    const newMarkers = [...config.markerTypes]
+                    newMarkers[index] = { ...marker, color: e.target.value }
+                    onChange({ ...config, markerTypes: newMarkers })
+                  }}
+                  className="w-6 h-6 rounded border border-gray-300"
+                />
+                <input
+                  type="text"
+                  value={marker.label}
+                  onChange={(e) => {
+                    const newMarkers = [...config.markerTypes]
+                    newMarkers[index] = { ...marker, label: e.target.value }
+                    onChange({ ...config, markerTypes: newMarkers })
+                  }}
+                  className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                <button
+                  onClick={() => {
+                    onChange({
+                      ...config,
+                      markerTypes: config.markerTypes.filter((_, i) => i !== index),
+                    })
+                  }}
+                  className="text-gray-400 hover:text-red-600"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+          <button
+            onClick={() => {
+              onChange({
+                ...config,
+                markerTypes: [
+                  ...config.markerTypes,
+                  {
+                    id: Math.random().toString(36).substring(2, 11),
+                    label: 'New Marker',
+                    color: '#3b82f6',
+                  },
+                ],
+              })
+            }}
+            className="mt-2 text-xs text-blue-600 hover:text-blue-700"
+          >
+            + Add marker type
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Calculated Field Config Editor
+interface CalculatedFieldConfigEditorProps {
+  config: CalculatedFieldConfig
+  allFields: FormField[]
+  currentFieldId: string
+  onChange: (config: CalculatedFieldConfig) => void
+}
+
+function CalculatedFieldConfigEditor({
+  config,
+  allFields,
+  currentFieldId,
+  onChange,
+}: CalculatedFieldConfigEditorProps) {
+  // Filter to only number fields that aren't the current field
+  const numberFields = allFields.filter(
+    (f) => f.type === 'number' && f.id !== currentFieldId
+  )
+
+  const addFieldToFormula = (fieldId: string) => {
+    onChange({
+      ...config,
+      formula: [...config.formula, { type: 'field', value: fieldId }],
+    })
+  }
+
+  const addOperator = (op: string) => {
+    onChange({
+      ...config,
+      formula: [...config.formula, { type: 'operator', value: op }],
+    })
+  }
+
+  const addConstant = (value: number) => {
+    onChange({
+      ...config,
+      formula: [...config.formula, { type: 'constant', value }],
+    })
+  }
+
+  const addFunction = (fn: string) => {
+    onChange({
+      ...config,
+      formula: [...config.formula, { type: 'function', value: fn }],
+    })
+  }
+
+  const removeLastStep = () => {
+    onChange({
+      ...config,
+      formula: config.formula.slice(0, -1),
+    })
+  }
+
+  const clearFormula = () => {
+    onChange({
+      ...config,
+      formula: [],
+    })
+  }
+
+  const getStepDisplay = (step: CalculatedFieldConfig['formula'][number]) => {
+    switch (step.type) {
+      case 'field':
+        const field = allFields.find((f) => f.id === step.value)
+        return field ? `[${field.label}]` : '[?]'
+      case 'constant':
+        return String(step.value)
+      case 'operator':
+        return step.value
+      case 'function':
+        return `${step.value}()`
+      default:
+        return '?'
+    }
+  }
+
+  return (
+    <div>
+      <h4 className="text-xs font-medium text-gray-500 uppercase mb-2">
+        Calculated Field
+      </h4>
+
+      <div className="space-y-3">
+        {/* Formula display */}
+        <div>
+          <label className="block text-xs text-gray-600 mb-1">Formula</label>
+          <div className="min-h-[60px] p-2 bg-white border border-gray-300 rounded text-sm font-mono">
+            {config.formula.length === 0 ? (
+              <span className="text-gray-400">No formula defined</span>
+            ) : (
+              config.formula.map((step, i) => (
+                <span key={i} className="mr-1">
+                  {getStepDisplay(step)}
+                </span>
+              ))
+            )}
+          </div>
+          <div className="flex gap-2 mt-1">
+            <button
+              onClick={removeLastStep}
+              disabled={config.formula.length === 0}
+              className="text-xs text-gray-600 hover:text-gray-800 disabled:opacity-50"
+            >
+              Undo
+            </button>
+            <button
+              onClick={clearFormula}
+              disabled={config.formula.length === 0}
+              className="text-xs text-red-600 hover:text-red-700 disabled:opacity-50"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+
+        {/* Field selector */}
+        {numberFields.length > 0 && (
+          <div>
+            <label className="block text-xs text-gray-600 mb-1">Add Field</label>
+            <select
+              onChange={(e) => {
+                if (e.target.value) {
+                  addFieldToFormula(e.target.value)
+                  e.target.value = ''
+                }
+              }}
+              className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">Select field...</option>
+              {numberFields.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Operators */}
+        <div>
+          <label className="block text-xs text-gray-600 mb-1">Operators</label>
+          <div className="flex gap-1 flex-wrap">
+            {['+', '-', '*', '/'].map((op) => (
+              <button
+                key={op}
+                onClick={() => addOperator(op)}
+                className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded text-sm font-mono"
+              >
+                {op}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Functions */}
+        <div>
+          <label className="block text-xs text-gray-600 mb-1">Functions</label>
+          <div className="flex gap-1 flex-wrap">
+            {['sum', 'avg', 'min', 'max', 'count'].map((fn) => (
+              <button
+                key={fn}
+                onClick={() => addFunction(fn)}
+                className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs"
+              >
+                {fn}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Constant */}
+        <div>
+          <label className="block text-xs text-gray-600 mb-1">Add Constant</label>
+          <div className="flex gap-2">
+            <input
+              type="number"
+              id="constant-input"
+              placeholder="Value"
+              className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+            <button
+              onClick={() => {
+                const input = document.getElementById('constant-input') as HTMLInputElement
+                const value = parseFloat(input.value)
+                if (!isNaN(value)) {
+                  addConstant(value)
+                  input.value = ''
+                }
+              }}
+              className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+            >
+              Add
+            </button>
+          </div>
+        </div>
+
+        {/* Display settings */}
+        <div className="flex gap-2">
+          <div className="flex-1">
+            <label className="block text-xs text-gray-600 mb-1">Decimals</label>
+            <input
+              type="number"
+              min="0"
+              max="10"
+              value={config.decimalPlaces ?? 2}
+              onChange={(e) => onChange({ ...config, decimalPlaces: parseInt(e.target.value) || 0 })}
+              className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+          <div className="flex-1">
+            <label className="block text-xs text-gray-600 mb-1">Prefix</label>
+            <input
+              type="text"
+              value={config.prefix || ''}
+              onChange={(e) => onChange({ ...config, prefix: e.target.value })}
+              placeholder="$"
+              className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+          <div className="flex-1">
+            <label className="block text-xs text-gray-600 mb-1">Suffix</label>
+            <input
+              type="text"
+              value={config.suffix || ''}
+              onChange={(e) => onChange({ ...config, suffix: e.target.value })}
+              placeholder="in"
+              className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

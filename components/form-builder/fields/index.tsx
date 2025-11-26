@@ -11,6 +11,9 @@ import SignatureField from './SignatureField'
 import PhotoField from './PhotoField'
 import SectionField from './SectionField'
 import DividerField from './DividerField'
+import IceDepthGridField from './IceDepthGridField'
+import BodyDiagramField from './BodyDiagramField'
+import CalculatedField from './CalculatedField'
 
 // Re-export all field components
 export {
@@ -24,6 +27,9 @@ export {
   PhotoField,
   SectionField,
   DividerField,
+  IceDepthGridField,
+  BodyDiagramField,
+  CalculatedField,
 }
 
 interface FieldRendererProps {
@@ -35,6 +41,9 @@ interface FieldRendererProps {
   isBuilder?: boolean
   isSelected?: boolean
   onClick?: () => void
+  // For calculated fields
+  allFields?: FormField[]
+  formValues?: Record<string, any>
 }
 
 // Universal field renderer based on field type
@@ -47,6 +56,8 @@ export function FieldRenderer({
   isBuilder = false,
   isSelected = false,
   onClick,
+  allFields = [],
+  formValues = {},
 }: FieldRendererProps) {
   const commonProps = {
     field,
@@ -94,6 +105,21 @@ export function FieldRenderer({
     case 'divider':
       return <DividerField {...commonProps} />
 
+    case 'ice_depth_grid':
+      return <IceDepthGridField {...commonProps} />
+
+    case 'body_diagram':
+      return <BodyDiagramField {...commonProps} />
+
+    case 'calculated':
+      return (
+        <CalculatedField
+          {...commonProps}
+          allFields={allFields}
+          formValues={formValues}
+        />
+      )
+
     default:
       return (
         <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
@@ -125,6 +151,9 @@ export function getFieldIcon(type: FieldType): string {
     photo: '📷',
     section: '§',
     divider: '—',
+    ice_depth_grid: '❄',
+    body_diagram: '🧍',
+    calculated: 'ƒ',
   }
   return icons[type]
 }

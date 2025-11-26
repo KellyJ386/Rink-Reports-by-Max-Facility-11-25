@@ -18,6 +18,7 @@ import {
   FieldType,
   createDefaultField,
   FIELD_PALETTE,
+  shouldShowField,
 } from '@/types/form-builder'
 import FieldPalette from './FieldPalette'
 import FormCanvas from './FormCanvas'
@@ -213,6 +214,7 @@ export default function FormBuilder({
         {/* Right: Field Config Panel */}
         <FieldConfigPanel
           field={selectedField}
+          allFields={fields}
           onUpdate={updateField}
           onClose={() => setSelectedFieldId(null)}
         />
@@ -242,17 +244,24 @@ function FormPreview({ fields }: FormPreviewProps) {
     setValues((prev) => ({ ...prev, [fieldName]: value }))
   }
 
+  // Filter fields based on conditional logic
+  const visibleFields = fields.filter((field) =>
+    shouldShowField(field, fields, values)
+  )
+
   return (
     <div className="max-w-2xl mx-auto p-8">
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h2 className="text-xl font-semibold mb-6">Form Preview</h2>
         <div className="flex flex-wrap">
-          {fields.map((field) => (
+          {visibleFields.map((field) => (
             <FieldRenderer
               key={field.id}
               field={field}
               value={values[field.name]}
               onChange={(value) => handleChange(field.name, value)}
+              allFields={fields}
+              formValues={values}
             />
           ))}
         </div>

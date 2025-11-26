@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { FormBuilder } from '@/components/form-builder'
 import { FormSchema, FormTemplateResponse } from '@/types/form-builder'
+import VersionHistory from '@/components/form-builder/VersionHistory'
 
 const MODULE_LABELS: Record<string, string> = {
   ICE_DEPTH: 'Ice Depth',
@@ -27,35 +28,94 @@ export default function FormEditorPage() {
   const [error, setError] = useState('')
   const [saveMessage, setSaveMessage] = useState('')
   const [isPreviewMode, setIsPreviewMode] = useState(false)
+  const [showVersionModal, setShowVersionModal] = useState(false)
+  const [pendingSchema, setPendingSchema] = useState<FormSchema | null>(null)
+  const [currentTemplateId, setCurrentTemplateId] = useState<string>(id)
 
   // Fetch template
-  useEffect(() => {
-    async function fetchTemplate() {
-      try {
-        const response = await fetch(`/api/form-templates/${id}`)
-        if (!response.ok) {
-          throw new Error('Failed to fetch template')
-        }
-        const data = await response.json()
-        setTemplate(data)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred')
-      } finally {
-        setIsLoading(false)
+  const fetchTemplate = useCallback(async (templateId: string) => {
+    setIsLoading(true)
+    try {
+      const response = await fetch(`/api/form-templates/${templateId}`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch template')
       }
+      const data = await response.json()
+      setTemplate(data)
+      setCurrentTemplateId(templateId)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
+    } finally {
+      setIsLoading(false)
     }
+  }, [])
 
-    fetchTemplate()
-  }, [id])
+  useEffect(() => {
+    fetchTemplate(id)
+  }, [id, fetchTemplate])
 
-  // Save template
+  // Handle version selection
+  const handleVersionSelect = async (versionId: string) => {
+    // Navigate to the selected version
+    router.push(`/dashboard/admin/forms/${versionId}`)
+  }
+
+  // Handle creating a new version
+  const handleCreateVersion = () => {
+    // Show the version creation modal
+    setShowVersionModal(true)
+  }
+
+  // Save as new version
+  const handleSaveAsNewVersion = async () => {
+    if (!pendingSchema) return
+
+    setIsSaving(true)
+    setSaveMessage('')
+    setError('')
+
+    try {
+      const response = await fetch(`/api/form-templates/${currentTemplateId}/versions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ schema: pendingSchema }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to create new version')
+      }
+
+      const newVersion = await response.json()
+      setShowVersionModal(false)
+      setPendingSchema(null)
+      setSaveMessage(`Version ${newVersion.version} created!`)
+      setTimeout(() => setSaveMessage(''), 3000)
+
+      // Navigate to the new version
+      router.push(`/dashboard/admin/forms/${newVersion.id}`)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  // Handle schema changes for version tracking
+  const handleSchemaChange = (schema: FormSchema) => {
+    setPendingSchema(schema)
+  }
+
+  // Save template (updates current version)
   const handleSave = async (schema: FormSchema) => {
     setIsSaving(true)
     setSaveMessage('')
     setError('')
 
     try {
-      const response = await fetch(`/api/form-templates/${id}`, {
+      const response = await fetch(`/api/form-templates/${currentTemplateId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -70,6 +130,7 @@ export default function FormEditorPage() {
 
       const updatedTemplate = await response.json()
       setTemplate(updatedTemplate)
+      setPendingSchema(schema)
       setSaveMessage('Saved successfully!')
       setTimeout(() => setSaveMessage(''), 3000)
     } catch (err) {
@@ -151,6 +212,15 @@ export default function FormEditorPage() {
                 {template.isLocked && ' • 🔒 Locked'}
               </p>
             </div>
+            {/* Version History Dropdown */}
+            <div className="ml-4">
+              <VersionHistory
+                templateId={currentTemplateId}
+                currentVersion={template.version}
+                onVersionSelect={handleVersionSelect}
+                onCreateVersion={handleCreateVersion}
+              />
+            </div>
           </div>
 
           <div className="flex items-center gap-3">
@@ -184,6 +254,7 @@ export default function FormEditorPage() {
       <div className="flex-1 overflow-hidden">
         <FormBuilder
           initialSchema={template.schema}
+          onChange={handleSchemaChange}
           onSave={handleSave}
           isPreviewMode={isPreviewMode}
         />
@@ -194,6 +265,41 @@ export default function FormEditorPage() {
         <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50">
           <div className="bg-white px-6 py-4 rounded-lg shadow-lg">
             Saving...
+          </div>
+        </div>
+      )}
+
+      {/* Version Creation Modal */}
+      {showVersionModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Create New Version
+            </h3>
+            <p className="text-gray-600 mb-6">
+              This will save the current form as version {template.version + 1}.
+              The previous version will be archived but remain accessible.
+            </p>
+            {!pendingSchema && (
+              <p className="text-amber-600 text-sm mb-4">
+                No unsaved changes detected. Save your form first before creating a new version.
+              </p>
+            )}
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowVersionModal(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveAsNewVersion}
+                disabled={!pendingSchema || isSaving}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSaving ? 'Creating...' : 'Create Version'}
+              </button>
+            </div>
           </div>
         </div>
       )}
