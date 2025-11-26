@@ -751,6 +751,170 @@ async function main() {
     },
   })
 
+  const airQualityForm = await prisma.formTemplate.upsert({
+    where: { id: 'form-air-quality-v1' },
+    update: {},
+    create: {
+      id: 'form-air-quality-v1',
+      facilityId: facility.id,
+      moduleType: ModuleType.AIR_QUALITY,
+      name: 'Air Quality Monitoring',
+      description: 'Monitor CO and NO2 levels for safety compliance',
+      version: 1,
+      isActive: true,
+      isLocked: false,
+      createdBy: generalManagerRole.id,
+      schema: {
+        header: {
+          includeUser: true,
+          includeFacility: true,
+          includeRink: true,
+          includeDateTime: true,
+          includeOutsideTemp: false,
+        },
+        sections: [
+          {
+            id: 'gas-levels-section',
+            title: 'Gas Level Readings',
+            description: 'Record CO and NO2 levels in parts per million (PPM)',
+            order: 1,
+            fields: [
+              {
+                id: 'co-level',
+                type: 'number',
+                label: 'Carbon Monoxide (CO) Level',
+                required: true,
+                min: 0,
+                max: 200,
+                decimalPlaces: 1,
+                helpText: 'Normal: < 9 PPM, Warning: 9-35 PPM, Critical: > 35 PPM',
+                order: 1,
+              },
+              {
+                id: 'no2-level',
+                type: 'number',
+                label: 'Nitrogen Dioxide (NO2) Level',
+                required: true,
+                min: 0,
+                max: 10,
+                decimalPlaces: 2,
+                helpText: 'Normal: < 0.5 PPM, Warning: 0.5-3 PPM, Critical: > 3 PPM',
+                order: 2,
+              },
+              {
+                id: 'reading-location',
+                type: 'dropdown',
+                label: 'Reading Location',
+                required: true,
+                options: [
+                  'Ice Surface - Center',
+                  'Ice Surface - Near Zamboni Door',
+                  'Spectator Area',
+                  'Locker Rooms',
+                  'Lobby',
+                  'Other',
+                ],
+                order: 3,
+              },
+              {
+                id: 'ventilation-status',
+                type: 'dropdown',
+                label: 'Ventilation System Status',
+                required: true,
+                options: ['Operating Normally', 'Partially Operating', 'Not Operating'],
+                order: 4,
+              },
+            ],
+          },
+          {
+            id: 'safety-section',
+            title: 'Safety Assessment',
+            order: 2,
+            fields: [
+              {
+                id: 'levels-exceeded',
+                type: 'toggle',
+                label: 'Threshold Levels Exceeded',
+                required: false,
+                defaultValue: false,
+                order: 1,
+              },
+              {
+                id: 'action-taken',
+                type: 'textarea',
+                label: 'Action Taken',
+                required: false,
+                rows: 4,
+                maxLength: 1000,
+                placeholder: 'Describe actions taken (e.g., increased ventilation, evacuated area, contacted maintenance)...',
+                order: 2,
+              },
+              {
+                id: 'evacuation-needed',
+                type: 'toggle',
+                label: 'Evacuation Required',
+                required: false,
+                defaultValue: false,
+                order: 3,
+              },
+              {
+                id: 'evacuation-notes',
+                type: 'textarea',
+                label: 'Evacuation Notes',
+                required: false,
+                rows: 3,
+                maxLength: 500,
+                placeholder: 'Document evacuation procedures and timing...',
+                order: 4,
+              },
+            ],
+          },
+          {
+            id: 'documentation-section',
+            title: 'Documentation',
+            order: 3,
+            fields: [
+              {
+                id: 'photos',
+                type: 'photo',
+                label: 'Monitoring Equipment Photos',
+                required: false,
+                maxPhotos: 3,
+                order: 1,
+              },
+              {
+                id: 'additional-notes',
+                type: 'textarea',
+                label: 'Additional Notes',
+                required: false,
+                rows: 4,
+                maxLength: 1000,
+                placeholder: 'Any additional observations or concerns...',
+                order: 2,
+              },
+            ],
+          },
+        ],
+      },
+      conditionalRules: {
+        rules: [
+          {
+            id: 'rule-require-action',
+            conditions: [{ fieldId: 'levels-exceeded', operator: 'equals', value: true }],
+            conditionLogic: 'AND',
+            actions: [{ type: 'require', targetFieldId: 'action-taken' }],
+          },
+          {
+            id: 'rule-require-evacuation-notes',
+            conditions: [{ fieldId: 'evacuation-needed', operator: 'equals', value: true }],
+            conditionLogic: 'AND',
+            actions: [{ type: 'require', targetFieldId: 'evacuation-notes' }],
+          },
+        ],
+      },
+    },
+  })
+
   console.log('✅ Database seeded successfully!')
   console.log('\n🔑 Demo accounts created:')
   console.log('  General Manager: gm@demo.com / password123')
@@ -761,11 +925,12 @@ async function main() {
   console.log('  - Ice Make Report (Ice Operations)')
   console.log('  - Ice Depth Measurement (Ice Depth)')
   console.log('  - Refrigeration System Report (Refrigeration)')
+  console.log('  - Air Quality Monitoring (Air Quality)')
   console.log('\n🚀 Next steps:')
   console.log('  1. Run: npm run dev')
   console.log('  2. Visit: http://localhost:3000/login')
   console.log('  3. Try logging in with any demo account')
-  console.log('  4. Navigate to Ice Operations, Ice Depth, or Refrigeration and submit a form')
+  console.log('  4. Navigate to any module and submit a form')
   console.log('  5. View data in Prisma Studio: npx prisma studio')
 }
 
