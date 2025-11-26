@@ -1,6 +1,26 @@
 import Link from 'next/link'
 import { getSession } from '@/lib/auth'
-import { getUserPermissions, getAccessibleModules } from '@/lib/permissions'
+import { getUserPermissions } from '@/lib/permissions'
+
+const MODULES = [
+  { key: 'iceDepth', label: 'Ice Depth', href: '/dashboard/ice-depth', icon: '📏', color: 'blue' },
+  { key: 'iceOperations', label: 'Ice Operations', href: '/dashboard/ice-operations', icon: '🏒', color: 'cyan' },
+  { key: 'refrigeration', label: 'Refrigeration', href: '/dashboard/refrigeration', icon: '❄️', color: 'indigo' },
+  { key: 'airQuality', label: 'Air Quality', href: '/dashboard/air-quality', icon: '🌡️', color: 'teal' },
+  { key: 'incidents', label: 'Incidents', href: '/dashboard/incidents', icon: '⚠️', color: 'red' },
+  { key: 'schedule', label: 'Schedule', href: '/dashboard/schedule', icon: '📅', color: 'purple' },
+  { key: 'dailyChecklist', label: 'Checklists', href: '/dashboard/checklists', icon: '✓', color: 'green' },
+]
+
+const COLOR_CLASSES: Record<string, { bg: string; border: string; text: string }> = {
+  blue: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-600' },
+  cyan: { bg: 'bg-cyan-50', border: 'border-cyan-200', text: 'text-cyan-600' },
+  indigo: { bg: 'bg-indigo-50', border: 'border-indigo-200', text: 'text-indigo-600' },
+  teal: { bg: 'bg-teal-50', border: 'border-teal-200', text: 'text-teal-600' },
+  red: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-600' },
+  purple: { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-600' },
+  green: { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-600' },
+}
 
 export default async function DashboardPage() {
   const user = await getSession()
@@ -10,111 +30,159 @@ export default async function DashboardPage() {
   }
 
   const permissions = getUserPermissions(user)
-  const accessibleModules = getAccessibleModules(user)
+
+  // Get accessible modules
+  const accessibleModules = MODULES.filter((module) => {
+    const perm = (permissions as any)[module.key]
+    return perm?.access
+  })
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-gray-900 mb-2">
-        Welcome back, {user.firstName}!
-      </h1>
-      <p className="text-gray-600 mb-8">
-        {user.facility.name} • {user.role.name}
-      </p>
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          Welcome back, {user.firstName}!
+        </h1>
+        <p className="text-gray-600">
+          {user.facility.name} • {user.role.name}
+        </p>
+      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-        <div className="card">
-          <h3 className="text-lg font-semibold mb-2">Quick Stats</h3>
-          <p className="text-gray-600 text-sm">
-            Coming soon: Recent submissions, pending approvals, and more.
-          </p>
+      {/* Quick Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+          <div className="text-xs text-gray-500 uppercase tracking-wide">Today's Date</div>
+          <div className="text-2xl font-bold text-gray-900 mt-1">
+            {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+          </div>
+          <div className="text-sm text-gray-500">
+            {new Date().toLocaleDateString('en-US', { weekday: 'long' })}
+          </div>
         </div>
-
-        <div className="card">
-          <h3 className="text-lg font-semibold mb-2">Recent Activity</h3>
-          <p className="text-gray-600 text-sm">
-            Coming soon: Your recent reports and actions.
-          </p>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+          <div className="text-xs text-gray-500 uppercase tracking-wide">Current Time</div>
+          <div className="text-2xl font-bold text-gray-900 mt-1">
+            {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+          </div>
+          <div className="text-sm text-gray-500">Local time</div>
         </div>
-
-        <div className="card">
-          <h3 className="text-lg font-semibold mb-2">Alerts</h3>
-          <p className="text-gray-600 text-sm">
-            Coming soon: Air quality alerts, incident notifications, and more.
-          </p>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+          <div className="text-xs text-gray-500 uppercase tracking-wide">Your Role</div>
+          <div className="text-xl font-bold text-gray-900 mt-1">{user.role.name}</div>
+          <div className="text-sm text-gray-500">{accessibleModules.length} modules</div>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+          <div className="text-xs text-gray-500 uppercase tracking-wide">Facility</div>
+          <div className="text-xl font-bold text-gray-900 mt-1 truncate">{user.facility.name}</div>
+          <div className="text-sm text-gray-500">Active</div>
         </div>
       </div>
 
-      {/* Quick Actions for Admin */}
-      {permissions.admin?.createTemplates && (
-        <div className="card mb-8 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-          <h2 className="text-xl font-bold mb-4">Admin Quick Actions</h2>
-          <div className="flex flex-wrap gap-4">
-            <Link
-              href="/dashboard/admin/forms"
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
-            >
-              <span>📝</span>
-              <span className="font-medium text-gray-800">Form Builder</span>
-            </Link>
-            <Link
-              href="/dashboard/admin/forms/new"
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <span>+</span>
-              <span className="font-medium">New Form Template</span>
-            </Link>
+      {/* Module Quick Access */}
+      <div className="mb-8">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Access</h2>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {accessibleModules.map((module) => {
+            const colors = COLOR_CLASSES[module.color]
+            return (
+              <Link
+                key={module.key}
+                href={module.href}
+                className={`${colors.bg} border ${colors.border} rounded-xl p-4 hover:shadow-md transition-all group`}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">{module.icon}</span>
+                  <div>
+                    <div className={`font-semibold ${colors.text} group-hover:underline`}>
+                      {module.label}
+                    </div>
+                    <div className="text-xs text-gray-500">Submit report</div>
+                  </div>
+                </div>
+              </Link>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Admin Section */}
+      {permissions.admin?.access && (
+        <div className="mb-8">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Administration</h2>
+          <div className="bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-xl p-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Link
+                href="/dashboard/admin/forms"
+                className="bg-white rounded-lg p-4 border border-gray-200 hover:shadow-md transition-all text-center"
+              >
+                <div className="text-2xl mb-2">📝</div>
+                <div className="font-medium text-gray-900">Form Builder</div>
+                <div className="text-xs text-gray-500">Manage templates</div>
+              </Link>
+              <Link
+                href="/dashboard/admin/users"
+                className="bg-white rounded-lg p-4 border border-gray-200 hover:shadow-md transition-all text-center"
+              >
+                <div className="text-2xl mb-2">👥</div>
+                <div className="font-medium text-gray-900">Users</div>
+                <div className="text-xs text-gray-500">Manage staff</div>
+              </Link>
+              <Link
+                href="/dashboard/admin/roles"
+                className="bg-white rounded-lg p-4 border border-gray-200 hover:shadow-md transition-all text-center"
+              >
+                <div className="text-2xl mb-2">🔐</div>
+                <div className="font-medium text-gray-900">Roles</div>
+                <div className="text-xs text-gray-500">Permissions</div>
+              </Link>
+              <Link
+                href="/dashboard/submissions"
+                className="bg-white rounded-lg p-4 border border-gray-200 hover:shadow-md transition-all text-center"
+              >
+                <div className="text-2xl mb-2">📊</div>
+                <div className="font-medium text-gray-900">Submissions</div>
+                <div className="text-xs text-gray-500">View all reports</div>
+              </Link>
+            </div>
           </div>
         </div>
       )}
 
-      <div className="card">
-        <h2 className="text-xl font-bold mb-4">Your Access</h2>
-        <p className="text-gray-600 mb-4">
-          You have access to the following modules:
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {accessibleModules.map((module) => (
-            <span
-              key={module}
-              className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
+      {/* Recent Activity Placeholder */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
+          <div className="space-y-3">
+            <div className="flex items-center gap-3 text-sm text-gray-600">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span>View your recent submissions in the Submissions page</span>
+            </div>
+            <Link
+              href="/dashboard/submissions"
+              className="inline-block text-blue-600 hover:text-blue-700 text-sm font-medium"
             >
-              {module}
-            </span>
-          ))}
+              View all submissions →
+            </Link>
+          </div>
         </div>
-      </div>
 
-      <div className="mt-8 card bg-blue-50 border-blue-200">
-        <h2 className="text-xl font-bold mb-2">Development Status</h2>
-        <div className="space-y-4">
-          <div>
-            <p className="text-gray-700 font-medium">Phase 1: Foundation</p>
-            <ul className="list-disc list-inside space-y-1 text-sm text-gray-600 mt-2">
-              <li>Next.js project with TypeScript</li>
-              <li>Prisma database schema</li>
-              <li>JWT authentication</li>
-              <li>Role-based access control</li>
-            </ul>
-          </div>
-          <div>
-            <p className="text-gray-700 font-medium">Phase 2: Form Builder Core</p>
-            <ul className="list-disc list-inside space-y-1 text-sm text-gray-600 mt-2">
-              <li>Drag-and-drop form canvas</li>
-              <li>Field type components</li>
-              <li>Field configuration panel</li>
-              <li>Form template CRUD</li>
-              <li>Form preview mode</li>
-            </ul>
-          </div>
-          <div>
-            <p className="text-gray-500 font-medium">Coming Next: Phase 3 - Form Builder Advanced</p>
-            <ul className="list-disc list-inside space-y-1 text-sm text-gray-400 mt-2">
-              <li>Conditional logic builder</li>
-              <li>Calculated fields</li>
-              <li>Specialized fields (ice depth grid, body diagram)</li>
-              <li>Form versioning</li>
-            </ul>
-          </div>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Tips</h3>
+          <ul className="space-y-2 text-sm text-gray-600">
+            <li className="flex items-start gap-2">
+              <span className="text-blue-500">•</span>
+              <span>Use the sidebar to navigate between modules</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-blue-500">•</span>
+              <span>All reports require selecting a rink first</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-blue-500">•</span>
+              <span>Incident reports require manager approval</span>
+            </li>
+          </ul>
         </div>
       </div>
     </div>

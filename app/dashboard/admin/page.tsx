@@ -26,27 +26,24 @@ export default async function AdminPage() {
     },
     {
       title: 'User Management',
-      description: 'Manage users, roles, and permissions',
+      description: 'Manage users and assign roles',
       href: '/dashboard/admin/users',
       icon: '👥',
-      permission: permissions.admin?.access,
-      comingSoon: true,
+      permission: permissions.admin?.manageUsers || permissions.admin?.access,
     },
     {
-      title: 'Facility Settings',
-      description: 'Configure facility-wide settings and thresholds',
-      href: '/dashboard/admin/settings',
-      icon: '⚙️',
-      permission: permissions.admin?.access,
-      comingSoon: true,
+      title: 'Role Management',
+      description: 'Configure roles and permissions',
+      href: '/dashboard/admin/roles',
+      icon: '🔐',
+      permission: permissions.admin?.manageRoles || permissions.admin?.access,
     },
     {
-      title: 'Data Retention',
-      description: 'Manage data retention policies and archival',
-      href: '/dashboard/admin/retention',
-      icon: '🗄️',
+      title: 'All Submissions',
+      description: 'View and manage all form submissions',
+      href: '/dashboard/submissions',
+      icon: '📊',
       permission: permissions.admin?.access,
-      comingSoon: true,
     },
   ]
 
@@ -63,21 +60,14 @@ export default async function AdminPage() {
           .map((section) => (
             <Link
               key={section.href}
-              href={section.comingSoon ? '#' : section.href}
-              className={`card hover:shadow-md transition-shadow ${
-                section.comingSoon ? 'opacity-60 cursor-not-allowed' : ''
-              }`}
+              href={section.href}
+              className="card hover:shadow-md transition-shadow"
             >
               <div className="flex items-start gap-4">
                 <div className="text-3xl">{section.icon}</div>
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900">
                     {section.title}
-                    {section.comingSoon && (
-                      <span className="ml-2 text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded">
-                        Coming Soon
-                      </span>
-                    )}
                   </h2>
                   <p className="text-sm text-gray-600 mt-1">
                     {section.description}

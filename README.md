@@ -45,8 +45,20 @@ MFO is a comprehensive ice rink management platform designed to digitize daily o
 ✅ Submissions list page with filtering and pagination
 ✅ Submission detail view page
 
-**Coming Next:**
-- Phase 6: Schedule & Checklist modules
+**Phase 6: Schedule & Checklist - COMPLETE**
+
+✅ Schedule module with week calendar view
+✅ Shift definitions and schedule entry management
+✅ Daily Checklist module with completion tracking
+✅ Enhanced Dashboard homepage with quick access
+
+**Phase 7: Admin Module - COMPLETE**
+
+✅ User Management page (list, add, search users)
+✅ Role Management page (view permissions, create roles)
+✅ Users and Roles API routes
+
+**Status: ~95% Complete** - Core functionality implemented
 
 ## 🏗️ Tech Stack
 
@@ -269,6 +281,22 @@ npm run prisma:seed      # Seed database
 ### Rinks
 - `GET /api/rinks` - List rinks for facility
 
+### Schedule
+- `GET /api/schedule` - List schedule entries
+- `POST /api/schedule` - Create schedule entry
+- `PUT /api/schedule/[id]` - Update schedule entry
+- `DELETE /api/schedule/[id]` - Delete/cancel schedule entry
+- `GET /api/schedule/shifts` - List shift definitions
+- `POST /api/schedule/shifts` - Create shift definition
+
+### Users
+- `GET /api/users` - List facility users
+- `POST /api/users` - Create new user
+
+### Roles
+- `GET /api/roles` - List roles
+- `POST /api/roles` - Create new role
+
 ## 🚧 Roadmap
 
 ### Phase 2: Form Builder Core - COMPLETE
@@ -299,8 +327,22 @@ npm run prisma:seed      # Seed database
 - [x] Submissions list page with filtering and pagination
 - [x] Submission detail view page
 
-### Phase 6-8
-See `SPEC.md` for complete implementation phases.
+### Phase 6: Schedule & Checklist - COMPLETE
+- [x] Schedule module with week calendar view
+- [x] Shift definitions and schedule entry API
+- [x] Daily Checklist module with completion tracking
+- [x] Enhanced Dashboard homepage
+
+### Phase 7: Admin Module - COMPLETE
+- [x] User Management page (list, create, search)
+- [x] Role Management page (view permissions, create roles)
+- [x] Users and Roles API routes
+
+### Remaining (Optional Enhancements)
+- [ ] PWA/Offline support with IndexedDB
+- [ ] Data export to CSV/PDF
+- [ ] Email/SMS notifications
+- [ ] Facility settings page
 
 ## 📄 License
 
