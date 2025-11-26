@@ -280,7 +280,13 @@ export default function SubmissionDetailPage({
                   return (
                     <div
                       key={field.id}
-                      className={field.type === 'textarea' ? 'md:col-span-2' : ''}
+                      className={
+                        field.type === 'textarea' ||
+                        field.type === 'photo' ||
+                        field.type === 'signature'
+                          ? 'md:col-span-2'
+                          : ''
+                      }
                     >
                       <div className="text-sm font-medium text-navy-700 mb-1">
                         {field.label}
@@ -289,7 +295,45 @@ export default function SubmissionDetailPage({
                         )}
                       </div>
                       <div className="text-navy-900">
-                        {field.type === 'textarea' ? (
+                        {field.type === 'photo' ? (
+                          // Photo field - display images
+                          Array.isArray(value) && value.length > 0 ? (
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                              {value.map((photoUrl: string, index: number) => (
+                                <div
+                                  key={index}
+                                  className="aspect-square rounded-lg overflow-hidden border-2 border-wolf-200"
+                                >
+                                  <img
+                                    src={photoUrl}
+                                    alt={`${field.label} ${index + 1}`}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-wolf-400 italic">
+                              No photos
+                            </span>
+                          )
+                        ) : field.type === 'signature' ? (
+                          // Signature field - display signature image
+                          value ? (
+                            <div className="border-2 border-wolf-200 rounded-lg p-4 bg-white inline-block">
+                              <img
+                                src={value}
+                                alt={field.label}
+                                className="max-w-full h-auto"
+                                style={{ maxHeight: '200px' }}
+                              />
+                            </div>
+                          ) : (
+                            <span className="text-wolf-400 italic">
+                              No signature
+                            </span>
+                          )
+                        ) : field.type === 'textarea' ? (
                           <div className="whitespace-pre-wrap bg-wolf-50 p-3 rounded-lg border border-wolf-200">
                             {displayValue || (
                               <span className="text-wolf-400 italic">
@@ -316,7 +360,7 @@ export default function SubmissionDetailPage({
                           </div>
                         ) : field.type === 'temperature' ? (
                           <span>
-                            {displayValue}°{field.unit || 'F'}
+                            {displayValue}°{(field as any).unit || 'F'}
                           </span>
                         ) : displayValue ? (
                           displayValue

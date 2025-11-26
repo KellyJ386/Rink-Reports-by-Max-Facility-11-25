@@ -16,12 +16,14 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 
-// Field component imports (will create these next)
+// Field component imports
 import TextField from './fields/TextField'
 import TextareaField from './fields/TextareaField'
 import NumberField from './fields/NumberField'
 import DropdownField from './fields/DropdownField'
 import ToggleField from './fields/ToggleField'
+import PhotoField from './fields/PhotoField'
+import SignatureField from './fields/SignatureField'
 
 interface FormRendererProps {
   schema: FormSchema
@@ -113,6 +115,39 @@ export default function FormRenderer({
 
       case 'toggle':
         return <ToggleField {...commonProps} />
+
+      case 'photo':
+        return (
+          <div key={field.id} className="col-span-full">
+            <label className="block text-sm font-medium text-navy mb-2">
+              {field.label}
+              {fieldState.required && <span className="text-red-500 ml-1">*</span>}
+            </label>
+            <PhotoField
+              field={field as any}
+              register={methods.register}
+              setValue={methods.setValue}
+              defaultValue={defaultValues?.[field.id]}
+              disabled={!fieldState.enabled || isSubmitting}
+            />
+          </div>
+        )
+
+      case 'signature':
+        return (
+          <div key={field.id} className="col-span-full">
+            <label className="block text-sm font-medium text-navy mb-2">
+              {field.label}
+              {fieldState.required && <span className="text-red-500 ml-1">*</span>}
+            </label>
+            <SignatureField
+              field={field as any}
+              setValue={methods.setValue}
+              defaultValue={defaultValues?.[field.id]}
+              disabled={!fieldState.enabled || isSubmitting}
+            />
+          </div>
+        )
 
       case 'sectionHeader':
         return (

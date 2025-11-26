@@ -72,10 +72,29 @@ export interface ToggleFieldConfig extends BaseFieldConfig {
   type: 'toggle'
 }
 
+// Photo field configuration
+export interface PhotoFieldConfig extends BaseFieldConfig {
+  type: 'photo'
+  maxPhotos?: number // Maximum number of photos allowed (default: 5)
+  maxFileSize?: number // Maximum file size in bytes (default: 10MB)
+  allowCamera?: boolean // Allow camera capture on mobile (default: true)
+}
+
+// Signature field configuration
+export interface SignatureFieldConfig extends BaseFieldConfig {
+  type: 'signature'
+  width?: number // Canvas width in pixels (default: 600)
+  height?: number // Canvas height in pixels (default: 200)
+}
+
 // Section header (visual divider, not a field)
 export interface SectionHeaderConfig extends BaseFieldConfig {
   type: 'sectionHeader'
 }
+
+// Type aliases for easier imports
+export type PhotoFieldSchema = PhotoFieldConfig
+export type SignatureFieldSchema = SignatureFieldConfig
 
 // Union type of all field configurations
 export type FieldConfig =
@@ -85,6 +104,8 @@ export type FieldConfig =
   | TemperatureFieldConfig
   | DropdownFieldConfig
   | ToggleFieldConfig
+  | PhotoFieldConfig
+  | SignatureFieldConfig
   | SectionHeaderConfig
 
 // Form section containing multiple fields
