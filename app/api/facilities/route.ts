@@ -65,10 +65,10 @@ export async function POST(request: NextRequest) {
 
     // Validate subscription tier if provided
     if (subscriptionTier) {
-      const validTiers = ['TRIAL', 'BASIC', 'PROFESSIONAL', 'ENTERPRISE']
+      const validTiers = ['TRIAL', 'BASIC', 'ENTERPRISE']
       if (!validTiers.includes(subscriptionTier)) {
         return NextResponse.json(
-          { error: 'Invalid subscription tier. Must be TRIAL, BASIC, PROFESSIONAL, or ENTERPRISE' },
+          { error: 'Invalid subscription tier. Must be TRIAL, BASIC, or ENTERPRISE' },
           { status: 400 }
         )
       }

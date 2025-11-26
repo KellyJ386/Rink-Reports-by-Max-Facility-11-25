@@ -78,7 +78,7 @@ export async function PATCH(
     }
     if (timezone !== undefined) updateData.timezone = timezone
     if (subscriptionTier !== undefined) {
-      const validTiers = ['TRIAL', 'BASIC', 'PROFESSIONAL', 'ENTERPRISE']
+      const validTiers = ['TRIAL', 'BASIC', 'ENTERPRISE']
       if (!validTiers.includes(subscriptionTier)) {
         return NextResponse.json({ error: 'Invalid subscription tier' }, { status: 400 })
       }

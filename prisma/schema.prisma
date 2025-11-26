@@ -15,12 +15,22 @@ datasource db {
 model Facility {
   id        String   @id @default(cuid())
   name      String
-  address   String
-  city      String
-  state     String
-  zipCode   String
+  address   String?
+  city      String?
+  state     String?
+  zipCode   String?
   country   String   @default("US")
+  phone     String?
+  email     String?
   timezone  String   @default("America/New_York")
+
+  // Subscription management (SaaS)
+  subscriptionTier   String  @default("TRIAL") // TRIAL, BASIC, ENTERPRISE
+  subscriptionStatus String  @default("ACTIVE") // ACTIVE, PAST_DUE, CANCELLED, SUSPENDED
+  maxUsers           Int     @default(10)
+  maxRinks           Int     @default(2)
+  isActive           Boolean @default(true)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

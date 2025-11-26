@@ -15,7 +15,7 @@ interface Facility {
   phone: string | null
   email: string | null
   timezone: string
-  subscriptionTier: 'TRIAL' | 'BASIC' | 'PROFESSIONAL' | 'ENTERPRISE'
+  subscriptionTier: 'TRIAL' | 'BASIC' | 'ENTERPRISE'
   subscriptionStatus: 'ACTIVE' | 'PAST_DUE' | 'CANCELLED' | 'SUSPENDED'
   maxUsers: number
   maxRinks: number
@@ -45,7 +45,7 @@ export default function FacilitiesAdminPage() {
     phone: '',
     email: '',
     timezone: 'America/Los_Angeles',
-    subscriptionTier: 'TRIAL' as 'TRIAL' | 'BASIC' | 'PROFESSIONAL' | 'ENTERPRISE',
+    subscriptionTier: 'TRIAL' as 'TRIAL' | 'BASIC' | 'ENTERPRISE',
     maxUsers: 10,
     maxRinks: 2,
   })
@@ -188,8 +188,6 @@ export default function FacilitiesAdminPage() {
         return <Badge variant="warning">Trial</Badge>
       case 'BASIC':
         return <Badge variant="default">Basic</Badge>
-      case 'PROFESSIONAL':
-        return <Badge variant="default" className="bg-blue-500">Professional</Badge>
       case 'ENTERPRISE':
         return <Badge variant="default" className="bg-purple-500">Enterprise</Badge>
       default:
@@ -404,9 +402,8 @@ export default function FacilitiesAdminPage() {
                     className="w-full px-3 py-2 border border-wolf-300 rounded-md focus:outline-none focus:ring-2 focus:ring-action-green"
                   >
                     <option value="TRIAL">Trial (14 days)</option>
-                    <option value="BASIC">Basic ($99/month)</option>
-                    <option value="PROFESSIONAL">Professional ($299/month)</option>
-                    <option value="ENTERPRISE">Enterprise (Custom)</option>
+                    <option value="BASIC">Basic - 8 rinks ($99/month)</option>
+                    <option value="ENTERPRISE">Enterprise (Coming soon)</option>
                   </select>
                 </div>
 
