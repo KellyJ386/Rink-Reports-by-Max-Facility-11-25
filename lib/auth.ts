@@ -4,8 +4,12 @@ import { cookies } from 'next/headers'
 import { prisma } from './prisma'
 import type { JWTPayload, UserWithRole } from '@/types'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key'
+const JWT_SECRET = process.env.JWT_SECRET
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d'
+
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required. Set it in your .env file.')
+}
 
 export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, 10)
