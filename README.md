@@ -37,8 +37,16 @@ MFO is a comprehensive ice rink management platform designed to digitize daily o
 ✅ Ice Depth module page
 ✅ Ice Operations module page
 
+**Phase 5: Additional Modules - COMPLETE**
+
+✅ Refrigeration module page with system monitoring
+✅ Air Quality module page with CO/NO2 thresholds and visual status
+✅ Incidents module page with severity levels and approval workflow
+✅ Submissions list page with filtering and pagination
+✅ Submission detail view page
+
 **Coming Next:**
-- Phase 5: Additional Modules (Refrigeration, Air Quality, Incidents)
+- Phase 6: Schedule & Checklist modules
 
 ## 🏗️ Tech Stack
 
@@ -284,7 +292,14 @@ npm run prisma:seed      # Seed database
 - [x] Ice Depth module page with form submission
 - [x] Ice Operations module page with quick actions
 
-### Phase 5-8
+### Phase 5: Additional Modules - COMPLETE
+- [x] Refrigeration module page with system monitoring dashboard
+- [x] Air Quality module page with CO/NO2 compliance thresholds
+- [x] Incidents module page with severity levels and review workflow
+- [x] Submissions list page with filtering and pagination
+- [x] Submission detail view page
+
+### Phase 6-8
 See `SPEC.md` for complete implementation phases.
 
 ## 📄 License
