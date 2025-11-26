@@ -577,6 +577,180 @@ async function main() {
     },
   })
 
+  const refrigerationForm = await prisma.formTemplate.upsert({
+    where: { id: 'form-refrigeration-v1' },
+    update: {},
+    create: {
+      id: 'form-refrigeration-v1',
+      facilityId: facility.id,
+      moduleType: ModuleType.REFRIGERATION,
+      name: 'Refrigeration System Report',
+      description: 'Monitor refrigeration equipment performance and maintenance',
+      version: 1,
+      isActive: true,
+      isLocked: false,
+      createdBy: generalManagerRole.id,
+      schema: {
+        header: {
+          includeUser: true,
+          includeFacility: true,
+          includeRink: true,
+          includeDateTime: true,
+          includeOutsideTemp: true,
+        },
+        sections: [
+          {
+            id: 'equipment-section',
+            title: 'Equipment Status',
+            description: 'Record refrigeration equipment readings and status',
+            order: 1,
+            fields: [
+              {
+                id: 'compressor-temp',
+                type: 'temperature',
+                label: 'Compressor Temperature',
+                required: true,
+                min: -40,
+                max: 120,
+                unit: 'F',
+                order: 1,
+              },
+              {
+                id: 'evaporator-temp',
+                type: 'temperature',
+                label: 'Evaporator Temperature',
+                required: true,
+                min: -40,
+                max: 60,
+                unit: 'F',
+                order: 2,
+              },
+              {
+                id: 'condenser-temp',
+                type: 'temperature',
+                label: 'Condenser Temperature',
+                required: true,
+                min: -20,
+                max: 120,
+                unit: 'F',
+                order: 3,
+              },
+              {
+                id: 'brine-temp',
+                type: 'temperature',
+                label: 'Brine Temperature',
+                required: true,
+                min: -40,
+                max: 40,
+                unit: 'F',
+                order: 4,
+              },
+              {
+                id: 'system-pressure',
+                type: 'number',
+                label: 'System Pressure (PSI)',
+                required: true,
+                min: 0,
+                max: 500,
+                order: 5,
+              },
+            ],
+          },
+          {
+            id: 'performance-section',
+            title: 'System Performance',
+            order: 2,
+            fields: [
+              {
+                id: 'system-status',
+                type: 'dropdown',
+                label: 'Overall System Status',
+                required: true,
+                options: ['Optimal', 'Normal', 'Degraded', 'Critical'],
+                order: 1,
+              },
+              {
+                id: 'compressor-running',
+                type: 'toggle',
+                label: 'Compressor Running',
+                required: false,
+                defaultValue: true,
+                order: 2,
+              },
+              {
+                id: 'has-alarms',
+                type: 'toggle',
+                label: 'Active Alarms',
+                required: false,
+                defaultValue: false,
+                order: 3,
+              },
+              {
+                id: 'alarm-details',
+                type: 'textarea',
+                label: 'Alarm Details',
+                required: false,
+                rows: 3,
+                maxLength: 500,
+                placeholder: 'Describe any active alarms or warnings...',
+                order: 4,
+              },
+            ],
+          },
+          {
+            id: 'maintenance-section',
+            title: 'Maintenance & Notes',
+            order: 3,
+            fields: [
+              {
+                id: 'maintenance-performed',
+                type: 'toggle',
+                label: 'Maintenance Performed',
+                required: false,
+                defaultValue: false,
+                order: 1,
+              },
+              {
+                id: 'maintenance-notes',
+                type: 'textarea',
+                label: 'Maintenance Notes',
+                required: false,
+                rows: 4,
+                maxLength: 1000,
+                placeholder: 'Describe maintenance performed, parts replaced, etc...',
+                order: 2,
+              },
+              {
+                id: 'photos',
+                type: 'photo',
+                label: 'Equipment Photos',
+                required: false,
+                maxPhotos: 5,
+                order: 3,
+              },
+            ],
+          },
+        ],
+      },
+      conditionalRules: {
+        rules: [
+          {
+            id: 'rule-require-alarm-details',
+            conditions: [{ fieldId: 'has-alarms', operator: 'equals', value: true }],
+            conditionLogic: 'AND',
+            actions: [{ type: 'require', targetFieldId: 'alarm-details' }],
+          },
+          {
+            id: 'rule-require-maintenance-notes',
+            conditions: [{ fieldId: 'maintenance-performed', operator: 'equals', value: true }],
+            conditionLogic: 'AND',
+            actions: [{ type: 'require', targetFieldId: 'maintenance-notes' }],
+          },
+        ],
+      },
+    },
+  })
+
   console.log('✅ Database seeded successfully!')
   console.log('\n🔑 Demo accounts created:')
   console.log('  General Manager: gm@demo.com / password123')
@@ -586,11 +760,12 @@ async function main() {
   console.log('\n📋 Form templates created:')
   console.log('  - Ice Make Report (Ice Operations)')
   console.log('  - Ice Depth Measurement (Ice Depth)')
+  console.log('  - Refrigeration System Report (Refrigeration)')
   console.log('\n🚀 Next steps:')
   console.log('  1. Run: npm run dev')
   console.log('  2. Visit: http://localhost:3000/login')
   console.log('  3. Try logging in with any demo account')
-  console.log('  4. Navigate to Ice Operations or Ice Depth and submit a form')
+  console.log('  4. Navigate to Ice Operations, Ice Depth, or Refrigeration and submit a form')
   console.log('  5. View data in Prisma Studio: npx prisma studio')
 }
 
