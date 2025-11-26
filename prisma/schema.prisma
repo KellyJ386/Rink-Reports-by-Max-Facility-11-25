@@ -35,13 +35,14 @@ model Facility {
   updatedAt DateTime @updatedAt
 
   // Relations
-  rinks          Rink[]
-  users          User[]
-  formTemplates  FormTemplate[]
-  shifts         ShiftDefinition[]
-  settings       FacilitySettings?
-  notifications  Notification[]
-  smsLogs        SMSLog[]
+  rinks            Rink[]
+  users            User[]
+  formTemplates    FormTemplate[]
+  shifts           ShiftDefinition[]
+  settings         FacilitySettings?
+  notifications    Notification[]
+  smsLogs          SMSLog[]
+  scheduledReports ScheduledReport[]
 
   @@map("facilities")
 }
@@ -451,4 +452,26 @@ enum IceDepthPreset {
   RINK_35 // 35 measurement points
   RINK_47 // 47 measurement points
   CUSTOM // Fully custom (up to 5 additional points)
+}
+
+// ==================== SCHEDULED REPORTS ====================
+
+model ScheduledReport {
+  id          String   @id @default(cuid())
+  facilityId  String
+  facility    Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  name        String
+  reportType  String // 'incident-summary', 'air-quality-compliance', 'safety-metrics', etc.
+  format      String   @default("pdf") // 'pdf', 'xlsx', 'csv'
+  frequency   String // 'daily', 'weekly', 'monthly', 'quarterly'
+  recipients  Json // Array of email addresses
+  isActive    Boolean  @default(true)
+  lastRunAt   DateTime?
+  nextRunAt   DateTime?
+  config      Json? // Additional configuration (date ranges, filters, etc.)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   String
+
+  @@map("scheduled_reports")
 }
