@@ -29,8 +29,16 @@ MFO is a comprehensive ice rink management platform designed to digitize daily o
 ✅ Body diagram specialized field for incident reports
 ✅ Form versioning system with version history
 
+**Phase 4: Report Modules - COMPLETE**
+
+✅ Universal header component (rink selector, date/time, temperature)
+✅ Form renderer component for data entry
+✅ Submission CRUD API routes
+✅ Ice Depth module page
+✅ Ice Operations module page
+
 **Coming Next:**
-- Phase 4: Report Modules
+- Phase 5: Additional Modules (Refrigeration, Air Quality, Incidents)
 
 ## 🏗️ Tech Stack
 
@@ -243,6 +251,16 @@ npm run prisma:seed      # Seed database
 - `GET /api/form-templates/[id]/versions` - Get version history
 - `POST /api/form-templates/[id]/versions` - Create new version
 
+### Submissions
+- `GET /api/submissions` - List submissions with filters
+- `POST /api/submissions` - Create new submission
+- `GET /api/submissions/[id]` - Get single submission
+- `PUT /api/submissions/[id]` - Update submission
+- `DELETE /api/submissions/[id]` - Archive submission
+
+### Rinks
+- `GET /api/rinks` - List rinks for facility
+
 ## 🚧 Roadmap
 
 ### Phase 2: Form Builder Core - COMPLETE
@@ -259,12 +277,12 @@ npm run prisma:seed      # Seed database
 - [x] Body diagram specialized field for incident reports
 - [x] Form versioning system with version history UI
 
-### Phase 4: Report Modules
-- [ ] Universal header component
-- [ ] Form renderer (submission view)
-- [ ] Submission CRUD
-- [ ] Ice Depth module
-- [ ] Ice Operations module
+### Phase 4: Report Modules - COMPLETE
+- [x] Universal header component (rink, date/time, temperature)
+- [x] Form renderer component for data entry
+- [x] Submission CRUD API routes
+- [x] Ice Depth module page with form submission
+- [x] Ice Operations module page with quick actions
 
 ### Phase 5-8
 See `SPEC.md` for complete implementation phases.
