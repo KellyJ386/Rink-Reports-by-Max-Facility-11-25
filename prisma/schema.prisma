@@ -318,20 +318,29 @@ enum ScheduleStatus {
 
 model AuditLog {
   id            String      @id @default(cuid())
-  userId        String
-  user          User        @relation(fields: [userId], references: [id])
+  userId        String?     // Nullable for system actions
+  user          User?       @relation(fields: [userId], references: [id])
+  facilityId    String?     // Track which facility for multi-tenant security
   action        AuditAction
-  entityType    String // "Submission", "FormTemplate", etc.
+  entityType    String      // "Submission", "FormTemplate", "User", "Facility", etc.
   entityId      String
-  previousValue Json?
-  newValue      Json?
+  previousValue Json?       // Before state (for UPDATE, DELETE)
+  newValue      Json?       // After state (for CREATE, UPDATE)
   ipAddress     String?
   userAgent     String?
+  metadata      Json?       // Additional context (request ID, session ID, etc.)
+  success       Boolean     @default(true) // Track failed attempts
+  errorMessage  String?     // Capture errors for failed actions
   createdAt     DateTime    @default(now())
 
   submissionId String?
   submission   Submission? @relation(fields: [submissionId], references: [id])
 
+  @@index([userId])
+  @@index([facilityId])
+  @@index([entityType, entityId])
+  @@index([action])
+  @@index([createdAt])
   @@map("audit_logs")
 }
 
@@ -344,6 +353,14 @@ enum AuditAction {
   REJECT
   LOGIN
   LOGOUT
+  LOGIN_FAILED
+  PASSWORD_CHANGE
+  PASSWORD_RESET
+  PERMISSION_CHANGE
+  EXPORT
+  IMPORT
+  SHARE
+  ACCESS_DENIED
 }
 
 model Notification {
