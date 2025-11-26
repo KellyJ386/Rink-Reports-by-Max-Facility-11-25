@@ -24,6 +24,8 @@ import DropdownField from './fields/DropdownField'
 import ToggleField from './fields/ToggleField'
 import PhotoField from './fields/PhotoField'
 import SignatureField from './fields/SignatureField'
+import IceDepthGridField from './fields/IceDepthGridField'
+import BodyDiagramField from './fields/BodyDiagramField'
 
 interface FormRendererProps {
   schema: FormSchema
@@ -141,6 +143,38 @@ export default function FormRenderer({
               {fieldState.required && <span className="text-red-500 ml-1">*</span>}
             </label>
             <SignatureField
+              field={field as any}
+              setValue={methods.setValue}
+              defaultValue={defaultValues?.[field.id]}
+              disabled={!fieldState.enabled || isSubmitting}
+            />
+          </div>
+        )
+
+      case 'iceDepthGrid':
+        return (
+          <div key={field.id} className="col-span-full">
+            <label className="block text-sm font-medium text-navy mb-2">
+              {field.label}
+              {fieldState.required && <span className="text-red-500 ml-1">*</span>}
+            </label>
+            <IceDepthGridField
+              field={field as any}
+              setValue={methods.setValue}
+              defaultValue={defaultValues?.[field.id]}
+              disabled={!fieldState.enabled || isSubmitting}
+            />
+          </div>
+        )
+
+      case 'bodyDiagram':
+        return (
+          <div key={field.id} className="col-span-full">
+            <label className="block text-sm font-medium text-navy mb-2">
+              {field.label}
+              {fieldState.required && <span className="text-red-500 ml-1">*</span>}
+            </label>
+            <BodyDiagramField
               field={field as any}
               setValue={methods.setValue}
               defaultValue={defaultValues?.[field.id]}

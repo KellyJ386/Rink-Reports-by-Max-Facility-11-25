@@ -283,7 +283,9 @@ export default function SubmissionDetailPage({
                       className={
                         field.type === 'textarea' ||
                         field.type === 'photo' ||
-                        field.type === 'signature'
+                        field.type === 'signature' ||
+                        field.type === 'iceDepthGrid' ||
+                        field.type === 'bodyDiagram'
                           ? 'md:col-span-2'
                           : ''
                       }
@@ -331,6 +333,114 @@ export default function SubmissionDetailPage({
                           ) : (
                             <span className="text-wolf-400 italic">
                               No signature
+                            </span>
+                          )
+                        ) : field.type === 'iceDepthGrid' ? (
+                          // Ice depth grid - display measurements summary
+                          value && typeof value === 'object' ? (
+                            <div className="bg-wolf-50 p-4 rounded-lg border border-wolf-200">
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                                <div>
+                                  <div className="text-xs font-medium text-navy-600 uppercase">
+                                    Points Measured
+                                  </div>
+                                  <div className="text-lg font-bold text-navy-900">
+                                    {Object.keys(value).length}
+                                  </div>
+                                </div>
+                                <div>
+                                  <div className="text-xs font-medium text-navy-600 uppercase">
+                                    Average Depth
+                                  </div>
+                                  <div className="text-lg font-bold text-navy-900">
+                                    {Object.keys(value).length > 0
+                                      ? (
+                                          Object.values(value).reduce(
+                                            (sum: number, val: any) => sum + val,
+                                            0
+                                          ) / Object.keys(value).length
+                                        ).toFixed(2)
+                                      : 'N/A'}{' '}
+                                    {(field as any).unit || 'inches'}
+                                  </div>
+                                </div>
+                                <div>
+                                  <div className="text-xs font-medium text-navy-600 uppercase">
+                                    Min Depth
+                                  </div>
+                                  <div className="text-lg font-bold text-navy-900">
+                                    {Object.keys(value).length > 0
+                                      ? Math.min(...Object.values(value).map((v: any) => v)).toFixed(2)
+                                      : 'N/A'}{' '}
+                                    {(field as any).unit || 'inches'}
+                                  </div>
+                                </div>
+                                <div>
+                                  <div className="text-xs font-medium text-navy-600 uppercase">
+                                    Max Depth
+                                  </div>
+                                  <div className="text-lg font-bold text-navy-900">
+                                    {Object.keys(value).length > 0
+                                      ? Math.max(...Object.values(value).map((v: any) => v)).toFixed(2)
+                                      : 'N/A'}{' '}
+                                    {(field as any).unit || 'inches'}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="text-xs text-wolf-600">
+                                View full grid data in raw submission details
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-wolf-400 italic">
+                              No measurements recorded
+                            </span>
+                          )
+                        ) : field.type === 'bodyDiagram' ? (
+                          // Body diagram - display injury list
+                          Array.isArray(value) && value.length > 0 ? (
+                            <div className="space-y-2">
+                              {value.map((injury: any, index: number) => (
+                                <div
+                                  key={index}
+                                  className="bg-wolf-50 p-3 rounded-lg border border-wolf-200"
+                                >
+                                  <div className="flex items-start gap-3">
+                                    <div
+                                      className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 ${
+                                        injury.severity === 'severe'
+                                          ? 'bg-red-500 border-red-700'
+                                          : injury.severity === 'moderate'
+                                          ? 'bg-orange-400 border-orange-600'
+                                          : 'bg-yellow-400 border-yellow-600'
+                                      }`}
+                                    >
+                                      {index + 1}
+                                    </div>
+                                    <div className="flex-1">
+                                      <div className="font-medium text-navy-900">
+                                        {injury.type}
+                                      </div>
+                                      <div className="text-sm text-wolf-600">
+                                        {injury.view.charAt(0).toUpperCase() +
+                                          injury.view.slice(1)}{' '}
+                                        view •{' '}
+                                        {injury.severity?.charAt(0).toUpperCase() +
+                                          injury.severity?.slice(1)}
+                                      </div>
+                                      {injury.description && (
+                                        <div className="text-sm text-wolf-700 mt-1">
+                                          {injury.description}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-wolf-400 italic">
+                              No injuries marked
                             </span>
                           )
                         ) : field.type === 'textarea' ? (

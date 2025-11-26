@@ -87,6 +87,22 @@ export interface SignatureFieldConfig extends BaseFieldConfig {
   height?: number // Canvas height in pixels (default: 200)
 }
 
+// Ice depth grid field configuration
+export interface IceDepthGridFieldConfig extends BaseFieldConfig {
+  type: 'iceDepthGrid'
+  preset?: '25' | '35' | '47' // Grid size preset (default: '35')
+  minDepth?: number // Minimum acceptable depth (default: 0.5)
+  maxDepth?: number // Maximum acceptable depth (default: 2.0)
+  unit?: string // Measurement unit (default: 'inches')
+}
+
+// Body diagram field configuration
+export interface BodyDiagramFieldConfig extends BaseFieldConfig {
+  type: 'bodyDiagram'
+  allowMultiple?: boolean // Allow multiple injury marks (default: true)
+  requiredFields?: ('type' | 'severity' | 'description')[] // Which fields are required for each mark
+}
+
 // Section header (visual divider, not a field)
 export interface SectionHeaderConfig extends BaseFieldConfig {
   type: 'sectionHeader'
@@ -95,6 +111,8 @@ export interface SectionHeaderConfig extends BaseFieldConfig {
 // Type aliases for easier imports
 export type PhotoFieldSchema = PhotoFieldConfig
 export type SignatureFieldSchema = SignatureFieldConfig
+export type IceDepthGridFieldSchema = IceDepthGridFieldConfig
+export type BodyDiagramFieldSchema = BodyDiagramFieldConfig
 
 // Union type of all field configurations
 export type FieldConfig =
@@ -106,6 +124,8 @@ export type FieldConfig =
   | ToggleFieldConfig
   | PhotoFieldConfig
   | SignatureFieldConfig
+  | IceDepthGridFieldConfig
+  | BodyDiagramFieldConfig
   | SectionHeaderConfig
 
 // Form section containing multiple fields
