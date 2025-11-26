@@ -477,6 +477,106 @@ async function main() {
     },
   })
 
+  const iceDepthForm = await prisma.formTemplate.upsert({
+    where: { id: 'form-ice-depth-v1' },
+    update: {},
+    create: {
+      id: 'form-ice-depth-v1',
+      facilityId: facility.id,
+      moduleType: ModuleType.ICE_DEPTH,
+      name: 'Ice Depth Measurement',
+      description: 'Measure ice depth across the rink surface using grid measurements',
+      version: 1,
+      isActive: true,
+      isLocked: false,
+      createdBy: generalManagerRole.id,
+      schema: {
+        header: {
+          includeUser: true,
+          includeFacility: true,
+          includeRink: true,
+          includeDateTime: true,
+          includeOutsideTemp: true,
+        },
+        sections: [
+          {
+            id: 'measurement-section',
+            title: 'Ice Depth Measurements',
+            description: 'Measure ice depth at designated points across the rink surface',
+            order: 1,
+            fields: [
+              {
+                id: 'ice-depth-grid',
+                type: 'iceDepthGrid',
+                label: 'Ice Depth Grid',
+                required: true,
+                preset: '35',
+                minDepth: 0.5,
+                maxDepth: 2.0,
+                unit: 'inches',
+                helpText: 'Click on grid points to record measurements. Green = good, Red = too thin, Yellow = too thick',
+                order: 1,
+              },
+            ],
+          },
+          {
+            id: 'conditions-section',
+            title: 'Rink Conditions',
+            order: 2,
+            fields: [
+              {
+                id: 'ice-temp',
+                type: 'temperature',
+                label: 'Ice Surface Temperature',
+                required: true,
+                min: -20,
+                max: 40,
+                unit: 'F',
+                order: 1,
+              },
+              {
+                id: 'surface-quality',
+                type: 'dropdown',
+                label: 'Surface Quality',
+                required: true,
+                options: ['Excellent', 'Good', 'Fair', 'Poor'],
+                order: 2,
+              },
+              {
+                id: 'has-thin-spots',
+                type: 'toggle',
+                label: 'Thin Spots Detected',
+                required: false,
+                defaultValue: false,
+                order: 3,
+              },
+              {
+                id: 'action-taken',
+                type: 'textarea',
+                label: 'Action Taken',
+                required: false,
+                rows: 3,
+                maxLength: 500,
+                placeholder: 'Describe any actions taken for thin spots or other issues...',
+                order: 4,
+              },
+            ],
+          },
+        ],
+      },
+      conditionalRules: {
+        rules: [
+          {
+            id: 'rule-require-action',
+            conditions: [{ fieldId: 'has-thin-spots', operator: 'equals', value: true }],
+            conditionLogic: 'AND',
+            actions: [{ type: 'require', targetFieldId: 'action-taken' }],
+          },
+        ],
+      },
+    },
+  })
+
   console.log('✅ Database seeded successfully!')
   console.log('\n🔑 Demo accounts created:')
   console.log('  General Manager: gm@demo.com / password123')
@@ -485,11 +585,12 @@ async function main() {
   console.log('  Operator: operator@demo.com / password123')
   console.log('\n📋 Form templates created:')
   console.log('  - Ice Make Report (Ice Operations)')
+  console.log('  - Ice Depth Measurement (Ice Depth)')
   console.log('\n🚀 Next steps:')
   console.log('  1. Run: npm run dev')
   console.log('  2. Visit: http://localhost:3000/login')
   console.log('  3. Try logging in with any demo account')
-  console.log('  4. Navigate to Ice Operations and submit a form')
+  console.log('  4. Navigate to Ice Operations or Ice Depth and submit a form')
   console.log('  5. View data in Prisma Studio: npx prisma studio')
 }
 
