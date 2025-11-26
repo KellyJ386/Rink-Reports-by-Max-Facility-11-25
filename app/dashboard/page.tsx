@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { getSession } from '@/lib/auth'
 import { getUserPermissions, getAccessibleModules } from '@/lib/permissions'
 
@@ -43,6 +44,29 @@ export default async function DashboardPage() {
         </div>
       </div>
 
+      {/* Quick Actions for Admin */}
+      {permissions.admin?.createTemplates && (
+        <div className="card mb-8 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+          <h2 className="text-xl font-bold mb-4">Admin Quick Actions</h2>
+          <div className="flex flex-wrap gap-4">
+            <Link
+              href="/dashboard/admin/forms"
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+            >
+              <span>📝</span>
+              <span className="font-medium text-gray-800">Form Builder</span>
+            </Link>
+            <Link
+              href="/dashboard/admin/forms/new"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <span>+</span>
+              <span className="font-medium">New Form Template</span>
+            </Link>
+          </div>
+        </div>
+      )}
+
       <div className="card">
         <h2 className="text-xl font-bold mb-4">Your Access</h2>
         <p className="text-gray-600 mb-4">
@@ -61,20 +85,37 @@ export default async function DashboardPage() {
       </div>
 
       <div className="mt-8 card bg-blue-50 border-blue-200">
-        <h2 className="text-xl font-bold mb-2">🚧 Development Status</h2>
-        <p className="text-gray-700 mb-4">
-          <strong>Phase 1: Foundation - Complete!</strong>
-        </p>
-        <ul className="list-disc list-inside space-y-1 text-sm text-gray-700">
-          <li>✅ Next.js project initialized</li>
-          <li>✅ Prisma database schema configured</li>
-          <li>✅ Authentication system implemented</li>
-          <li>✅ Role-based access control</li>
-          <li>✅ Basic dashboard layout</li>
-        </ul>
-        <p className="mt-4 text-sm text-gray-600">
-          Next up: Form Builder and Report Modules!
-        </p>
+        <h2 className="text-xl font-bold mb-2">Development Status</h2>
+        <div className="space-y-4">
+          <div>
+            <p className="text-gray-700 font-medium">Phase 1: Foundation</p>
+            <ul className="list-disc list-inside space-y-1 text-sm text-gray-600 mt-2">
+              <li>Next.js project with TypeScript</li>
+              <li>Prisma database schema</li>
+              <li>JWT authentication</li>
+              <li>Role-based access control</li>
+            </ul>
+          </div>
+          <div>
+            <p className="text-gray-700 font-medium">Phase 2: Form Builder Core</p>
+            <ul className="list-disc list-inside space-y-1 text-sm text-gray-600 mt-2">
+              <li>Drag-and-drop form canvas</li>
+              <li>Field type components</li>
+              <li>Field configuration panel</li>
+              <li>Form template CRUD</li>
+              <li>Form preview mode</li>
+            </ul>
+          </div>
+          <div>
+            <p className="text-gray-500 font-medium">Coming Next: Phase 3 - Form Builder Advanced</p>
+            <ul className="list-disc list-inside space-y-1 text-sm text-gray-400 mt-2">
+              <li>Conditional logic builder</li>
+              <li>Calculated fields</li>
+              <li>Specialized fields (ice depth grid, body diagram)</li>
+              <li>Form versioning</li>
+            </ul>
+          </div>
+        </div>
       </div>
     </div>
   )

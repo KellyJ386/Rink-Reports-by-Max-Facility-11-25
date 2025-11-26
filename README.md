@@ -13,8 +13,15 @@ MFO is a comprehensive ice rink management platform designed to digitize daily o
 ✅ Role-based access control (RBAC)
 ✅ Basic dashboard layout and navigation
 
+**Phase 2: Form Builder Core - COMPLETE**
+
+✅ Field type components (text, number, select, checkbox, radio, date/time, signature, photo)
+✅ Drag-and-drop form canvas with @dnd-kit
+✅ Field configuration panel with validation settings
+✅ Form template CRUD API routes
+✅ Form preview mode with validation
+
 **Coming Next:**
-- Phase 2: Form Builder Core
 - Phase 3: Form Builder Advanced
 - Phase 4: Report Modules
 
@@ -144,12 +151,20 @@ See `prisma/schema.prisma` for the complete schema.
 mfo/
 ├── app/                    # Next.js App Router
 │   ├── api/               # API routes
-│   │   └── auth/          # Authentication endpoints
+│   │   ├── auth/          # Authentication endpoints
+│   │   └── form-templates/ # Form template CRUD
 │   ├── dashboard/         # Protected dashboard routes
+│   │   └── admin/         # Admin pages (forms, users, settings)
 │   ├── login/             # Login page
 │   ├── layout.tsx         # Root layout
 │   └── page.tsx           # Root page (redirects to login)
 ├── components/            # React components
+│   ├── form-builder/      # Form builder components
+│   │   ├── fields/        # Field type components
+│   │   ├── FormBuilder.tsx
+│   │   ├── FormCanvas.tsx
+│   │   ├── FieldPalette.tsx
+│   │   └── FieldConfigPanel.tsx
 │   └── layout/           # Layout components (Sidebar, etc.)
 ├── lib/                   # Utility libraries
 │   ├── auth.ts           # Authentication utilities
@@ -159,7 +174,8 @@ mfo/
 │   ├── schema.prisma     # Database schema
 │   └── seed.ts           # Seed data
 ├── types/                # TypeScript types
-│   └── index.ts          # Shared types
+│   ├── index.ts          # Shared types
+│   └── form-builder.ts   # Form builder types
 └── middleware.ts         # Route protection middleware
 ```
 
@@ -211,18 +227,23 @@ npm run prisma:seed      # Seed database
 - `POST /api/auth/logout` - Logout current user
 - `GET /api/auth/me` - Get current user session
 
-More API routes will be added as modules are developed.
+### Form Templates
+- `GET /api/form-templates` - List all templates for facility
+- `POST /api/form-templates` - Create new template
+- `GET /api/form-templates/[id]` - Get single template
+- `PUT /api/form-templates/[id]` - Update template
+- `DELETE /api/form-templates/[id]` - Delete/deactivate template
 
 ## 🚧 Roadmap
 
-### Phase 2: Form Builder Core (Next)
-- [ ] Field type components (basic)
-- [ ] Drag-and-drop form canvas
-- [ ] Field configuration panel
-- [ ] Form template CRUD
-- [ ] Form preview mode
+### Phase 2: Form Builder Core - COMPLETE
+- [x] Field type components (text, textarea, number, email, phone, date, time, select, checkbox, radio, toggle, signature, photo, section, divider)
+- [x] Drag-and-drop form canvas with @dnd-kit
+- [x] Field configuration panel with validation settings
+- [x] Form template CRUD API routes
+- [x] Form preview mode with validation
 
-### Phase 3: Form Builder Advanced
+### Phase 3: Form Builder Advanced (Next)
 - [ ] Conditional logic builder
 - [ ] Calculated fields
 - [ ] Specialized fields (ice depth grid, body diagram)
