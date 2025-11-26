@@ -3,6 +3,7 @@ import { withAuth, withPermission } from '@/lib/middleware'
 import { prisma } from '@/lib/prisma'
 import type { FormData, UniversalHeaderData } from '@/types/forms'
 import type { ModuleType, SubmissionStatus } from '@prisma/client'
+import { triggerSubmissionNotifications } from '@/lib/services/notificationTriggers'
 
 /**
  * POST /api/submissions
@@ -174,6 +175,14 @@ export async function POST(request: NextRequest) {
           submissionId: submission.id,
         },
       })
+
+      // Trigger automated notifications for submitted forms (not drafts)
+      if (status === 'SUBMITTED') {
+        // Run in background - don't wait for completion
+        triggerSubmissionNotifications(submission.id, formTemplate.moduleType).catch((error) => {
+          console.error('Error triggering submission notifications:', error)
+        })
+      }
 
       return NextResponse.json(
         {
