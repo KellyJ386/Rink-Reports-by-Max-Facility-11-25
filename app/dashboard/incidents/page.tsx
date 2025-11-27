@@ -1,10 +1,17 @@
-import { getSession } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { canUserAccess } from '@/lib/permissions'
-import { redirect } from 'next/navigation'
-import Link from 'next/link'
+'use client'
 
-export const dynamic = 'force-dynamic'
+import { useState, useEffect, useCallback } from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+
+interface Submission {
+  id: string
+  status: string
+  submittedAt: string
+  data: any
+  rink: { id: string; name: string }
+  submittedBy: { id: string; firstName: string; lastName: string }
+}
 
 function getSeverityBadge(severity: string) {
   switch (severity) {
@@ -49,40 +56,92 @@ function getStatusBadge(status: string) {
   }
 }
 
-export default async function IncidentsPage() {
-  const user = await getSession()
+const PAGE_SIZE = 30
 
-  if (!user) {
-    redirect('/login')
+export default function IncidentsPage() {
+  const router = useRouter()
+  const [loading, setLoading] = useState(true)
+  const [submissions, setSubmissions] = useState<Submission[]>([])
+  const [total, setTotal] = useState(0)
+  const [displayCount, setDisplayCount] = useState(PAGE_SIZE)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [canSubmit, setCanSubmit] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchData = useCallback(async (offset = 0, append = false) => {
+    try {
+      if (offset > 0) setLoadingMore(true)
+
+      const [meRes, submissionsRes] = await Promise.all([
+        fetch('/api/auth/me'),
+        fetch(`/api/submissions?moduleType=INCIDENT&limit=${PAGE_SIZE}&page=${Math.floor(offset / PAGE_SIZE) + 1}`),
+      ])
+
+      if (!meRes.ok) {
+        router.push('/login')
+        return
+      }
+
+      const meData = await meRes.json()
+
+      // Check permissions
+      const permissions = meData.user?.role?.permissions
+      if (!permissions?.incidents?.access) {
+        router.push('/dashboard')
+        return
+      }
+
+      setCanSubmit(permissions?.incidents?.submit || false)
+
+      if (submissionsRes.ok) {
+        const data = await submissionsRes.json()
+        if (append) {
+          setSubmissions(prev => [...prev, ...(data.submissions || [])])
+        } else {
+          setSubmissions(data.submissions || [])
+        }
+        setTotal(data.total || 0)
+      }
+    } catch (err) {
+      setError('Failed to load data')
+      console.error('Error fetching data:', err)
+    } finally {
+      setLoading(false)
+      setLoadingMore(false)
+    }
+  }, [router])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
+
+  const loadMore = () => {
+    fetchData(submissions.length, true)
   }
 
-  if (!canUserAccess(user, 'incidents', 'access')) {
-    redirect('/dashboard')
+  const handleShowMore = () => {
+    if (displayCount < submissions.length) {
+      setDisplayCount(Math.min(displayCount + PAGE_SIZE, submissions.length))
+    } else if (submissions.length < total) {
+      loadMore()
+    }
   }
 
-  const canSubmit = canUserAccess(user, 'incidents', 'submit')
-  const canViewAll = canUserAccess(user, 'incidents', 'viewAll')
+  const hasMore = displayCount < submissions.length || submissions.length < total
 
-  const submissions = await prisma.submission.findMany({
-    where: {
-      formTemplate: {
-        facilityId: user.facilityId,
-        moduleType: 'INCIDENT',
-      },
-      ...(canViewAll ? {} : { submittedById: user.id }),
-      archivedAt: null,
-    },
-    include: {
-      rink: { select: { id: true, name: true } },
-      submittedBy: { select: { id: true, firstName: true, lastName: true } },
-    },
-    orderBy: { submittedAt: 'desc' },
-    take: 100,
-  })
+  if (loading) {
+    return <div className="text-center py-12 text-gray-500">Loading...</div>
+  }
 
-  // Calculate stats
+  if (error) {
+    return <div className="text-center py-12 text-red-500">{error}</div>
+  }
+
+  const displayedSubmissions = submissions.slice(0, displayCount)
+
+  // Calculate stats from loaded submissions
   const stats = {
-    total: submissions.length,
+    total: total,
     open: submissions.filter((s) => s.status === 'SUBMITTED').length,
     injuries: submissions.filter((s) => (s.data as any)?.incidentType === 'injury').length,
     ambulanceCalls: submissions.filter((s) => (s.data as any)?.ambulanceCalled).length,
@@ -147,7 +206,7 @@ export default async function IncidentsPage() {
                     href={`/dashboard/incidents/${incident.id}`}
                     className="block text-sm text-red-700 hover:text-red-900 underline"
                   >
-                    {new Date(incident.submittedAt).toLocaleDateString()} - {(incident.data as any)?.involvedPersonName || 'Unknown'} - {incident.rink.name}
+                    {new Date(incident.submittedAt).toLocaleDateString()} - {(incident.data as any)?.involvedPersonName || 'Unknown'} - {incident.rink?.name || 'Unknown'}
                   </Link>
                 ))}
               </div>
@@ -158,72 +217,93 @@ export default async function IncidentsPage() {
 
       {/* Incidents Table */}
       <div className="card">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">All Incidents</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">All Incidents</h2>
+          {total > 0 && (
+            <span className="text-sm text-gray-500">
+              Showing {displayedSubmissions.length} of {total}
+            </span>
+          )}
+        </div>
         {submissions.length === 0 ? (
           <div className="text-center py-8 text-gray-400">
             <p>No incidents reported yet</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Date</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Type</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Person Involved</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Location</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Severity</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Status</th>
-                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {submissions.map((s) => {
-                  const data = s.data as any
-                  const typeBadge = getTypeBadge(data?.incidentType || '')
-                  const severityBadge = getSeverityBadge(data?.severity || '')
-                  const statusBadge = getStatusBadge(s.status)
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Date</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Type</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Person Involved</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Location</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Severity</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Status</th>
+                    <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {displayedSubmissions.map((s) => {
+                    const data = s.data as any
+                    const typeBadge = getTypeBadge(data?.incidentType || '')
+                    const severityBadge = getSeverityBadge(data?.severity || '')
+                    const statusBadge = getStatusBadge(s.status)
 
-                  return (
-                    <tr key={s.id} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="py-3 px-4">
-                        <div className="text-sm font-medium">{new Date(s.submittedAt).toLocaleDateString()}</div>
-                        <div className="text-xs text-gray-500">{new Date(s.submittedAt).toLocaleTimeString()}</div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${typeBadge.color}`}>
-                          {typeBadge.label}
-                        </span>
-                        {data?.ambulanceCalled && (
-                          <span className="ml-1 text-red-600" title="Ambulance Called">🚑</span>
-                        )}
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="text-sm font-medium">{data?.involvedPersonName || 'Not specified'}</div>
-                        <div className="text-xs text-gray-500 capitalize">{data?.involvedPersonType || ''}</div>
-                      </td>
-                      <td className="py-3 px-4 text-sm">{s.rink.name}</td>
-                      <td className="py-3 px-4">
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${severityBadge.color}`}>
-                          {severityBadge.label}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${statusBadge.color}`}>
-                          {statusBadge.label}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <Link href={`/dashboard/incidents/${s.id}`} className="text-blue-600 hover:text-blue-700 text-sm font-medium">
-                          View
-                        </Link>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
+                    return (
+                      <tr key={s.id} className="border-b border-gray-100 hover:bg-gray-50">
+                        <td className="py-3 px-4">
+                          <div className="text-sm font-medium">{new Date(s.submittedAt).toLocaleDateString()}</div>
+                          <div className="text-xs text-gray-500">{new Date(s.submittedAt).toLocaleTimeString()}</div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${typeBadge.color}`}>
+                            {typeBadge.label}
+                          </span>
+                          {data?.ambulanceCalled && (
+                            <span className="ml-1 text-red-600" title="Ambulance Called">🚑</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="text-sm font-medium">{data?.involvedPersonName || 'Not specified'}</div>
+                          <div className="text-xs text-gray-500 capitalize">{data?.involvedPersonType || ''}</div>
+                        </td>
+                        <td className="py-3 px-4 text-sm">{s.rink?.name || 'Unknown'}</td>
+                        <td className="py-3 px-4">
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${severityBadge.color}`}>
+                            {severityBadge.label}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${statusBadge.color}`}>
+                            {statusBadge.label}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <Link href={`/dashboard/incidents/${s.id}`} className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                            View
+                          </Link>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {hasMore && (
+              <div className="text-center mt-4 pt-4 border-t">
+                <button
+                  onClick={handleShowMore}
+                  disabled={loadingMore}
+                  className="btn btn-secondary"
+                >
+                  {loadingMore ? 'Loading...' : 'Load More'}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

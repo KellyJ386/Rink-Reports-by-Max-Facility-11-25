@@ -1,10 +1,22 @@
-import { getSession } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { canUserAccess } from '@/lib/permissions'
-import { redirect } from 'next/navigation'
-import Link from 'next/link'
+'use client'
 
-export const dynamic = 'force-dynamic'
+import { useState, useEffect, useCallback } from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+
+interface Submission {
+  id: string
+  rinkId: string
+  submittedAt: string
+  data: any
+  rink: { id: string; name: string }
+  submittedBy: { id: string; firstName: string; lastName: string }
+}
+
+interface Rink {
+  id: string
+  name: string
+}
 
 const CHECKLIST_TYPES = {
   opening: { label: 'Opening', icon: '🌅', color: 'bg-yellow-100 text-yellow-800' },
@@ -21,41 +33,95 @@ function getCompletionStatus(completed: number, total: number) {
   return { label: `${percentage}%`, color: 'bg-red-100 text-red-800' }
 }
 
-export default async function ChecklistsPage() {
-  const user = await getSession()
+const PAGE_SIZE = 20
 
-  if (!user) {
-    redirect('/login')
+export default function ChecklistsPage() {
+  const router = useRouter()
+  const [loading, setLoading] = useState(true)
+  const [submissions, setSubmissions] = useState<Submission[]>([])
+  const [rinks, setRinks] = useState<Rink[]>([])
+  const [total, setTotal] = useState(0)
+  const [displayCount, setDisplayCount] = useState(PAGE_SIZE)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [canSubmit, setCanSubmit] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchData = useCallback(async (offset = 0, append = false) => {
+    try {
+      if (offset > 0) setLoadingMore(true)
+
+      const [meRes, rinksRes, submissionsRes] = await Promise.all([
+        fetch('/api/auth/me'),
+        fetch('/api/rinks'),
+        fetch(`/api/submissions?moduleType=DAILY_CHECKLIST&limit=${PAGE_SIZE}&page=${Math.floor(offset / PAGE_SIZE) + 1}`),
+      ])
+
+      if (!meRes.ok) {
+        router.push('/login')
+        return
+      }
+
+      const meData = await meRes.json()
+
+      // Check permissions
+      const permissions = meData.user?.role?.permissions
+      if (!permissions?.dailyChecklist?.access) {
+        router.push('/dashboard')
+        return
+      }
+
+      setCanSubmit(permissions?.dailyChecklist?.submit || false)
+
+      if (rinksRes.ok) {
+        const rinksData = await rinksRes.json()
+        setRinks(rinksData.rinks || [])
+      }
+
+      if (submissionsRes.ok) {
+        const data = await submissionsRes.json()
+        if (append) {
+          setSubmissions(prev => [...prev, ...(data.submissions || [])])
+        } else {
+          setSubmissions(data.submissions || [])
+        }
+        setTotal(data.total || 0)
+      }
+    } catch (err) {
+      setError('Failed to load data')
+      console.error('Error fetching data:', err)
+    } finally {
+      setLoading(false)
+      setLoadingMore(false)
+    }
+  }, [router])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
+
+  const loadMore = () => {
+    fetchData(submissions.length, true)
   }
 
-  if (!canUserAccess(user, 'dailyChecklist', 'access')) {
-    redirect('/dashboard')
+  const handleShowMore = () => {
+    if (displayCount < submissions.length) {
+      setDisplayCount(Math.min(displayCount + PAGE_SIZE, submissions.length))
+    } else if (submissions.length < total) {
+      loadMore()
+    }
   }
 
-  const canSubmit = canUserAccess(user, 'dailyChecklist', 'submit')
-  const canViewAll = canUserAccess(user, 'dailyChecklist', 'viewAll')
+  const hasMore = displayCount < submissions.length || submissions.length < total
 
-  const rinks = await prisma.rink.findMany({
-    where: { facility: { id: user.facilityId }, isActive: true },
-    orderBy: { name: 'asc' },
-  })
+  if (loading) {
+    return <div className="text-center py-12 text-gray-500">Loading...</div>
+  }
 
-  const submissions = await prisma.submission.findMany({
-    where: {
-      formTemplate: {
-        facilityId: user.facilityId,
-        moduleType: 'DAILY_CHECKLIST',
-      },
-      ...(canViewAll ? {} : { submittedById: user.id }),
-      archivedAt: null,
-    },
-    include: {
-      rink: { select: { id: true, name: true } },
-      submittedBy: { select: { id: true, firstName: true, lastName: true } },
-    },
-    orderBy: { submittedAt: 'desc' },
-    take: 100,
-  })
+  if (error) {
+    return <div className="text-center py-12 text-red-500">{error}</div>
+  }
+
+  const displayedSubmissions = submissions.slice(0, displayCount)
 
   // Get today's checklists
   const today = new Date()
@@ -67,6 +133,8 @@ export default async function ChecklistsPage() {
   })
 
   // Calculate stats
+  const weekAgo = new Date(today)
+  weekAgo.setDate(weekAgo.getDate() - 7)
   const stats = {
     todayTotal: todayChecklists.length,
     todayComplete: todayChecklists.filter((s) => {
@@ -75,8 +143,6 @@ export default async function ChecklistsPage() {
     }).length,
     weekTotal: submissions.filter((s) => {
       const submitted = new Date(s.submittedAt)
-      const weekAgo = new Date(today)
-      weekAgo.setDate(weekAgo.getDate() - 7)
       return submitted >= weekAgo
     }).length,
   }
@@ -178,68 +244,89 @@ export default async function ChecklistsPage() {
 
       {/* Recent Checklists */}
       <div className="card">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Checklists</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">Recent Checklists</h2>
+          {total > 0 && (
+            <span className="text-sm text-gray-500">
+              Showing {displayedSubmissions.length} of {total}
+            </span>
+          )}
+        </div>
         {submissions.length === 0 ? (
           <div className="text-center py-8 text-gray-400">
             <p>No checklists completed yet</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Date</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Type</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Rink</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Completed By</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Status</th>
-                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {submissions.slice(0, 20).map((s) => {
-                  const data = s.data as any
-                  const type = CHECKLIST_TYPES[data?.checklistType as keyof typeof CHECKLIST_TYPES] || {
-                    label: 'General',
-                    icon: '📋',
-                    color: 'bg-gray-100 text-gray-800',
-                  }
-                  const completed = data?.completedItems || 0
-                  const total = data?.totalItems || 0
-                  const status = getCompletionStatus(completed, total)
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Date</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Type</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Rink</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Completed By</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Status</th>
+                    <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {displayedSubmissions.map((s) => {
+                    const data = s.data as any
+                    const type = CHECKLIST_TYPES[data?.checklistType as keyof typeof CHECKLIST_TYPES] || {
+                      label: 'General',
+                      icon: '📋',
+                      color: 'bg-gray-100 text-gray-800',
+                    }
+                    const completed = data?.completedItems || 0
+                    const totalItems = data?.totalItems || 0
+                    const status = getCompletionStatus(completed, totalItems)
 
-                  return (
-                    <tr key={s.id} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="py-3 px-4">
-                        <div className="text-sm font-medium">{new Date(s.submittedAt).toLocaleDateString()}</div>
-                        <div className="text-xs text-gray-500">{new Date(s.submittedAt).toLocaleTimeString()}</div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${type.color}`}>
-                          <span>{type.icon}</span>
-                          {type.label}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-sm">{s.rink.name}</td>
-                      <td className="py-3 px-4 text-sm">
-                        {s.submittedBy.firstName} {s.submittedBy.lastName}
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${status.color}`}>
-                          {status.label}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <Link href={`/dashboard/checklists/${s.id}`} className="text-blue-600 hover:text-blue-700 text-sm font-medium">
-                          View
-                        </Link>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
+                    return (
+                      <tr key={s.id} className="border-b border-gray-100 hover:bg-gray-50">
+                        <td className="py-3 px-4">
+                          <div className="text-sm font-medium">{new Date(s.submittedAt).toLocaleDateString()}</div>
+                          <div className="text-xs text-gray-500">{new Date(s.submittedAt).toLocaleTimeString()}</div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${type.color}`}>
+                            <span>{type.icon}</span>
+                            {type.label}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-sm">{s.rink?.name || 'Unknown'}</td>
+                        <td className="py-3 px-4 text-sm">
+                          {s.submittedBy?.firstName} {s.submittedBy?.lastName}
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${status.color}`}>
+                            {status.label}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <Link href={`/dashboard/checklists/${s.id}`} className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                            View
+                          </Link>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {hasMore && (
+              <div className="text-center mt-4 pt-4 border-t">
+                <button
+                  onClick={handleShowMore}
+                  disabled={loadingMore}
+                  className="btn btn-secondary"
+                >
+                  {loadingMore ? 'Loading...' : 'Load More'}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

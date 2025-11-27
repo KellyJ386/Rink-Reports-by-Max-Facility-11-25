@@ -1,10 +1,22 @@
-import { getSession } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { canUserAccess } from '@/lib/permissions'
-import { redirect } from 'next/navigation'
-import Link from 'next/link'
+'use client'
 
-export const dynamic = 'force-dynamic'
+import { useState, useEffect, useCallback } from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+
+interface Submission {
+  id: string
+  rinkId: string
+  submittedAt: string
+  data: any
+  rink: { id: string; name: string }
+  submittedBy: { id: string; firstName: string; lastName: string }
+}
+
+interface Rink {
+  id: string
+  name: string
+}
 
 function getStatusIndicator(value: number, min: number, max: number) {
   if (value < min || value > max) {
@@ -17,59 +29,113 @@ function getStatusIndicator(value: number, min: number, max: number) {
   return { status: 'normal', color: 'text-green-600', bg: 'bg-green-100' }
 }
 
-export default async function RefrigerationPage() {
-  const user = await getSession()
+// Normal operating ranges (these could come from facility settings)
+const ranges = {
+  suctionPressure: { min: 20, max: 40, unit: 'PSI' },
+  dischargePressure: { min: 150, max: 250, unit: 'PSI' },
+  brineTemp: { min: 18, max: 24, unit: '°F' },
+  compressorAmps: { min: 50, max: 150, unit: 'A' },
+}
 
-  if (!user) {
-    redirect('/login')
+const PAGE_SIZE = 30
+
+export default function RefrigerationPage() {
+  const router = useRouter()
+  const [loading, setLoading] = useState(true)
+  const [submissions, setSubmissions] = useState<Submission[]>([])
+  const [rinks, setRinks] = useState<Rink[]>([])
+  const [total, setTotal] = useState(0)
+  const [displayCount, setDisplayCount] = useState(PAGE_SIZE)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [canSubmit, setCanSubmit] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchData = useCallback(async (offset = 0, append = false) => {
+    try {
+      if (offset > 0) setLoadingMore(true)
+
+      const [meRes, rinksRes, submissionsRes] = await Promise.all([
+        fetch('/api/auth/me'),
+        fetch('/api/rinks'),
+        fetch(`/api/submissions?moduleType=REFRIGERATION&limit=${PAGE_SIZE}&page=${Math.floor(offset / PAGE_SIZE) + 1}`),
+      ])
+
+      if (!meRes.ok) {
+        router.push('/login')
+        return
+      }
+
+      const meData = await meRes.json()
+
+      // Check permissions
+      const permissions = meData.user?.role?.permissions
+      if (!permissions?.refrigeration?.access) {
+        router.push('/dashboard')
+        return
+      }
+
+      setCanSubmit(permissions?.refrigeration?.submit || false)
+
+      if (rinksRes.ok) {
+        const rinksData = await rinksRes.json()
+        setRinks(rinksData.rinks || [])
+      }
+
+      if (submissionsRes.ok) {
+        const data = await submissionsRes.json()
+        if (append) {
+          setSubmissions(prev => [...prev, ...(data.submissions || [])])
+        } else {
+          setSubmissions(data.submissions || [])
+        }
+        setTotal(data.total || 0)
+      }
+    } catch (err) {
+      setError('Failed to load data')
+      console.error('Error fetching data:', err)
+    } finally {
+      setLoading(false)
+      setLoadingMore(false)
+    }
+  }, [router])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
+
+  const loadMore = () => {
+    fetchData(submissions.length, true)
   }
 
-  if (!canUserAccess(user, 'refrigeration', 'access')) {
-    redirect('/dashboard')
+  const handleShowMore = () => {
+    if (displayCount < submissions.length) {
+      setDisplayCount(Math.min(displayCount + PAGE_SIZE, submissions.length))
+    } else if (submissions.length < total) {
+      loadMore()
+    }
   }
 
-  const canSubmit = canUserAccess(user, 'refrigeration', 'submit')
-  const canViewAll = canUserAccess(user, 'refrigeration', 'viewAll')
+  const hasMore = displayCount < submissions.length || submissions.length < total
 
-  const rinks = await prisma.rink.findMany({
-    where: { facility: { id: user.facilityId }, isActive: true },
-    orderBy: { name: 'asc' },
-  })
+  if (loading) {
+    return <div className="text-center py-12 text-gray-500">Loading...</div>
+  }
 
-  const submissions = await prisma.submission.findMany({
-    where: {
-      formTemplate: {
-        facilityId: user.facilityId,
-        moduleType: 'REFRIGERATION',
-      },
-      ...(canViewAll ? {} : { submittedById: user.id }),
-      archivedAt: null,
-    },
-    include: {
-      rink: { select: { id: true, name: true } },
-      submittedBy: { select: { id: true, firstName: true, lastName: true } },
-    },
-    orderBy: { submittedAt: 'desc' },
-    take: 100,
-  })
+  if (error) {
+    return <div className="text-center py-12 text-red-500">{error}</div>
+  }
+
+  const displayedSubmissions = submissions.slice(0, displayCount)
 
   // Get latest reading per rink
-  const latestByRink: Record<string, any> = {}
+  const latestByRink: Record<string, Submission> = {}
   submissions.forEach((s) => {
     if (!latestByRink[s.rinkId]) {
       latestByRink[s.rinkId] = s
     }
   })
 
-  // Normal operating ranges (these could come from facility settings)
-  const ranges = {
-    suctionPressure: { min: 20, max: 40, unit: 'PSI' },
-    dischargePressure: { min: 150, max: 250, unit: 'PSI' },
-    brineTemp: { min: 18, max: 24, unit: '°F' },
-    compressorAmps: { min: 50, max: 150, unit: 'A' },
-  }
-
-  // Check for alerts
+  // Check for alerts in recent readings
   const alerts = submissions.slice(0, 20).filter((s) => {
     const data = s.data as any
     return (
@@ -201,63 +267,84 @@ export default async function RefrigerationPage() {
 
       {/* Recent Readings */}
       <div className="card">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Readings</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">Recent Readings</h2>
+          {total > 0 && (
+            <span className="text-sm text-gray-500">
+              Showing {displayedSubmissions.length} of {total}
+            </span>
+          )}
+        </div>
         {submissions.length === 0 ? (
           <div className="text-center py-8 text-gray-400">
             <p>No readings recorded yet</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Date/Time</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Rink</th>
-                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">Suction</th>
-                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">Discharge</th>
-                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">Brine</th>
-                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">Amps</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Status</th>
-                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {submissions.slice(0, 30).map((s) => {
-                  const data = s.data as any
-                  const hasAlert =
-                    (data?.suctionPressure && (data.suctionPressure < ranges.suctionPressure.min || data.suctionPressure > ranges.suctionPressure.max)) ||
-                    (data?.dischargePressure && (data.dischargePressure < ranges.dischargePressure.min || data.dischargePressure > ranges.dischargePressure.max)) ||
-                    (data?.brineTemp && (data.brineTemp < ranges.brineTemp.min || data.brineTemp > ranges.brineTemp.max))
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Date/Time</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Rink</th>
+                    <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">Suction</th>
+                    <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">Discharge</th>
+                    <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">Brine</th>
+                    <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">Amps</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Status</th>
+                    <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {displayedSubmissions.map((s) => {
+                    const data = s.data as any
+                    const hasAlert =
+                      (data?.suctionPressure && (data.suctionPressure < ranges.suctionPressure.min || data.suctionPressure > ranges.suctionPressure.max)) ||
+                      (data?.dischargePressure && (data.dischargePressure < ranges.dischargePressure.min || data.dischargePressure > ranges.dischargePressure.max)) ||
+                      (data?.brineTemp && (data.brineTemp < ranges.brineTemp.min || data.brineTemp > ranges.brineTemp.max))
 
-                  return (
-                    <tr key={s.id} className={`border-b border-gray-100 ${hasAlert ? 'bg-red-50' : 'hover:bg-gray-50'}`}>
-                      <td className="py-3 px-4">
-                        <div className="text-sm font-medium">{new Date(s.submittedAt).toLocaleDateString()}</div>
-                        <div className="text-xs text-gray-500">{new Date(s.submittedAt).toLocaleTimeString()}</div>
-                      </td>
-                      <td className="py-3 px-4 text-sm">{s.rink.name}</td>
-                      <td className="py-3 px-4 text-right font-mono">{data?.suctionPressure ?? '--'}</td>
-                      <td className="py-3 px-4 text-right font-mono">{data?.dischargePressure ?? '--'}</td>
-                      <td className="py-3 px-4 text-right font-mono">{data?.brineTemp ?? '--'}</td>
-                      <td className="py-3 px-4 text-right font-mono">{data?.compressorAmps ?? '--'}</td>
-                      <td className="py-3 px-4">
-                        {hasAlert ? (
-                          <span className="px-2 py-1 bg-red-100 text-red-800 rounded text-xs font-medium">Alert</span>
-                        ) : (
-                          <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">Normal</span>
-                        )}
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <Link href={`/dashboard/refrigeration/${s.id}`} className="text-blue-600 hover:text-blue-700 text-sm font-medium">
-                          View
-                        </Link>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
+                    return (
+                      <tr key={s.id} className={`border-b border-gray-100 ${hasAlert ? 'bg-red-50' : 'hover:bg-gray-50'}`}>
+                        <td className="py-3 px-4">
+                          <div className="text-sm font-medium">{new Date(s.submittedAt).toLocaleDateString()}</div>
+                          <div className="text-xs text-gray-500">{new Date(s.submittedAt).toLocaleTimeString()}</div>
+                        </td>
+                        <td className="py-3 px-4 text-sm">{s.rink?.name || 'Unknown'}</td>
+                        <td className="py-3 px-4 text-right font-mono">{data?.suctionPressure ?? '--'}</td>
+                        <td className="py-3 px-4 text-right font-mono">{data?.dischargePressure ?? '--'}</td>
+                        <td className="py-3 px-4 text-right font-mono">{data?.brineTemp ?? '--'}</td>
+                        <td className="py-3 px-4 text-right font-mono">{data?.compressorAmps ?? '--'}</td>
+                        <td className="py-3 px-4">
+                          {hasAlert ? (
+                            <span className="px-2 py-1 bg-red-100 text-red-800 rounded text-xs font-medium">Alert</span>
+                          ) : (
+                            <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">Normal</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <Link href={`/dashboard/refrigeration/${s.id}`} className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                            View
+                          </Link>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {hasMore && (
+              <div className="text-center mt-4 pt-4 border-t">
+                <button
+                  onClick={handleShowMore}
+                  disabled={loadingMore}
+                  className="btn btn-secondary"
+                >
+                  {loadingMore ? 'Loading...' : 'Load More'}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
