@@ -152,6 +152,7 @@ export default function FormBuilder({
         {/* Configuration Panel */}
         <FieldConfigPanel
           field={selectedField}
+          allFields={fields}
           onUpdate={handleUpdateField}
           onClose={() => setSelectedFieldId(null)}
         />

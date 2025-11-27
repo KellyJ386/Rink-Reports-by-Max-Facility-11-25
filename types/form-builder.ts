@@ -16,6 +16,8 @@ export type FieldType =
   | 'photo'
   | 'section'
   | 'divider'
+  | 'iceDepthGrid'
+  | 'bodyDiagram'
 
 export interface FieldOption {
   label: string
@@ -92,22 +94,28 @@ export interface DragItem {
 }
 
 // Field palette - available fields to drag
-export const FIELD_PALETTE: Array<{ type: FieldType; label: string; icon: string }> = [
-  { type: 'text', label: 'Text Input', icon: 'T' },
-  { type: 'number', label: 'Number', icon: '#' },
-  { type: 'textarea', label: 'Text Area', icon: '=' },
-  { type: 'select', label: 'Dropdown', icon: 'v' },
-  { type: 'checkbox', label: 'Checkbox', icon: '[]' },
-  { type: 'radio', label: 'Radio Group', icon: 'O' },
-  { type: 'date', label: 'Date', icon: 'D' },
-  { type: 'time', label: 'Time', icon: 'T' },
-  { type: 'datetime', label: 'Date & Time', icon: 'DT' },
-  { type: 'email', label: 'Email', icon: '@' },
-  { type: 'phone', label: 'Phone', icon: 'P' },
-  { type: 'signature', label: 'Signature', icon: 'S' },
-  { type: 'photo', label: 'Photo Upload', icon: 'I' },
-  { type: 'section', label: 'Section Header', icon: 'H' },
-  { type: 'divider', label: 'Divider', icon: '-' },
+export const FIELD_PALETTE: Array<{ type: FieldType; label: string; icon: string; category?: string }> = [
+  // Basic fields
+  { type: 'text', label: 'Text Input', icon: 'T', category: 'basic' },
+  { type: 'number', label: 'Number', icon: '#', category: 'basic' },
+  { type: 'textarea', label: 'Text Area', icon: '=', category: 'basic' },
+  { type: 'select', label: 'Dropdown', icon: 'v', category: 'basic' },
+  { type: 'checkbox', label: 'Checkbox', icon: '[]', category: 'basic' },
+  { type: 'radio', label: 'Radio Group', icon: 'O', category: 'basic' },
+  { type: 'date', label: 'Date', icon: 'D', category: 'basic' },
+  { type: 'time', label: 'Time', icon: 'T', category: 'basic' },
+  { type: 'datetime', label: 'Date & Time', icon: 'DT', category: 'basic' },
+  { type: 'email', label: 'Email', icon: '@', category: 'basic' },
+  { type: 'phone', label: 'Phone', icon: 'P', category: 'basic' },
+  // Media fields
+  { type: 'signature', label: 'Signature', icon: 'S', category: 'media' },
+  { type: 'photo', label: 'Photo Upload', icon: 'I', category: 'media' },
+  // Specialized fields
+  { type: 'iceDepthGrid', label: 'Ice Depth Grid', icon: '❄', category: 'specialized' },
+  { type: 'bodyDiagram', label: 'Body Diagram', icon: '👤', category: 'specialized' },
+  // Layout fields
+  { type: 'section', label: 'Section Header', icon: 'H', category: 'layout' },
+  { type: 'divider', label: 'Divider', icon: '-', category: 'layout' },
 ]
 
 // Generate unique ID
@@ -163,6 +171,8 @@ function getDefaultLabel(type: FieldType): string {
     photo: 'Photo',
     section: 'Section Title',
     divider: '',
+    iceDepthGrid: 'Ice Depth Measurements',
+    bodyDiagram: 'Injury Diagram',
   }
   return labels[type]
 }

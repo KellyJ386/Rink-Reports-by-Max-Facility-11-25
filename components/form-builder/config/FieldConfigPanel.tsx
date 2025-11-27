@@ -1,16 +1,19 @@
 'use client'
 
-import { useState } from 'react'
 import type { FormField, FieldOption, ValidationRule } from '@/types/form-builder'
+import ConditionalLogicEditor from './ConditionalLogicEditor'
+import CalculatedFieldEditor from './CalculatedFieldEditor'
 
 interface FieldConfigPanelProps {
   field: FormField | null
+  allFields?: FormField[]
   onUpdate: (field: FormField) => void
   onClose: () => void
 }
 
 export default function FieldConfigPanel({
   field,
+  allFields = [],
   onUpdate,
   onClose,
 }: FieldConfigPanelProps) {
@@ -171,6 +174,22 @@ export default function FieldConfigPanel({
             disabled={field.isLocked}
           />
         )}
+
+        {/* Conditional Logic */}
+        <ConditionalLogicEditor
+          field={field}
+          allFields={allFields}
+          onUpdate={(rules) => updateField({ conditionalRules: rules })}
+          disabled={field.isLocked}
+        />
+
+        {/* Calculated Fields */}
+        <CalculatedFieldEditor
+          field={field}
+          allFields={allFields}
+          onUpdate={(config) => updateField({ defaultValue: config as unknown as string })}
+          disabled={field.isLocked}
+        />
 
         {/* Lock indicator */}
         {field.isLocked && (

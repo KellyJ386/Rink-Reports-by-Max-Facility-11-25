@@ -12,6 +12,8 @@ import SignatureField from './SignatureField'
 import PhotoField from './PhotoField'
 import SectionField from './SectionField'
 import DividerField from './DividerField'
+import IceDepthGridField from './IceDepthGridField'
+import BodyDiagramField from './BodyDiagramField'
 
 interface FieldRendererProps {
   field: FormField
@@ -149,6 +151,30 @@ export default function FieldRenderer({
     case 'divider':
       return <DividerField />
 
+    case 'iceDepthGrid':
+      return (
+        <IceDepthGridField
+          field={field}
+          value={value as Record<string, number>}
+          onChange={onChange as (value: Record<string, number>) => void}
+          disabled={disabled}
+          error={error}
+          preview={preview}
+        />
+      )
+
+    case 'bodyDiagram':
+      return (
+        <BodyDiagramField
+          field={field}
+          value={value as unknown as { view: 'front' | 'back'; marks: Array<{ id: string; x: number; y: number; type: 'bruise' | 'cut' | 'fracture' | 'pain' | 'other'; notes?: string }> }}
+          onChange={onChange as (value: unknown) => void}
+          disabled={disabled}
+          error={error}
+          preview={preview}
+        />
+      )
+
     default:
       return (
         <div className="text-red-500 text-sm">
@@ -170,4 +196,6 @@ export {
   PhotoField,
   SectionField,
   DividerField,
+  IceDepthGridField,
+  BodyDiagramField,
 }

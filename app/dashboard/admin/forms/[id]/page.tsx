@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import FormBuilder from '@/components/form-builder/FormBuilder'
 import FormPreview from '@/components/form-builder/FormPreview'
+import FormVersionHistory from '@/components/form-builder/FormVersionHistory'
 import type { FormSchema } from '@/types/form-builder'
 
 const MODULE_OPTIONS = [
@@ -137,10 +138,18 @@ export default function EditFormPage({ params }: PageProps) {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Edit Form Template</h1>
-          <p className="text-gray-600 mt-1">
-            Version {version}
-            {isLocked && <span className="ml-2 text-yellow-600">(Locked)</span>}
-          </p>
+          <div className="flex items-center gap-3 mt-1">
+            <FormVersionHistory
+              templateId={id}
+              currentVersion={version}
+              onRestore={(versionId) => {
+                // In production, this would fetch and restore the version
+                console.log('Restoring version:', versionId)
+                fetchTemplate()
+              }}
+            />
+            {isLocked && <span className="text-yellow-600 text-sm">(Locked)</span>}
+          </div>
         </div>
       </div>
 
