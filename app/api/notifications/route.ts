@@ -89,6 +89,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Validate input lengths
+    if (title.length > 255) {
+      return NextResponse.json({ error: 'Title must be 255 characters or less' }, { status: 400 })
+    }
+    if (message.length > 2000) {
+      return NextResponse.json({ error: 'Message must be 2000 characters or less' }, { status: 400 })
+    }
+
     // Validate notification type
     const validTypes = [
       'INCIDENT_SUBMITTED',

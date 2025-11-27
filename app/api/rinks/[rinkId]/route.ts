@@ -89,6 +89,11 @@ export async function PUT(
       return NextResponse.json({ error: 'Rink name cannot be empty' }, { status: 400 })
     }
 
+    // Validate name length
+    if (name && name.trim().length > 100) {
+      return NextResponse.json({ error: 'Rink name must be 100 characters or less' }, { status: 400 })
+    }
+
     const rink = await prisma.rink.update({
       where: { id: rinkId },
       data: {

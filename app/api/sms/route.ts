@@ -86,6 +86,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Validate message length (SMS limit is ~160 chars per segment, 1600 for 10 segments)
+    if (messageBody.length > 1600) {
+      return NextResponse.json({ error: 'Message body must be 1600 characters or less' }, { status: 400 })
+    }
+
     if (!userId && !phoneNumber) {
       return NextResponse.json(
         { error: 'Either userId or phoneNumber is required' },

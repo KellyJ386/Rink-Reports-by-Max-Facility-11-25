@@ -77,6 +77,14 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     const { name, description, schema, conditionalRules, calculatedFields, createNewVersion } = body
 
+    // Validate input lengths
+    if (name && name.length > 255) {
+      return NextResponse.json({ error: 'Name must be 255 characters or less' }, { status: 400 })
+    }
+    if (description && description.length > 1000) {
+      return NextResponse.json({ error: 'Description must be 1000 characters or less' }, { status: 400 })
+    }
+
     // If schema changed and has submissions, create new version
     const hasSubmissions = await prisma.submission.count({
       where: { formTemplateId: id },
