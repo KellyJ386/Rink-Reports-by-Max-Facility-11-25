@@ -81,6 +81,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Validate input lengths
+    if (name.length > 255) {
+      return NextResponse.json({ error: 'Name must be 255 characters or less' }, { status: 400 })
+    }
+    if (description && description.length > 1000) {
+      return NextResponse.json({ error: 'Description must be 1000 characters or less' }, { status: 400 })
+    }
+
     const form = await prisma.formTemplate.create({
       data: {
         facilityId: user.facilityId,

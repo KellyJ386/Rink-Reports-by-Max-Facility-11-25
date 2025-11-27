@@ -5,6 +5,26 @@ import { canUserAccess } from '@/lib/permissions'
 
 export const dynamic = 'force-dynamic'
 
+// Valid permission modules and actions for validation
+const VALID_MODULES = ['admin', 'iceDepth', 'iceOperations', 'refrigeration', 'airQuality', 'incidents', 'schedule', 'dailyChecklist']
+const VALID_ACTIONS = ['access', 'submit', 'viewOwn', 'viewAll', 'edit', 'delete', 'export', 'approve', 'createTemplates', 'create', 'publish']
+
+function validatePermissionOverrides(overrides: any): boolean {
+  if (typeof overrides !== 'object' || overrides === null) return false
+
+  for (const module of Object.keys(overrides)) {
+    if (!VALID_MODULES.includes(module)) return false
+    const modulePerms = overrides[module]
+    if (typeof modulePerms !== 'object' || modulePerms === null) return false
+
+    for (const action of Object.keys(modulePerms)) {
+      if (!VALID_ACTIONS.includes(action)) return false
+      if (typeof modulePerms[action] !== 'boolean') return false
+    }
+  }
+  return true
+}
+
 interface RouteParams {
   params: Promise<{ id: string }>
 }
@@ -150,7 +170,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         updateData.roleId = roleId
       }
       if (isActive !== undefined) updateData.isActive = isActive
-      if (permissionOverrides !== undefined) updateData.permissionOverrides = permissionOverrides
+      if (permissionOverrides !== undefined) {
+        // Validate permission overrides structure
+        if (permissionOverrides !== null && !validatePermissionOverrides(permissionOverrides)) {
+          return NextResponse.json({ error: 'Invalid permission overrides structure' }, { status: 400 })
+        }
+        updateData.permissionOverrides = permissionOverrides
+      }
     }
 
     const updatedUser = await prisma.user.update({

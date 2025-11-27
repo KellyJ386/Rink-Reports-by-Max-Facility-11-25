@@ -79,6 +79,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Validate input lengths
+    if (name.length > 100) {
+      return NextResponse.json({ error: 'Role name must be 100 characters or less' }, { status: 400 })
+    }
+    if (description && description.length > 500) {
+      return NextResponse.json({ error: 'Description must be 500 characters or less' }, { status: 400 })
+    }
+
     const role = await prisma.role.create({
       data: {
         facilityId: user.facilityId,

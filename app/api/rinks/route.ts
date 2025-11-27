@@ -84,6 +84,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Rink name is required' }, { status: 400 })
     }
 
+    // Validate input lengths
+    if (name.trim().length > 100) {
+      return NextResponse.json({ error: 'Rink name must be 100 characters or less' }, { status: 400 })
+    }
+
     const rink = await prisma.rink.create({
       data: {
         facilityId: user.facilityId,
