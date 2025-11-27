@@ -40,6 +40,7 @@ export default function FormDetailPage() {
   const [error, setError] = useState('')
   const [mode, setMode] = useState<'view' | 'edit' | 'preview'>('view')
   const [isSaving, setIsSaving] = useState(false)
+  const [isArchiving, setIsArchiving] = useState(false)
 
   useEffect(() => {
     fetchForm()
@@ -96,6 +97,34 @@ export default function FormDetailPage() {
       setError(err instanceof Error ? err.message : 'Failed to save form')
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  const handleArchive = async () => {
+    if (!form) return
+
+    if (!confirm(`Are you sure you want to archive "${form.name}"? It will no longer be available for new submissions.`)) {
+      return
+    }
+
+    setIsArchiving(true)
+    setError('')
+
+    try {
+      const response = await fetch(`/api/forms/${formId}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to archive form')
+      }
+
+      router.push('/dashboard/admin/forms')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to archive form')
+    } finally {
+      setIsArchiving(false)
     }
   }
 
@@ -215,6 +244,12 @@ export default function FormDetailPage() {
         </div>
       </div>
 
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm mb-6">
+          {error}
+        </div>
+      )}
+
       {form.description && (
         <p className="text-gray-600 mb-6">{form.description}</p>
       )}
@@ -258,6 +293,25 @@ export default function FormDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Archive Section */}
+      {form.isActive && !form.isLocked && (
+        <div className="mt-6 pt-6 border-t border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="font-medium text-gray-900">Archive Form</h4>
+              <p className="text-sm text-gray-500">Remove this form from active use. Existing submissions will be preserved.</p>
+            </div>
+            <button
+              onClick={handleArchive}
+              disabled={isArchiving}
+              className="btn btn-secondary text-red-600 hover:bg-red-50 disabled:opacity-50"
+            >
+              {isArchiving ? 'Archiving...' : 'Archive Form'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
