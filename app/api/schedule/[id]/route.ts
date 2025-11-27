@@ -24,6 +24,8 @@ export async function GET(
       },
       include: {
         user: { select: { id: true, firstName: true, lastName: true } },
+        rink: { select: { id: true, name: true } },
+        shift: { select: { id: true, name: true, startTime: true, endTime: true } },
       },
     })
 
@@ -82,6 +84,8 @@ export async function PATCH(
         },
         include: {
           user: { select: { id: true, firstName: true, lastName: true } },
+          rink: { select: { id: true, name: true } },
+          shift: { select: { id: true, name: true, startTime: true, endTime: true } },
         },
       })
 
@@ -104,6 +108,8 @@ export async function PATCH(
       data: updateData,
       include: {
         user: { select: { id: true, firstName: true, lastName: true } },
+        rink: { select: { id: true, name: true } },
+        shift: { select: { id: true, name: true, startTime: true, endTime: true } },
       },
     })
 

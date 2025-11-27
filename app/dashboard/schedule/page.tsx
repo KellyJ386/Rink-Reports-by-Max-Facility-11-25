@@ -79,8 +79,6 @@ export default function SchedulePage() {
   const [users, setUsers] = useState<User[]>([])
   const [currentUser, setCurrentUser] = useState<UserPermissions | null>(null)
   const [error, setError] = useState('')
-  const [deleting, setDeleting] = useState<string | null>(null)
-  const [selectedEntry, setSelectedEntry] = useState<ScheduleEntry | null>(null)
 
   // Get current week dates
   const today = new Date()
@@ -120,35 +118,7 @@ export default function SchedulePage() {
     }
   }
 
-  const handleDeleteEntry = async (entryId: string) => {
-    if (!confirm('Are you sure you want to delete this shift?')) {
-      return
-    }
-
-    setDeleting(entryId)
-    setError('')
-
-    try {
-      const response = await fetch(`/api/schedule/${entryId}`, {
-        method: 'DELETE',
-      })
-
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Failed to delete')
-      }
-
-      setScheduleEntries(scheduleEntries.filter((e) => e.id !== entryId))
-      setSelectedEntry(null)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete shift')
-    } finally {
-      setDeleting(null)
-    }
-  }
-
   const canCreate = currentUser?.role?.permissions?.schedule?.create
-  const canDelete = currentUser?.role?.permissions?.schedule?.delete
 
   // Group entries by date
   const entriesByDate: Record<string, ScheduleEntry[]> = {}
@@ -233,10 +203,10 @@ export default function SchedulePage() {
                       <div className="text-center text-gray-400 text-sm py-4">No shifts</div>
                     ) : (
                       entries.map((entry) => (
-                        <div
+                        <Link
                           key={entry.id}
-                          onClick={() => setSelectedEntry(entry)}
-                          className={`p-2 rounded text-sm cursor-pointer hover:ring-2 hover:ring-blue-300 ${
+                          href={`/dashboard/schedule/${entry.id}`}
+                          className={`block p-2 rounded text-sm cursor-pointer hover:ring-2 hover:ring-blue-300 ${
                             entry.isOpenShift
                               ? 'bg-orange-100 border border-orange-300'
                               : entry.isEmergency
@@ -253,7 +223,7 @@ export default function SchedulePage() {
                           {entry.isEmergency && (
                             <span className="text-xs text-red-600 font-medium">Emergency</span>
                           )}
-                        </div>
+                        </Link>
                       ))
                     )}
                   </div>
@@ -263,76 +233,6 @@ export default function SchedulePage() {
           </div>
         </div>
       </div>
-
-      {/* Shift Details Modal */}
-      {selectedEntry && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setSelectedEntry(null)}>
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-start mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Shift Details</h3>
-              <button onClick={() => setSelectedEntry(null)} className="text-gray-400 hover:text-gray-600">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <dl className="space-y-3">
-              <div>
-                <dt className="text-sm text-gray-500">Date</dt>
-                <dd className="font-medium">
-                  {new Date(selectedEntry.date).toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-sm text-gray-500">Time</dt>
-                <dd className="font-medium">
-                  {formatTime(selectedEntry.startTime)} - {formatTime(selectedEntry.endTime)}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-sm text-gray-500">Assigned To</dt>
-                <dd className="font-medium">
-                  {selectedEntry.isOpenShift
-                    ? 'Open Shift - Not Assigned'
-                    : `${selectedEntry.user.firstName} ${selectedEntry.user.lastName}`}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-sm text-gray-500">Status</dt>
-                <dd>
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${
-                    selectedEntry.status === 'PUBLISHED' ? 'bg-green-100 text-green-800' :
-                    selectedEntry.status === 'FILLED' ? 'bg-blue-100 text-blue-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
-                    {selectedEntry.status}
-                  </span>
-                </dd>
-              </div>
-              {selectedEntry.isEmergency && (
-                <div className="bg-red-50 text-red-700 px-3 py-2 rounded text-sm">
-                  Emergency Coverage Required
-                </div>
-              )}
-            </dl>
-            {(canDelete || selectedEntry.createdById === currentUser?.id) && (
-              <div className="mt-6 pt-4 border-t flex justify-end">
-                <button
-                  onClick={() => handleDeleteEntry(selectedEntry.id)}
-                  disabled={deleting === selectedEntry.id}
-                  className="btn btn-secondary text-red-600 hover:bg-red-50 disabled:opacity-50"
-                >
-                  {deleting === selectedEntry.id ? 'Deleting...' : 'Delete Shift'}
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* Shift Definitions and Staff */}
       <div className="grid md:grid-cols-2 gap-6">
