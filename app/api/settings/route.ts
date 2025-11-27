@@ -80,6 +80,18 @@ export async function PUT(request: NextRequest) {
 
     // Update or create settings
     if (settingsData) {
+      // Validate air quality thresholds
+      if (settingsData.coWarningPpm !== undefined && settingsData.coEvacuationPpm !== undefined) {
+        if (settingsData.coWarningPpm >= settingsData.coEvacuationPpm) {
+          return NextResponse.json({ error: 'CO warning threshold must be less than evacuation threshold' }, { status: 400 })
+        }
+      }
+      if (settingsData.no2WarningPpm !== undefined && settingsData.no2EvacuationPpm !== undefined) {
+        if (settingsData.no2WarningPpm >= settingsData.no2EvacuationPpm) {
+          return NextResponse.json({ error: 'NO2 warning threshold must be less than evacuation threshold' }, { status: 400 })
+        }
+      }
+
       await prisma.facilitySettings.upsert({
         where: { facilityId: user.facilityId },
         update: {

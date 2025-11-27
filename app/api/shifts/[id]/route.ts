@@ -70,6 +70,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Shift name cannot be empty' }, { status: 400 })
     }
 
+    // Validate end time is after start time (use existing values if not provided)
+    const finalStartTime = startTime ?? existingShift.startTime
+    const finalEndTime = endTime ?? existingShift.endTime
+    if (finalEndTime <= finalStartTime) {
+      return NextResponse.json({ error: 'End time must be after start time' }, { status: 400 })
+    }
+
     const shift = await prisma.shiftDefinition.update({
       where: { id },
       data: {

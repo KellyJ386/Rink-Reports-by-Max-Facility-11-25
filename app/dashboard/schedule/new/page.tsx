@@ -99,6 +99,12 @@ export default function NewScheduleEntryPage() {
       return
     }
 
+    // Validate end time is after start time
+    if (formData.endTime <= formData.startTime) {
+      setError('End time must be after start time')
+      return
+    }
+
     setSubmitting(true)
     setError('')
 

@@ -42,6 +42,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Name, start time, and end time are required' }, { status: 400 })
     }
 
+    // Validate end time is after start time
+    if (endTime <= startTime) {
+      return NextResponse.json({ error: 'End time must be after start time' }, { status: 400 })
+    }
+
     const shift = await prisma.shiftDefinition.create({
       data: {
         facilityId: user.facilityId,

@@ -94,6 +94,19 @@ export default function UserDetailPage() {
       return
     }
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(formData.email)) {
+      setError('Please enter a valid email address')
+      return
+    }
+
+    // Validate password strength if provided
+    if (formData.password && formData.password.length < 8) {
+      setError('Password must be at least 8 characters')
+      return
+    }
+
     setSaving(true)
     setError('')
 

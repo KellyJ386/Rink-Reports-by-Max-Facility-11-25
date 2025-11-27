@@ -100,6 +100,24 @@ export default function SettingsPage() {
   }
 
   const handleSave = async () => {
+    // Validate air quality thresholds
+    if (settings.coWarningPpm >= settings.coEvacuationPpm) {
+      setMessage({ type: 'error', text: 'CO warning threshold must be less than evacuation threshold' })
+      return
+    }
+    if (settings.no2WarningPpm >= settings.no2EvacuationPpm) {
+      setMessage({ type: 'error', text: 'NO2 warning threshold must be less than evacuation threshold' })
+      return
+    }
+
+    // Validate SMS quiet hours if enabled
+    if (settings.smsEnabled && settings.smsQuietHoursStart && settings.smsQuietHoursEnd) {
+      if (settings.smsQuietHoursEnd <= settings.smsQuietHoursStart) {
+        setMessage({ type: 'error', text: 'SMS quiet hours end time must be after start time' })
+        return
+      }
+    }
+
     setSaving(true)
     setMessage(null)
 

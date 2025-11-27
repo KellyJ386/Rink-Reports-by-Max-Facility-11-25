@@ -92,6 +92,12 @@ export default function ShiftDefinitionsPage() {
       return
     }
 
+    // Validate end time is after start time
+    if (formData.endTime <= formData.startTime) {
+      setMessage({ type: 'error', text: 'End time must be after start time' })
+      return
+    }
+
     setSaving(true)
     setMessage(null)
 

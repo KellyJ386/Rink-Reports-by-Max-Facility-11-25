@@ -93,6 +93,19 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     const { firstName, lastName, phone, email, password, roleId, isActive, smsOptIn, smsPreference, permissionOverrides } = body
 
+    // Validate email format if provided
+    if (email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(email)) {
+        return NextResponse.json({ error: 'Invalid email format' }, { status: 400 })
+      }
+    }
+
+    // Validate password strength if provided (minimum 8 characters)
+    if (password && password.length < 8) {
+      return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 })
+    }
+
     // Build update data based on permissions
     const updateData: any = {}
 

@@ -63,6 +63,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Date, start time, and end time are required' }, { status: 400 })
     }
 
+    // Validate end time is after start time
+    if (endTime <= startTime) {
+      return NextResponse.json({ error: 'End time must be after start time' }, { status: 400 })
+    }
+
     // For non-open shifts, require a user
     if (!isOpenShift && !userId) {
       return NextResponse.json({ error: 'User ID is required for assigned shifts' }, { status: 400 })
