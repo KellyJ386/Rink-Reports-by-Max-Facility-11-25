@@ -1,10 +1,21 @@
-import { getSession } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { canUserAccess } from '@/lib/permissions'
-import { redirect } from 'next/navigation'
-import Link from 'next/link'
+'use client'
 
-export const dynamic = 'force-dynamic'
+import { useState, useEffect, useCallback } from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+
+interface Submission {
+  id: string
+  submittedAt: string
+  data: any
+  rink: { id: string; name: string }
+  submittedBy: { id: string; firstName: string; lastName: string }
+}
+
+interface Rink {
+  id: string
+  name: string
+}
 
 const OPERATION_TYPES = {
   ice_make: { label: 'Ice Make', icon: '🧊', color: 'bg-blue-100 text-blue-800' },
@@ -15,51 +26,109 @@ const OPERATION_TYPES = {
   other: { label: 'Other', icon: '📝', color: 'bg-gray-100 text-gray-800' },
 }
 
-export default async function IceOperationsPage() {
-  const user = await getSession()
+const PAGE_SIZE = 30
 
-  if (!user) {
-    redirect('/login')
+export default function IceOperationsPage() {
+  const router = useRouter()
+  const [loading, setLoading] = useState(true)
+  const [submissions, setSubmissions] = useState<Submission[]>([])
+  const [rinks, setRinks] = useState<Rink[]>([])
+  const [total, setTotal] = useState(0)
+  const [displayCount, setDisplayCount] = useState(PAGE_SIZE)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [canSubmit, setCanSubmit] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchData = useCallback(async (offset = 0, append = false) => {
+    try {
+      if (offset > 0) setLoadingMore(true)
+
+      const [meRes, rinksRes, submissionsRes] = await Promise.all([
+        fetch('/api/auth/me'),
+        fetch('/api/rinks'),
+        fetch(`/api/submissions?moduleType=ICE_OPERATIONS&limit=${PAGE_SIZE}&page=${Math.floor(offset / PAGE_SIZE) + 1}`),
+      ])
+
+      if (!meRes.ok) {
+        router.push('/login')
+        return
+      }
+
+      const meData = await meRes.json()
+
+      // Check permissions
+      const permissions = meData.user?.role?.permissions
+      if (!permissions?.iceOperations?.access) {
+        router.push('/dashboard')
+        return
+      }
+
+      setCanSubmit(permissions?.iceOperations?.submit || false)
+
+      if (rinksRes.ok) {
+        const rinksData = await rinksRes.json()
+        setRinks(rinksData.rinks || [])
+      }
+
+      if (submissionsRes.ok) {
+        const data = await submissionsRes.json()
+        if (append) {
+          setSubmissions(prev => [...prev, ...(data.submissions || [])])
+        } else {
+          setSubmissions(data.submissions || [])
+        }
+        setTotal(data.total || 0)
+      }
+    } catch (err) {
+      setError('Failed to load data')
+      console.error('Error fetching data:', err)
+    } finally {
+      setLoading(false)
+      setLoadingMore(false)
+    }
+  }, [router])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
+
+  const loadMore = () => {
+    fetchData(submissions.length, true)
   }
 
-  if (!canUserAccess(user, 'iceOperations', 'access')) {
-    redirect('/dashboard')
+  const handleShowMore = () => {
+    if (displayCount < submissions.length) {
+      setDisplayCount(Math.min(displayCount + PAGE_SIZE, submissions.length))
+    } else if (submissions.length < total) {
+      loadMore()
+    }
   }
 
-  const canSubmit = canUserAccess(user, 'iceOperations', 'submit')
-  const canViewAll = canUserAccess(user, 'iceOperations', 'viewAll')
+  const hasMore = displayCount < submissions.length || submissions.length < total
 
-  const rinks = await prisma.rink.findMany({
-    where: { facility: { id: user.facilityId }, isActive: true },
-    orderBy: { name: 'asc' },
-  })
+  if (loading) {
+    return <div className="text-center py-12 text-gray-500">Loading...</div>
+  }
 
-  const submissions = await prisma.submission.findMany({
-    where: {
-      formTemplate: {
-        facilityId: user.facilityId,
-        moduleType: 'ICE_OPERATIONS',
-      },
-      ...(canViewAll ? {} : { submittedById: user.id }),
-      archivedAt: null,
-    },
-    include: {
-      rink: { select: { id: true, name: true } },
-      submittedBy: { select: { id: true, firstName: true, lastName: true } },
-    },
-    orderBy: { submittedAt: 'desc' },
-    take: 30,
-  })
+  if (error) {
+    return <div className="text-center py-12 text-red-500">{error}</div>
+  }
+
+  const displayedSubmissions = submissions.slice(0, displayCount)
 
   // Group by date
   const today = new Date().toDateString()
   const yesterday = new Date(Date.now() - 86400000).toDateString()
 
-  const todayOps = submissions.filter((s) => new Date(s.submittedAt).toDateString() === today)
-  const yesterdayOps = submissions.filter((s) => new Date(s.submittedAt).toDateString() === yesterday)
-  const olderOps = submissions.filter(
+  const todayOps = displayedSubmissions.filter((s) => new Date(s.submittedAt).toDateString() === today)
+  const yesterdayOps = displayedSubmissions.filter((s) => new Date(s.submittedAt).toDateString() === yesterday)
+  const olderOps = displayedSubmissions.filter(
     (s) => new Date(s.submittedAt).toDateString() !== today && new Date(s.submittedAt).toDateString() !== yesterday
   )
+
+  // Weekly count from all loaded submissions (best estimate)
+  const weekAgo = new Date(Date.now() - 7 * 86400000)
+  const weeklyCount = submissions.filter((s) => new Date(s.submittedAt) >= weekAgo).length
 
   return (
     <div>
@@ -86,12 +155,7 @@ export default async function IceOperationsPage() {
         </div>
         <div className="card">
           <div className="text-sm text-gray-500 mb-1">This Week</div>
-          <div className="text-2xl font-semibold">
-            {submissions.filter((s) => {
-              const weekAgo = new Date(Date.now() - 7 * 86400000)
-              return new Date(s.submittedAt) >= weekAgo
-            }).length}
-          </div>
+          <div className="text-2xl font-semibold">{weeklyCount}</div>
         </div>
         <div className="card">
           <div className="text-sm text-gray-500 mb-1">Rinks</div>
@@ -99,9 +163,16 @@ export default async function IceOperationsPage() {
         </div>
         <div className="card">
           <div className="text-sm text-gray-500 mb-1">Total Logged</div>
-          <div className="text-2xl font-semibold">{submissions.length}</div>
+          <div className="text-2xl font-semibold">{total}</div>
         </div>
       </div>
+
+      {/* Show count */}
+      {total > 0 && (
+        <div className="text-sm text-gray-500 mb-4">
+          Showing {displayedSubmissions.length} of {total} operations
+        </div>
+      )}
 
       {/* Operations List */}
       <div className="space-y-6">
@@ -125,12 +196,24 @@ export default async function IceOperationsPage() {
             )}
           </div>
         )}
+
+        {hasMore && (
+          <div className="text-center">
+            <button
+              onClick={handleShowMore}
+              disabled={loadingMore}
+              className="btn btn-secondary"
+            >
+              {loadingMore ? 'Loading...' : 'Load More'}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )
 }
 
-function OperationsGroup({ title, operations }: { title: string; operations: any[] }) {
+function OperationsGroup({ title, operations }: { title: string; operations: Submission[] }) {
   return (
     <div>
       <h2 className="text-sm font-medium text-gray-500 mb-3">{title}</h2>
@@ -151,10 +234,10 @@ function OperationsGroup({ title, operations }: { title: string; operations: any
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="font-medium text-gray-900">{opType.label}</span>
-                  <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs">{op.rink.name}</span>
+                  <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs">{op.rink?.name || 'Unknown'}</span>
                 </div>
                 <div className="text-sm text-gray-500">
-                  {op.submittedBy.firstName} {op.submittedBy.lastName} • {new Date(op.submittedAt).toLocaleTimeString()}
+                  {op.submittedBy?.firstName} {op.submittedBy?.lastName} • {new Date(op.submittedAt).toLocaleTimeString()}
                 </div>
               </div>
               {data?.resurfacerHours && (

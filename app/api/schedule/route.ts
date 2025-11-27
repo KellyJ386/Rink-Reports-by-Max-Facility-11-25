@@ -34,8 +34,10 @@ export async function GET(request: NextRequest) {
     const endDate = searchParams.get('endDate')
     const userId = searchParams.get('userId')
     const openOnly = searchParams.get('openOnly') === 'true'
-    const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined
-    const offset = searchParams.get('offset') ? parseInt(searchParams.get('offset')!) : undefined
+    const limitParam = searchParams.get('limit')
+    const offsetParam = searchParams.get('offset')
+    const limit = limitParam ? Math.min(100, Math.max(1, parseInt(limitParam) || 20)) : undefined
+    const offset = offsetParam ? Math.max(0, parseInt(offsetParam) || 0) : undefined
 
     const where = {
       user: { facilityId: user.facilityId },
