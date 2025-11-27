@@ -94,6 +94,12 @@ export async function PATCH(
 
     // Handle status updates (requires edit permission)
     if (updateData.status) {
+      // Validate status value
+      const validStatuses = ['DRAFT', 'PUBLISHED', 'FILLED', 'CANCELLED']
+      if (!validStatuses.includes(updateData.status)) {
+        return NextResponse.json({ error: 'Invalid status value' }, { status: 400 })
+      }
+
       const canEdit = canUserAccess(user, 'schedule', 'edit')
       const isOwner = entry.userId === user.id
 

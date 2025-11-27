@@ -111,6 +111,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Verify rink belongs to same facility
+    if (rinkId) {
+      const rink = await prisma.rink.findFirst({
+        where: { id: rinkId, facilityId: user.facilityId },
+      })
+      if (!rink) {
+        return NextResponse.json({ error: 'Rink not found' }, { status: 404 })
+      }
+    }
+
     const entry = await prisma.scheduleEntry.create({
       data: {
         userId: userId || user.id, // Use current user as placeholder for open shifts

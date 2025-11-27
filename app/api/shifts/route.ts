@@ -74,6 +74,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Name, start time, and end time are required' }, { status: 400 })
     }
 
+    // Validate name length
+    if (name.length > 100) {
+      return NextResponse.json({ error: 'Shift name must be 100 characters or less' }, { status: 400 })
+    }
+
     // If rinkId provided, verify it belongs to user's facility
     if (rinkId) {
       const rink = await prisma.rink.findFirst({

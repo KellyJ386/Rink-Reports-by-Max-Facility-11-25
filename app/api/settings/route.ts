@@ -64,6 +64,23 @@ export async function PUT(request: NextRequest) {
 
     // Update facility info
     if (facilityData) {
+      // Validate input lengths
+      if (facilityData.name && facilityData.name.length > 255) {
+        return NextResponse.json({ error: 'Facility name must be 255 characters or less' }, { status: 400 })
+      }
+      if (facilityData.address && facilityData.address.length > 500) {
+        return NextResponse.json({ error: 'Address must be 500 characters or less' }, { status: 400 })
+      }
+      if (facilityData.city && facilityData.city.length > 100) {
+        return NextResponse.json({ error: 'City must be 100 characters or less' }, { status: 400 })
+      }
+      if (facilityData.state && facilityData.state.length > 100) {
+        return NextResponse.json({ error: 'State must be 100 characters or less' }, { status: 400 })
+      }
+      if (facilityData.zipCode && facilityData.zipCode.length > 20) {
+        return NextResponse.json({ error: 'Zip code must be 20 characters or less' }, { status: 400 })
+      }
+
       await prisma.facility.update({
         where: { id: user.facilityId },
         data: {
