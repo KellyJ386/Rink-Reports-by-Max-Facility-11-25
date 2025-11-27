@@ -22,7 +22,7 @@ export default async function AdminPage() {
       description: 'Create and customize report templates',
       href: '/dashboard/admin/forms',
       icon: '📝',
-      available: false,
+      available: true,
     },
     {
       title: 'User Management',
@@ -113,11 +113,11 @@ export default async function AdminPage() {
         ))}
       </div>
 
-      <div className="mt-8 card bg-blue-50 border-blue-200">
-        <h2 className="text-xl font-bold mb-2">Admin Module Status</h2>
+      <div className="mt-8 card bg-green-50 border-green-200">
+        <h2 className="text-xl font-bold mb-2">Phase 2: Form Builder - Complete!</h2>
         <p className="text-gray-700">
-          The admin module will include a drag-and-drop form builder, user management,
-          and facility configuration. This is scheduled for <strong>Phase 2-3</strong>.
+          The drag-and-drop form builder is now available. Create custom form templates
+          for each module with various field types, validation rules, and layouts.
         </p>
       </div>
     </div>
