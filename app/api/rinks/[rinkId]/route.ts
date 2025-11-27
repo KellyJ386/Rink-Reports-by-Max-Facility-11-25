@@ -125,8 +125,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check if user has admin permissions
-    if (!canUserAccess(user, 'admin', 'edit')) {
+    // Check if user has admin delete permissions
+    if (!canUserAccess(user, 'admin', 'delete')) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
     }
 

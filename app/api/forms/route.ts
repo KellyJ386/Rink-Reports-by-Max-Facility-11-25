@@ -16,31 +16,40 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const moduleType = searchParams.get('moduleType')
     const activeOnly = searchParams.get('active') !== 'false'
+    const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined
+    const offset = searchParams.get('offset') ? parseInt(searchParams.get('offset')!) : undefined
 
-    const forms = await prisma.formTemplate.findMany({
-      where: {
-        facilityId: user.facilityId,
-        ...(moduleType && { moduleType: moduleType as any }),
-        ...(activeOnly && { isActive: true }),
-      },
-      orderBy: { updatedAt: 'desc' },
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        moduleType: true,
-        version: true,
-        isActive: true,
-        isLocked: true,
-        createdAt: true,
-        updatedAt: true,
-        _count: {
-          select: { submissions: true },
+    const where = {
+      facilityId: user.facilityId,
+      ...(moduleType && { moduleType: moduleType as any }),
+      ...(activeOnly && { isActive: true }),
+    }
+
+    const [forms, total] = await Promise.all([
+      prisma.formTemplate.findMany({
+        where,
+        orderBy: { updatedAt: 'desc' },
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          moduleType: true,
+          version: true,
+          isActive: true,
+          isLocked: true,
+          createdAt: true,
+          updatedAt: true,
+          _count: {
+            select: { submissions: true },
+          },
         },
-      },
-    })
+        ...(limit !== undefined && { take: limit }),
+        ...(offset !== undefined && { skip: offset }),
+      }),
+      prisma.formTemplate.count({ where }),
+    ])
 
-    return NextResponse.json({ forms })
+    return NextResponse.json({ forms, total, ...(limit !== undefined && { limit, offset: offset || 0 }) })
   } catch (error) {
     console.error('Error fetching forms:', error)
     return NextResponse.json({ error: 'Failed to fetch forms' }, { status: 500 })

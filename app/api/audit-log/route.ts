@@ -36,18 +36,25 @@ export async function GET(request: NextRequest) {
       where.entityType = entityType
     }
 
-    // Filter by user
-    if (userId) {
-      where.userId = userId
-    }
-
     // Get facility users to filter logs to this facility only
     const facilityUsers = await prisma.user.findMany({
       where: { facilityId: user.facilityId },
       select: { id: true },
     })
     const facilityUserIds = facilityUsers.map(u => u.id)
-    where.userId = { in: facilityUserIds }
+
+    // Filter by user - if specific userId provided, verify they belong to facility
+    if (userId) {
+      if (facilityUserIds.includes(userId)) {
+        where.userId = userId
+      } else {
+        // User not in this facility, return empty results
+        return NextResponse.json({ logs: [], page, totalPages: 0, total: 0 })
+      }
+    } else {
+      // No specific user requested, show all facility users' logs
+      where.userId = { in: facilityUserIds }
+    }
 
     // Count total
     const total = await prisma.auditLog.count({ where })

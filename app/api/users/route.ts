@@ -22,37 +22,46 @@ export async function GET(request: NextRequest) {
     const roleId = searchParams.get('roleId')
     const active = searchParams.get('active')
     const search = searchParams.get('search')
+    const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined
+    const offset = searchParams.get('offset') ? parseInt(searchParams.get('offset')!) : undefined
 
-    const users = await prisma.user.findMany({
-      where: {
-        facilityId: user.facilityId,
-        ...(roleId && { roleId }),
-        ...(active !== null && { isActive: active === 'true' }),
-        ...(search && {
-          OR: [
-            { firstName: { contains: search, mode: 'insensitive' } },
-            { lastName: { contains: search, mode: 'insensitive' } },
-            { email: { contains: search, mode: 'insensitive' } },
-          ],
-        }),
-      },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        phone: true,
-        isActive: true,
-        createdAt: true,
-        lastLoginAt: true,
-        role: {
-          select: { id: true, name: true },
+    const where = {
+      facilityId: user.facilityId,
+      ...(roleId && { roleId }),
+      ...(active !== null && { isActive: active === 'true' }),
+      ...(search && {
+        OR: [
+          { firstName: { contains: search, mode: 'insensitive' as const } },
+          { lastName: { contains: search, mode: 'insensitive' as const } },
+          { email: { contains: search, mode: 'insensitive' as const } },
+        ],
+      }),
+    }
+
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          phone: true,
+          isActive: true,
+          createdAt: true,
+          lastLoginAt: true,
+          role: {
+            select: { id: true, name: true },
+          },
         },
-      },
-      orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
-    })
+        orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
+        ...(limit !== undefined && { take: limit }),
+        ...(offset !== undefined && { skip: offset }),
+      }),
+      prisma.user.count({ where }),
+    ])
 
-    return NextResponse.json({ users })
+    return NextResponse.json({ users, total, ...(limit !== undefined && { limit, offset: offset || 0 }) })
   } catch (error) {
     console.error('Error fetching users:', error)
     return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 })

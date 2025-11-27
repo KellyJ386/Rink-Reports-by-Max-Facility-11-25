@@ -24,15 +24,27 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const shifts = await prisma.shiftDefinition.findMany({
-      where: {
-        facilityId: user.facilityId,
-        isActive: true,
-      },
-      orderBy: { startTime: 'asc' },
-    })
+    const { searchParams } = new URL(request.url)
+    const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined
+    const offset = searchParams.get('offset') ? parseInt(searchParams.get('offset')!) : undefined
+    const includeInactive = searchParams.get('includeInactive') === 'true'
 
-    return NextResponse.json({ shifts })
+    const where = {
+      facilityId: user.facilityId,
+      ...(includeInactive ? {} : { isActive: true }),
+    }
+
+    const [shifts, total] = await Promise.all([
+      prisma.shiftDefinition.findMany({
+        where,
+        orderBy: { startTime: 'asc' },
+        ...(limit !== undefined && { take: limit }),
+        ...(offset !== undefined && { skip: offset }),
+      }),
+      prisma.shiftDefinition.count({ where }),
+    ])
+
+    return NextResponse.json({ shifts, total, ...(limit !== undefined && { limit, offset: offset || 0 }) })
   } catch (error) {
     console.error('Error fetching shifts:', error)
     return NextResponse.json({ error: 'Failed to fetch shifts' }, { status: 500 })

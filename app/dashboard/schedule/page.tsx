@@ -100,17 +100,22 @@ export default function SchedulePage() {
         fetch('/api/auth/me'),
       ])
 
-      const [scheduleData, shiftsData, usersData, meData] = await Promise.all([
-        scheduleRes.json(),
-        shiftsRes.json(),
-        usersRes.json(),
-        meRes.json(),
-      ])
+      // Check for API errors before parsing
+      if (!meRes.ok) {
+        throw new Error('Failed to load user data')
+      }
+
+      const meData = await meRes.json()
+      setCurrentUser(meData.user || null)
+
+      // Parse remaining data, defaulting to empty arrays on error
+      const scheduleData = scheduleRes.ok ? await scheduleRes.json() : { entries: [] }
+      const shiftsData = shiftsRes.ok ? await shiftsRes.json() : { shifts: [] }
+      const usersData = usersRes.ok ? await usersRes.json() : { users: [] }
 
       setScheduleEntries(scheduleData.entries || [])
       setShifts(shiftsData.shifts || [])
       setUsers(usersData.users || [])
-      setCurrentUser(meData.user || null)
     } catch (err) {
       setError('Failed to load schedule data')
     } finally {

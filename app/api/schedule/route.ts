@@ -34,22 +34,31 @@ export async function GET(request: NextRequest) {
     const endDate = searchParams.get('endDate')
     const userId = searchParams.get('userId')
     const openOnly = searchParams.get('openOnly') === 'true'
+    const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined
+    const offset = searchParams.get('offset') ? parseInt(searchParams.get('offset')!) : undefined
 
-    const entries = await prisma.scheduleEntry.findMany({
-      where: {
-        user: { facilityId: user.facilityId },
-        ...(startDate && { date: { gte: new Date(startDate) } }),
-        ...(endDate && { date: { lte: new Date(endDate) } }),
-        ...(userId && { userId }),
-        ...(openOnly && { isOpenShift: true, status: { not: 'FILLED' } }),
-      },
-      include: {
-        user: { select: { id: true, firstName: true, lastName: true } },
-      },
-      orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
-    })
+    const where = {
+      user: { facilityId: user.facilityId },
+      ...(startDate && { date: { gte: new Date(startDate) } }),
+      ...(endDate && { date: { lte: new Date(endDate) } }),
+      ...(userId && { userId }),
+      ...(openOnly && { isOpenShift: true, status: { not: 'FILLED' as const } }),
+    }
 
-    return NextResponse.json({ entries })
+    const [entries, total] = await Promise.all([
+      prisma.scheduleEntry.findMany({
+        where,
+        include: {
+          user: { select: { id: true, firstName: true, lastName: true } },
+        },
+        orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
+        ...(limit !== undefined && { take: limit }),
+        ...(offset !== undefined && { skip: offset }),
+      }),
+      prisma.scheduleEntry.count({ where }),
+    ])
+
+    return NextResponse.json({ entries, total, ...(limit !== undefined && { limit, offset: offset || 0 }) })
   } catch (error) {
     console.error('Error fetching schedule:', error)
     return NextResponse.json({ error: 'Failed to fetch schedule' }, { status: 500 })
