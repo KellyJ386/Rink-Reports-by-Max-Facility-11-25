@@ -1,10 +1,22 @@
-import { getSession } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { canUserAccess } from '@/lib/permissions'
-import { redirect } from 'next/navigation'
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
-export const dynamic = 'force-dynamic'
+interface OpenShift {
+  id: string
+  date: string
+  startTime: string
+  endTime: string
+  isEmergency: boolean
+  status: string
+  user: {
+    id: string
+    firstName: string
+    lastName: string
+  }
+}
 
 function formatTime(time: string) {
   const [hours, minutes] = time.split(':')
@@ -14,30 +26,76 @@ function formatTime(time: string) {
   return `${h12}:${minutes} ${ampm}`
 }
 
-export default async function OpenShiftsPage() {
-  const user = await getSession()
+export default function OpenShiftsPage() {
+  const router = useRouter()
+  const [openShifts, setOpenShifts] = useState<OpenShift[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [pickingUp, setPickingUp] = useState<string | null>(null)
 
-  if (!user) {
-    redirect('/login')
+  useEffect(() => {
+    fetchOpenShifts()
+  }, [])
+
+  const fetchOpenShifts = async () => {
+    try {
+      const response = await fetch('/api/schedule?openOnly=true')
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to load')
+      }
+
+      // Filter future shifts only
+      const now = new Date()
+      now.setHours(0, 0, 0, 0)
+      const futureShifts = (data.entries || []).filter(
+        (shift: OpenShift) => new Date(shift.date) >= now
+      )
+      setOpenShifts(futureShifts)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load open shifts')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  if (!canUserAccess(user, 'schedule', 'access')) {
-    redirect('/dashboard')
+  const handlePickupShift = async (shiftId: string) => {
+    if (!confirm('Are you sure you want to pick up this shift?')) {
+      return
+    }
+
+    setPickingUp(shiftId)
+    setError('')
+
+    try {
+      const response = await fetch(`/api/schedule/${shiftId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'pickup' }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to pick up shift')
+      }
+
+      // Remove the shift from the list
+      setOpenShifts(openShifts.filter((s) => s.id !== shiftId))
+
+      // Show success message
+      alert('Shift picked up successfully! Check your schedule.')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to pick up shift')
+    } finally {
+      setPickingUp(null)
+    }
   }
 
-  // Get open shifts
-  const openShifts = await prisma.scheduleEntry.findMany({
-    where: {
-      user: { facilityId: user.facilityId },
-      isOpenShift: true,
-      status: { not: 'FILLED' },
-      date: { gte: new Date() },
-    },
-    include: {
-      user: { select: { id: true, firstName: true, lastName: true } },
-    },
-    orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
-  })
+  if (loading) {
+    return <div className="text-center py-12 text-gray-500">Loading...</div>
+  }
 
   // Separate emergency and regular open shifts
   const emergencyShifts = openShifts.filter((s) => s.isEmergency)
@@ -57,10 +115,14 @@ export default async function OpenShiftsPage() {
         </div>
       </div>
 
+      {error && (
+        <div className="bg-red-50 text-red-700 p-4 rounded-lg mb-6">{error}</div>
+      )}
+
       {openShifts.length === 0 ? (
         <div className="card text-center py-12">
-          <div className="text-5xl mb-4">🎉</div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">All Shifts Covered!</h2>
+          <div className="text-5xl mb-4">All Clear!</div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">All Shifts Covered</h2>
           <p className="text-gray-500">No open shifts at this time</p>
         </div>
       ) : (
@@ -69,7 +131,7 @@ export default async function OpenShiftsPage() {
           {emergencyShifts.length > 0 && (
             <div>
               <h2 className="text-lg font-semibold text-red-800 mb-3 flex items-center gap-2">
-                <span className="text-2xl">🚨</span>
+                <span className="text-2xl">URGENT</span>
                 Emergency Coverage Needed
               </h2>
               <div className="space-y-3">
@@ -95,8 +157,12 @@ export default async function OpenShiftsPage() {
                         <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium">
                           Urgent
                         </span>
-                        <button className="btn btn-primary bg-red-600 hover:bg-red-700">
-                          Pick Up Shift
+                        <button
+                          onClick={() => handlePickupShift(shift.id)}
+                          disabled={pickingUp === shift.id}
+                          className="btn btn-primary bg-red-600 hover:bg-red-700 disabled:opacity-50"
+                        >
+                          {pickingUp === shift.id ? 'Picking up...' : 'Pick Up Shift'}
                         </button>
                       </div>
                     </div>
@@ -126,8 +192,12 @@ export default async function OpenShiftsPage() {
                           {formatTime(shift.startTime)} - {formatTime(shift.endTime)}
                         </div>
                       </div>
-                      <button className="btn btn-primary">
-                        Pick Up Shift
+                      <button
+                        onClick={() => handlePickupShift(shift.id)}
+                        disabled={pickingUp === shift.id}
+                        className="btn btn-primary disabled:opacity-50"
+                      >
+                        {pickingUp === shift.id ? 'Picking up...' : 'Pick Up Shift'}
                       </button>
                     </div>
                   </div>
