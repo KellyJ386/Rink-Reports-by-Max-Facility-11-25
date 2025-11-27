@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma'
 import { getSession, hashPassword } from '@/lib/auth'
 import { canUserAccess } from '@/lib/permissions'
 
+export const dynamic = 'force-dynamic'
+
 // GET /api/users - List all users in the facility
 export async function GET(request: NextRequest) {
   try {

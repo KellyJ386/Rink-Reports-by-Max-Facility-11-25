@@ -4,6 +4,8 @@ import { canUserAccess } from '@/lib/permissions'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 
+export const dynamic = 'force-dynamic'
+
 function getSeverityBadge(severity: string) {
   switch (severity) {
     case 'critical':

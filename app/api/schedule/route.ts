@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
 import { canUserAccess } from '@/lib/permissions'
 
+export const dynamic = 'force-dynamic'
+
 // GET /api/schedule - List schedule entries
 export async function GET(request: NextRequest) {
   try {

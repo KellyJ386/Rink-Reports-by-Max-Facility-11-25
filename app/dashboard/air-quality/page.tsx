@@ -4,6 +4,8 @@ import { canUserAccess } from '@/lib/permissions'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 
+export const dynamic = 'force-dynamic'
+
 function getCoStatus(ppm: number, warning: number, evacuation: number) {
   if (ppm >= evacuation) return { label: 'EVACUATE', color: 'bg-red-600 text-white', urgent: true }
   if (ppm >= warning) return { label: 'Warning', color: 'bg-yellow-500 text-white', urgent: true }

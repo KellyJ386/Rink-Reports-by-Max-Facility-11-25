@@ -1,5 +1,4 @@
-import type { User, Role } from '@prisma/client'
-import type { ModuleType, ModulePermissions, PermissionSet } from '@/types'
+import type { User, Role, ModuleType, ModulePermissions, PermissionSet } from '@/types'
 
 export function getUserPermissions(
   user: User & { role: Role }

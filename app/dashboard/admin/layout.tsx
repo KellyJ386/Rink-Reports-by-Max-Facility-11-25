@@ -3,6 +3,8 @@ import { getSession } from '@/lib/auth'
 import { canUserAccess } from '@/lib/permissions'
 import Link from 'next/link'
 
+export const dynamic = 'force-dynamic'
+
 export default async function AdminLayout({
   children,
 }: {

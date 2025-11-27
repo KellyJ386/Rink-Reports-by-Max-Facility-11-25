@@ -4,6 +4,8 @@ import { canUserAccess } from '@/lib/permissions'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 
+export const dynamic = 'force-dynamic'
+
 const BODY_PARTS_LABELS: Record<string, string> = {
   head: 'Head',
   face: 'Face',

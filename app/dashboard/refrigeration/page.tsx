@@ -4,6 +4,8 @@ import { canUserAccess } from '@/lib/permissions'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 
+export const dynamic = 'force-dynamic'
+
 function getStatusIndicator(value: number, min: number, max: number) {
   if (value < min || value > max) {
     return { status: 'critical', color: 'text-red-600', bg: 'bg-red-100' }

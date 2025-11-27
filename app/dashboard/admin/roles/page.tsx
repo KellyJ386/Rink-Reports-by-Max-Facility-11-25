@@ -4,6 +4,8 @@ import { canUserAccess } from '@/lib/permissions'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 
+export const dynamic = 'force-dynamic'
+
 export default async function RolesPage() {
   const user = await getSession()
 

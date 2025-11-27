@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import { canUserAccess } from '@/lib/permissions'
 
+export const dynamic = 'force-dynamic'
+
 const MODULE_LABELS: Record<string, string> = {
   ICE_DEPTH: 'Ice Depth',
   ICE_OPERATIONS: 'Ice Operations',
@@ -46,14 +48,15 @@ export default async function FormsListPage() {
   })
 
   // Group forms by module
-  const formsByModule = forms.reduce((acc, form) => {
+  type FormType = (typeof forms)[number]
+  const formsByModule: Record<string, FormType[]> = {}
+  for (const form of forms) {
     const module = form.moduleType
-    if (!acc[module]) {
-      acc[module] = []
+    if (!formsByModule[module]) {
+      formsByModule[module] = []
     }
-    acc[module].push(form)
-    return acc
-  }, {} as Record<string, typeof forms>)
+    formsByModule[module].push(form)
+  }
 
   return (
     <div>

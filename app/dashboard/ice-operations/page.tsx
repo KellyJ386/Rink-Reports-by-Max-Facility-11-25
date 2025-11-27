@@ -4,6 +4,8 @@ import { canUserAccess } from '@/lib/permissions'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 
+export const dynamic = 'force-dynamic'
+
 const OPERATION_TYPES = {
   ice_make: { label: 'Ice Make', icon: '🧊', color: 'bg-blue-100 text-blue-800' },
   circle_check: { label: 'Circle Check', icon: '🔄', color: 'bg-green-100 text-green-800' },

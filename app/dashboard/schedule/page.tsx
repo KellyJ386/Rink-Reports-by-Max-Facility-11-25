@@ -4,10 +4,12 @@ import { canUserAccess } from '@/lib/permissions'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 
-function getWeekDates(date: Date) {
+export const dynamic = 'force-dynamic'
+
+function getWeekDates(date: Date): Date[] {
   const start = new Date(date)
   start.setDate(start.getDate() - start.getDay())
-  const dates = []
+  const dates: Date[] = []
   for (let i = 0; i < 7; i++) {
     const d = new Date(start)
     d.setDate(d.getDate() + i)

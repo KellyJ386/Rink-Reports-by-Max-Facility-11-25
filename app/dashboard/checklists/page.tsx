@@ -4,6 +4,8 @@ import { canUserAccess } from '@/lib/permissions'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 
+export const dynamic = 'force-dynamic'
+
 const CHECKLIST_TYPES = {
   opening: { label: 'Opening', icon: '🌅', color: 'bg-yellow-100 text-yellow-800' },
   closing: { label: 'Closing', icon: '🌙', color: 'bg-indigo-100 text-indigo-800' },

@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma'
 import { getSession, hashPassword } from '@/lib/auth'
 import { canUserAccess } from '@/lib/permissions'
 
+export const dynamic = 'force-dynamic'
+
 interface RouteParams {
   params: Promise<{ id: string }>
 }

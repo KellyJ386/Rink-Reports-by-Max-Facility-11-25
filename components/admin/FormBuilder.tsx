@@ -140,7 +140,7 @@ export default function FormBuilder({
 
   const handleUpdateField = useCallback((fieldId: string, updates: Partial<FieldConfig>) => {
     setFields((current) =>
-      current.map((f) => (f.id === fieldId ? { ...f, ...updates } : f))
+      current.map((f) => (f.id === fieldId ? { ...f, ...updates } as FieldConfig : f))
     )
   }, [])
 

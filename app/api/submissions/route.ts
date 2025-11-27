@@ -4,6 +4,8 @@ import { getSession } from '@/lib/auth'
 import { canUserAccess, getUserPermissions } from '@/lib/permissions'
 import { ModuleType } from '@/types'
 
+export const dynamic = 'force-dynamic'
+
 // GET /api/submissions - List submissions with filtering
 export async function GET(request: NextRequest) {
   try {

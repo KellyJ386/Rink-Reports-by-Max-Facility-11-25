@@ -4,6 +4,8 @@ import { canUserAccess } from '@/lib/permissions'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 
+export const dynamic = 'force-dynamic'
+
 function formatTime(time: string) {
   const [hours, minutes] = time.split(':')
   const h = parseInt(hours)

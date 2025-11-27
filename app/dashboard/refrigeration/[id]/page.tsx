@@ -4,6 +4,8 @@ import { canUserAccess } from '@/lib/permissions'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 
+export const dynamic = 'force-dynamic'
+
 const RANGES = {
   suctionPressure: { min: 20, max: 40, unit: 'PSI', label: 'Suction Pressure' },
   dischargePressure: { min: 150, max: 250, unit: 'PSI', label: 'Discharge Pressure' },

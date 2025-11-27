@@ -1,4 +1,7 @@
-import { User, Role, Facility, Rink } from '@prisma/client'
+import type { User, Role, Facility, Rink } from './database'
+
+export type { User, Role, Facility, Rink } from './database'
+export * from './database'
 
 export type UserWithRole = User & {
   role: Role

@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
 import { canUserAccess } from '@/lib/permissions'
 
+export const dynamic = 'force-dynamic'
+
 // GET /api/roles - List all roles (system defaults + facility custom)
 export async function GET() {
   try {

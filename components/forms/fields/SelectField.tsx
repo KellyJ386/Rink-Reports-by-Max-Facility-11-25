@@ -60,7 +60,7 @@ export default function SelectField({
                   name={config.id}
                   type="radio"
                   value="other"
-                  checked={value === 'other' || (value && !config.options.find(o => o.value === value))}
+                  checked={value === 'other' || !!(value && !config.options.find(o => o.value === value))}
                   onChange={() => onChange(otherValue || 'other')}
                   disabled={disabled || config.disabled}
                   className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
