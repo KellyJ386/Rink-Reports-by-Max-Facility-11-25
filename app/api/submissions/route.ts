@@ -116,6 +116,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Form template not found' }, { status: 404 })
     }
 
+    // Verify rink belongs to user's facility
+    const rink = await prisma.rink.findFirst({
+      where: { id: rinkId, facilityId: user.facilityId },
+    })
+
+    if (!rink) {
+      return NextResponse.json({ error: 'Rink not found' }, { status: 404 })
+    }
+
     // Check submit permission for the module
     const moduleKey = formTemplate.moduleType.toLowerCase().replace('_', '') as ModuleType
     if (!canUserAccess(user, moduleKey, 'submit')) {
