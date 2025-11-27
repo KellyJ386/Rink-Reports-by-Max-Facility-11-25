@@ -9,6 +9,41 @@ interface RouteParams {
   params: Promise<{ id: string }>
 }
 
+// GET /api/roles/[id] - Get a specific role
+export async function GET(request: NextRequest, { params }: RouteParams) {
+  try {
+    const user = await getSession()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    if (!canUserAccess(user, 'admin', 'access')) {
+      return NextResponse.json({ error: 'Admin permission required' }, { status: 403 })
+    }
+
+    const { id } = await params
+
+    const role = await prisma.role.findFirst({
+      where: {
+        id,
+        OR: [{ facilityId: user.facilityId }, { isSystemDefault: true }],
+      },
+      include: {
+        _count: { select: { users: true } },
+      },
+    })
+
+    if (!role) {
+      return NextResponse.json({ error: 'Role not found' }, { status: 404 })
+    }
+
+    return NextResponse.json({ role })
+  } catch (error) {
+    console.error('Error fetching role:', error)
+    return NextResponse.json({ error: 'Failed to fetch role' }, { status: 500 })
+  }
+}
+
 // PUT /api/roles/[id] - Update a role
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
