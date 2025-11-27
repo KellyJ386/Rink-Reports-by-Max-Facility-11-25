@@ -24,6 +24,8 @@ export default async function AdminLayout({
     { label: 'Forms', href: '/dashboard/admin/forms', icon: '📝' },
     { label: 'Users', href: '/dashboard/admin/users', icon: '👥' },
     { label: 'Roles', href: '/dashboard/admin/roles', icon: '🔐' },
+    { label: 'Ice Depth', href: '/dashboard/admin/ice-depth', icon: '❄️' },
+    { label: 'Audit Log', href: '/dashboard/admin/audit-log', icon: '📋' },
     { label: 'Settings', href: '/dashboard/admin/settings', icon: '⚙️' },
   ]
 

@@ -14,7 +14,7 @@ interface Role {
 }
 
 const MODULES = [
-  { key: 'admin', label: 'Admin', permissions: ['access', 'editForms', 'editUsers', 'editSettings'] },
+  { key: 'admin', label: 'Admin', permissions: ['access', 'edit', 'delete', 'createTemplates'], description: 'Manage users, roles, forms, and settings' },
   { key: 'iceDepth', label: 'Ice Depth', permissions: ['access', 'submit', 'viewOwn', 'viewAll', 'edit', 'delete', 'export'] },
   { key: 'iceOperations', label: 'Ice Operations', permissions: ['access', 'submit', 'viewOwn', 'viewAll', 'edit', 'delete', 'export'] },
   { key: 'refrigeration', label: 'Refrigeration', permissions: ['access', 'submit', 'viewOwn', 'viewAll', 'edit', 'delete', 'export'] },
@@ -29,16 +29,21 @@ const PERMISSION_LABELS: Record<string, string> = {
   submit: 'Submit Reports',
   viewOwn: 'View Own',
   viewAll: 'View All',
-  edit: 'Edit',
+  edit: 'Edit Users/Roles',
   delete: 'Delete',
   export: 'Export',
   approve: 'Approve',
   create: 'Create',
   publish: 'Publish',
-  editForms: 'Edit Forms',
-  editUsers: 'Edit Users',
-  editSettings: 'Edit Settings',
-  createTemplates: 'Create Templates',
+  createTemplates: 'Manage Forms',
+}
+
+// Admin-specific permission labels
+const ADMIN_PERMISSION_LABELS: Record<string, string> = {
+  access: 'Access Admin Area',
+  edit: 'Edit Users & Roles',
+  delete: 'Delete Users & Roles',
+  createTemplates: 'Manage Form Templates',
 }
 
 export default function RoleDetailPage() {
@@ -234,7 +239,12 @@ export default function RoleDetailPage() {
                             className="h-4 w-4 rounded border-gray-300 text-blue-600"
                             disabled={isReadOnly}
                           />
-                          <span className="text-sm text-gray-600">{PERMISSION_LABELS[perm] || perm}</span>
+                          <span className="text-sm text-gray-600">
+                            {mod.key === 'admin'
+                              ? (ADMIN_PERMISSION_LABELS[perm] || perm)
+                              : (PERMISSION_LABELS[perm] || perm)
+                            }
+                          </span>
                         </label>
                       ))}
                     </div>
