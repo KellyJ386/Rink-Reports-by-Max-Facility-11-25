@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
+import { canUserAccess } from '@/lib/permissions'
 
 export const dynamic = 'force-dynamic'
 
@@ -61,11 +62,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Require admin edit permission to create shifts
+    if (!canUserAccess(user, 'admin', 'edit')) {
+      return NextResponse.json({ error: 'No permission to create shifts' }, { status: 403 })
+    }
+
     const body = await request.json()
     const { name, startTime, endTime, rinkId, color } = body
 
     if (!name || !startTime || !endTime) {
       return NextResponse.json({ error: 'Name, start time, and end time are required' }, { status: 400 })
+    }
+
+    // If rinkId provided, verify it belongs to user's facility
+    if (rinkId) {
+      const rink = await prisma.rink.findFirst({
+        where: { id: rinkId, facilityId: user.facilityId },
+      })
+      if (!rink) {
+        return NextResponse.json({ error: 'Rink not found' }, { status: 404 })
+      }
     }
 
     // Validate time format

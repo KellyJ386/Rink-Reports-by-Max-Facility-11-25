@@ -62,7 +62,7 @@ export default function AirQualityPage() {
   const fetchData = async () => {
     try {
       const [submissionsRes, rinksRes, settingsRes, meRes] = await Promise.all([
-        fetch('/api/submissions?moduleType=AIR_QUALITY&limit=100'),
+        fetch(`/api/submissions?moduleType=AIR_QUALITY&limit=${PAGE_SIZE}`),
         fetch('/api/rinks'),
         fetch('/api/settings'),
         fetch('/api/auth/me'),
@@ -112,7 +112,7 @@ export default function AirQualityPage() {
   const loadMore = async () => {
     setLoadingMore(true)
     try {
-      const response = await fetch(`/api/submissions?moduleType=AIR_QUALITY&limit=50&offset=${submissions.length}`)
+      const response = await fetch(`/api/submissions?moduleType=AIR_QUALITY&limit=${PAGE_SIZE}&offset=${submissions.length}`)
       if (response.ok) {
         const data = await response.json()
         setSubmissions([...submissions, ...(data.submissions || [])])
