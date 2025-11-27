@@ -37,6 +37,9 @@ export default function RinksManagementPage() {
     surfaceType: 'ice',
   })
 
+  // Search state
+  const [search, setSearch] = useState('')
+
   useEffect(() => {
     fetchRinks()
   }, [])
@@ -123,6 +126,14 @@ export default function RinksManagementPage() {
     setFormData({ name: '', dimensions: '', surfaceType: 'ice' })
     setIsEditing(false)
   }
+
+  // Filter rinks based on search
+  const filteredRinks = rinks.filter((rink) =>
+    !search ||
+    rink.name.toLowerCase().includes(search.toLowerCase()) ||
+    rink.surfaceType.toLowerCase().includes(search.toLowerCase()) ||
+    (rink.dimensions && rink.dimensions.toLowerCase().includes(search.toLowerCase()))
+  )
 
   if (loading) {
     return <div className="text-center py-12 text-gray-500">Loading...</div>
@@ -232,18 +243,51 @@ export default function RinksManagementPage() {
         </div>
       )}
 
+      {/* Search */}
+      {!isEditing && rinks.length > 0 && (
+        <div className="card mb-4">
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <input
+                type="text"
+                placeholder="Search rinks..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="input w-full"
+              />
+            </div>
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                className="btn btn-secondary text-sm"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Rinks List */}
       <div className="card">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Active Rinks</h2>
-        {rinks.length === 0 ? (
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">
+          Active Rinks {search && `(${filteredRinks.length} of ${rinks.length})`}
+        </h2>
+        {filteredRinks.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
             <div className="text-4xl mb-2">🏒</div>
-            <p>No rinks configured yet</p>
-            <p className="text-sm">Add your first rink to get started</p>
+            {rinks.length === 0 ? (
+              <>
+                <p>No rinks configured yet</p>
+                <p className="text-sm">Add your first rink to get started</p>
+              </>
+            ) : (
+              <p>No rinks match your search</p>
+            )}
           </div>
         ) : (
           <div className="space-y-3">
-            {rinks.map((rink) => (
+            {filteredRinks.map((rink) => (
               <div key={rink.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                 <div>
                   <h3 className="font-semibold text-gray-900">{rink.name}</h3>
