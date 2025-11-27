@@ -56,6 +56,7 @@ export default function DashboardPage() {
   const [user, setUser] = useState<UserInfo | null>(null)
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     fetchDashboardData()
@@ -63,6 +64,7 @@ export default function DashboardPage() {
 
   const fetchDashboardData = async () => {
     try {
+      setError('')
       // Fetch user info and dashboard stats in parallel
       const [meRes, statsRes] = await Promise.all([
         fetch('/api/auth/me'),
@@ -72,14 +74,20 @@ export default function DashboardPage() {
       if (meRes.ok) {
         const meData = await meRes.json()
         setUser(meData.user)
+      } else {
+        throw new Error('Failed to load user information')
       }
 
       if (statsRes.ok) {
         const statsData = await statsRes.json()
         setStats(statsData)
+      } else {
+        // Stats failure is non-critical, just log it
+        console.error('Failed to load dashboard stats')
       }
     } catch (err) {
       console.error('Failed to load dashboard:', err)
+      setError(err instanceof Error ? err.message : 'Failed to load dashboard data')
     } finally {
       setLoading(false)
     }
@@ -89,6 +97,19 @@ export default function DashboardPage() {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-gray-500">Loading dashboard...</div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="card text-center py-12">
+        <div className="text-red-500 text-5xl mb-4">⚠️</div>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Dashboard</h3>
+        <p className="text-gray-500 mb-6">{error}</p>
+        <button onClick={fetchDashboardData} className="btn btn-primary">
+          Try Again
+        </button>
       </div>
     )
   }

@@ -4,6 +4,18 @@ import { getSession } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
+// Validate time format (HH:MM) and return true if valid
+function isValidTimeFormat(time: string): boolean {
+  const timeRegex = /^([01]?[0-9]|2[0-3]):([0-5][0-9])$/
+  return timeRegex.test(time)
+}
+
+// Convert time string to minutes for comparison
+function timeToMinutes(time: string): number {
+  const [hours, minutes] = time.split(':').map(Number)
+  return hours * 60 + minutes
+}
+
 // GET /api/shifts - List shift definitions
 export async function GET(request: NextRequest) {
   try {
@@ -42,8 +54,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Name, start time, and end time are required' }, { status: 400 })
     }
 
+    // Validate time format
+    if (!isValidTimeFormat(startTime) || !isValidTimeFormat(endTime)) {
+      return NextResponse.json({ error: 'Invalid time format. Use HH:MM (e.g., 09:00, 17:30)' }, { status: 400 })
+    }
+
     // Validate end time is after start time
-    if (endTime <= startTime) {
+    if (timeToMinutes(endTime) <= timeToMinutes(startTime)) {
       return NextResponse.json({ error: 'End time must be after start time' }, { status: 400 })
     }
 

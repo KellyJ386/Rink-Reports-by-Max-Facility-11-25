@@ -36,6 +36,7 @@ export default function UserDetailPage() {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
+    confirmPassword: '',
     firstName: '',
     lastName: '',
     phone: '',
@@ -68,6 +69,7 @@ export default function UserDetailPage() {
         setFormData({
           email: userData.user.email,
           password: '',
+          confirmPassword: '',
           firstName: userData.user.firstName,
           lastName: userData.user.lastName,
           phone: userData.user.phone || '',
@@ -105,6 +107,12 @@ export default function UserDetailPage() {
     // Validate password strength if provided
     if (formData.password && formData.password.length < 8) {
       setError('Password must be at least 8 characters')
+      return
+    }
+
+    // Validate password confirmation
+    if (formData.password && formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match')
       return
     }
 
@@ -239,18 +247,33 @@ export default function UserDetailPage() {
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Password {isNew && <span className="text-red-500">*</span>}
-          </label>
-          <input
-            type="password"
-            value={formData.password}
-            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            className="input"
-            placeholder={isNew ? 'Enter password' : 'Leave blank to keep current'}
-            required={isNew}
-          />
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Password {isNew && <span className="text-red-500">*</span>}
+            </label>
+            <input
+              type="password"
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              className="input"
+              placeholder={isNew ? 'Enter password' : 'Leave blank to keep current'}
+              required={isNew}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Confirm Password {(isNew || formData.password) && <span className="text-red-500">*</span>}
+            </label>
+            <input
+              type="password"
+              value={formData.confirmPassword}
+              onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+              className="input"
+              placeholder="Confirm password"
+              required={isNew || !!formData.password}
+            />
+          </div>
         </div>
 
         <div>

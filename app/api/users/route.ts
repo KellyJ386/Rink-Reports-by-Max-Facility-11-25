@@ -102,9 +102,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email already in use' }, { status: 409 })
     }
 
-    // Verify role exists
-    const role = await prisma.role.findUnique({
-      where: { id: roleId },
+    // Verify role exists and belongs to facility or is system default
+    const role = await prisma.role.findFirst({
+      where: {
+        id: roleId,
+        OR: [
+          { facilityId: user.facilityId },
+          { isSystemDefault: true },
+        ],
+      },
     })
 
     if (!role) {

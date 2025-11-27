@@ -133,7 +133,22 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         }
         updateData.email = email
       }
-      if (roleId) updateData.roleId = roleId
+      if (roleId) {
+        // Validate role exists and belongs to facility
+        const role = await prisma.role.findFirst({
+          where: {
+            id: roleId,
+            OR: [
+              { facilityId: currentUser.facilityId },
+              { isSystemDefault: true },
+            ],
+          },
+        })
+        if (!role) {
+          return NextResponse.json({ error: 'Invalid role' }, { status: 400 })
+        }
+        updateData.roleId = roleId
+      }
       if (isActive !== undefined) updateData.isActive = isActive
       if (permissionOverrides !== undefined) updateData.permissionOverrides = permissionOverrides
     }
