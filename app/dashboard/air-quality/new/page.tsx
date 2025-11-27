@@ -12,6 +12,7 @@ interface Rink {
 export default function NewAirQualityPage() {
   const router = useRouter()
   const [rinks, setRinks] = useState<Rink[]>([])
+  const [formTemplateId, setFormTemplateId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -28,16 +29,16 @@ export default function NewAirQualityPage() {
     doorsOpen: false,
   })
 
-  // Thresholds (could be fetched from settings)
-  const thresholds = {
+  // Thresholds from settings
+  const [thresholds, setThresholds] = useState({
     coWarning: 20,
     coEvacuation: 83,
     no2Warning: 0.3,
     no2Evacuation: 2.0,
-  }
+  })
 
   useEffect(() => {
-    fetchRinks()
+    fetchInitialData()
   }, [])
 
   // Check for alerts when values change
@@ -56,20 +57,47 @@ export default function NewAirQualityPage() {
     } else {
       setAlert(null)
     }
-  }, [formData.coPpm, formData.no2Ppm])
+  }, [formData.coPpm, formData.no2Ppm, thresholds])
 
-  const fetchRinks = async () => {
+  const fetchInitialData = async () => {
     try {
-      const response = await fetch('/api/rinks')
-      const data = await response.json()
-      if (response.ok) {
-        setRinks(data.rinks)
-        if (data.rinks.length === 1) {
-          setFormData((prev) => ({ ...prev, rinkId: data.rinks[0].id }))
+      // Fetch rinks, form template, and settings in parallel
+      const [rinksRes, formsRes, settingsRes] = await Promise.all([
+        fetch('/api/rinks'),
+        fetch('/api/forms?moduleType=AIR_QUALITY'),
+        fetch('/api/settings'),
+      ])
+
+      if (rinksRes.ok) {
+        const rinksData = await rinksRes.json()
+        setRinks(rinksData.rinks)
+        if (rinksData.rinks.length === 1) {
+          setFormData((prev) => ({ ...prev, rinkId: rinksData.rinks[0].id }))
+        }
+      } else {
+        setError('Failed to load rinks')
+      }
+
+      if (formsRes.ok) {
+        const formsData = await formsRes.json()
+        if (formsData.forms && formsData.forms.length > 0) {
+          setFormTemplateId(formsData.forms[0].id)
+        }
+      }
+
+      if (settingsRes.ok) {
+        const settingsData = await settingsRes.json()
+        if (settingsData.settings) {
+          setThresholds({
+            coWarning: settingsData.settings.coWarningPpm ?? 20,
+            coEvacuation: settingsData.settings.coEvacuationPpm ?? 83,
+            no2Warning: settingsData.settings.no2WarningPpm ?? 0.3,
+            no2Evacuation: settingsData.settings.no2EvacuationPpm ?? 2.0,
+          })
         }
       }
     } catch (err) {
-      setError('Failed to load rinks')
+      setError('Failed to load data')
     } finally {
       setLoading(false)
     }
@@ -88,6 +116,11 @@ export default function NewAirQualityPage() {
       return
     }
 
+    if (!formTemplateId) {
+      setError('No form template configured for air quality. Please contact an administrator.')
+      return
+    }
+
     setSubmitting(true)
     setError('')
 
@@ -96,7 +129,7 @@ export default function NewAirQualityPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          formTemplateId: 'air-quality-default',
+          formTemplateId,
           rinkId: formData.rinkId,
           data: {
             coPpm: formData.coPpm ? parseFloat(formData.coPpm) : null,

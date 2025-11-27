@@ -102,6 +102,7 @@ export default function NewChecklistPage() {
   const initialType = searchParams.get('type') || ''
 
   const [rinks, setRinks] = useState<Rink[]>([])
+  const [formTemplateId, setFormTemplateId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -115,21 +116,34 @@ export default function NewChecklistPage() {
   })
 
   useEffect(() => {
-    fetchRinks()
+    fetchInitialData()
   }, [])
 
-  const fetchRinks = async () => {
+  const fetchInitialData = async () => {
     try {
-      const response = await fetch('/api/rinks')
-      const data = await response.json()
-      if (response.ok) {
-        setRinks(data.rinks)
-        if (data.rinks.length === 1) {
-          setFormData((prev) => ({ ...prev, rinkId: data.rinks[0].id }))
+      const [rinksRes, formsRes] = await Promise.all([
+        fetch('/api/rinks'),
+        fetch('/api/forms?moduleType=DAILY_CHECKLIST'),
+      ])
+
+      if (rinksRes.ok) {
+        const rinksData = await rinksRes.json()
+        setRinks(rinksData.rinks)
+        if (rinksData.rinks.length === 1) {
+          setFormData((prev) => ({ ...prev, rinkId: rinksData.rinks[0].id }))
+        }
+      } else {
+        setError('Failed to load rinks')
+      }
+
+      if (formsRes.ok) {
+        const formsData = await formsRes.json()
+        if (formsData.forms && formsData.forms.length > 0) {
+          setFormTemplateId(formsData.forms[0].id)
         }
       }
     } catch (err) {
-      setError('Failed to load rinks')
+      setError('Failed to load data')
     } finally {
       setLoading(false)
     }
@@ -174,6 +188,11 @@ export default function NewChecklistPage() {
       return
     }
 
+    if (!formTemplateId) {
+      setError('No form template configured for checklists. Please contact an administrator.')
+      return
+    }
+
     setSubmitting(true)
     setError('')
 
@@ -182,7 +201,7 @@ export default function NewChecklistPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          formTemplateId: 'checklist-default',
+          formTemplateId,
           rinkId: formData.rinkId,
           data: {
             checklistType: formData.checklistType,

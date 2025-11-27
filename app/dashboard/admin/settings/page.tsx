@@ -110,11 +110,22 @@ export default function SettingsPage() {
       return
     }
 
-    // Validate SMS quiet hours if enabled
-    if (settings.smsEnabled && settings.smsQuietHoursStart && settings.smsQuietHoursEnd) {
-      if (settings.smsQuietHoursEnd <= settings.smsQuietHoursStart) {
-        setMessage({ type: 'error', text: 'SMS quiet hours end time must be after start time' })
+    // Validate SMS configuration if enabled
+    if (settings.smsEnabled) {
+      if (!settings.smsProvider) {
+        setMessage({ type: 'error', text: 'Please select an SMS provider when SMS is enabled' })
         return
+      }
+      if (!settings.smsFromNumber) {
+        setMessage({ type: 'error', text: 'Please enter a From Number when SMS is enabled' })
+        return
+      }
+      // Validate quiet hours if set
+      if (settings.smsQuietHoursStart && settings.smsQuietHoursEnd) {
+        if (settings.smsQuietHoursEnd <= settings.smsQuietHoursStart) {
+          setMessage({ type: 'error', text: 'SMS quiet hours end time must be after start time' })
+          return
+        }
       }
     }
 

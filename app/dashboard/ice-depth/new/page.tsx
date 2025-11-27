@@ -21,6 +21,7 @@ interface Rink {
 export default function NewIceDepthPage() {
   const router = useRouter()
   const [rinks, setRinks] = useState<Rink[]>([])
+  const [formTemplateId, setFormTemplateId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -32,21 +33,35 @@ export default function NewIceDepthPage() {
   const [measurements, setMeasurements] = useState<Record<string, number>>({})
 
   useEffect(() => {
-    fetchRinks()
+    fetchInitialData()
   }, [])
 
-  const fetchRinks = async () => {
+  const fetchInitialData = async () => {
     try {
-      const response = await fetch('/api/rinks')
-      const data = await response.json()
-      if (response.ok) {
-        setRinks(data.rinks)
-        if (data.rinks.length === 1) {
-          setSelectedRink(data.rinks[0].id)
+      // Fetch rinks and form template in parallel
+      const [rinksRes, formsRes] = await Promise.all([
+        fetch('/api/rinks'),
+        fetch('/api/forms?moduleType=ICE_DEPTH'),
+      ])
+
+      if (rinksRes.ok) {
+        const rinksData = await rinksRes.json()
+        setRinks(rinksData.rinks)
+        if (rinksData.rinks.length === 1) {
+          setSelectedRink(rinksData.rinks[0].id)
+        }
+      } else {
+        setError('Failed to load rinks')
+      }
+
+      if (formsRes.ok) {
+        const formsData = await formsRes.json()
+        if (formsData.forms && formsData.forms.length > 0) {
+          setFormTemplateId(formsData.forms[0].id)
         }
       }
     } catch (err) {
-      setError('Failed to load rinks')
+      setError('Failed to load data')
     } finally {
       setLoading(false)
     }
@@ -65,17 +80,20 @@ export default function NewIceDepthPage() {
       return
     }
 
+    if (!formTemplateId) {
+      setError('No form template configured for ice depth. Please contact an administrator.')
+      return
+    }
+
     setSubmitting(true)
     setError('')
 
     try {
-      // First, we need to get or create a form template for ice depth
-      // For now, we'll create a submission with the data directly
       const response = await fetch('/api/submissions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          formTemplateId: 'ice-depth-default', // We'll need to handle this
+          formTemplateId,
           rinkId: selectedRink,
           outsideTemp: outsideTemp ? parseFloat(outsideTemp) : null,
           data: {
