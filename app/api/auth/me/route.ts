@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { getUserPermissions } from '@/lib/permissions'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
   try {
     const user = await getSession()

@@ -5,7 +5,7 @@ import { prisma } from './prisma'
 import type { JWTPayload, UserWithRole } from '@/types'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key'
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d'
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d' as const
 
 export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, 10)
@@ -19,7 +19,7 @@ export async function verifyPassword(
 }
 
 export function generateToken(payload: JWTPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN })
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN as jwt.SignOptions['expiresIn'] })
 }
 
 export function verifyToken(token: string): JWTPayload | null {

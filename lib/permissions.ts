@@ -1,5 +1,4 @@
-import type { User, Role } from '@prisma/client'
-import type { ModuleType, ModulePermissions, PermissionSet } from '@/types'
+import type { User, Role, ModuleType, ModulePermissions, PermissionSet } from '@/types'
 
 export function getUserPermissions(
   user: User & { role: Role }
@@ -14,11 +13,11 @@ export function getUserPermissions(
   // Merge overrides with base permissions
   const merged: PermissionSet = { ...basePermissions }
 
-  for (const module in overrides) {
-    if (overrides.hasOwnProperty(module)) {
-      merged[module as ModuleType] = {
-        ...basePermissions[module as ModuleType],
-        ...overrides[module as ModuleType],
+  for (const moduleKey in overrides) {
+    if (Object.prototype.hasOwnProperty.call(overrides, moduleKey)) {
+      merged[moduleKey as ModuleType] = {
+        ...basePermissions[moduleKey as ModuleType],
+        ...overrides[moduleKey as ModuleType],
       }
     }
   }
@@ -57,9 +56,9 @@ export function getAccessibleModules(
   const permissions = getUserPermissions(user)
   const modules: ModuleType[] = []
 
-  for (const module in permissions) {
-    if (permissions[module as ModuleType].access) {
-      modules.push(module as ModuleType)
+  for (const moduleKey in permissions) {
+    if (permissions[moduleKey as ModuleType].access) {
+      modules.push(moduleKey as ModuleType)
     }
   }
 
