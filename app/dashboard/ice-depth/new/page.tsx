@@ -11,6 +11,10 @@ interface Rink {
   iceDepthConfiguration?: {
     presetType: string
     measurementPoints: any[]
+    backgroundImage?: string | null
+    targetDepth?: number
+    optimalTolerance?: number
+    warningTolerance?: number
   }
 }
 
@@ -99,7 +103,15 @@ export default function NewIceDepthPage() {
   }
 
   const selectedRinkData = rinks.find((r) => r.id === selectedRink)
-  const presetType = selectedRinkData?.iceDepthConfiguration?.presetType || 'RINK_25'
+  const rinkConfig = selectedRinkData?.iceDepthConfiguration
+  const presetType = rinkConfig?.presetType || 'RINK_25'
+  const customPoints = rinkConfig?.measurementPoints || undefined
+  const backgroundImage = rinkConfig?.backgroundImage || null
+  const thresholds = {
+    target: rinkConfig?.targetDepth || 1.25,
+    optimal: rinkConfig?.optimalTolerance || 0.125,
+    warning: rinkConfig?.warningTolerance || 0.25,
+  }
 
   if (loading) {
     return (
@@ -185,8 +197,12 @@ export default function NewIceDepthPage() {
             </h2>
             <IceDepthGrid
               presetType={presetType as any}
+              customPoints={customPoints}
               values={measurements}
               onChange={setMeasurements}
+              thresholds={thresholds}
+              backgroundImage={backgroundImage}
+              showBluetooth={true}
             />
           </div>
         ) : (

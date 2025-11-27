@@ -27,6 +27,10 @@ export async function GET() {
           select: {
             presetType: true,
             measurementPoints: true,
+            backgroundImage: true,
+            targetDepth: true,
+            optimalTolerance: true,
+            warningTolerance: true,
           },
         },
       },
