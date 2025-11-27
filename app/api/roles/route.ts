@@ -6,34 +6,49 @@ import { canUserAccess } from '@/lib/permissions'
 export const dynamic = 'force-dynamic'
 
 // GET /api/roles - List all roles (system defaults + facility custom)
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const user = await getSession()
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const roles = await prisma.role.findMany({
-      where: {
-        OR: [
-          { isSystemDefault: true },
-          { facilityId: user.facilityId },
-        ],
-      },
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        isSystemDefault: true,
-        permissions: true,
-        _count: {
-          select: { users: true },
-        },
-      },
-      orderBy: { name: 'asc' },
-    })
+    const { searchParams } = new URL(request.url)
+    const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined
+    const offset = searchParams.get('offset') ? parseInt(searchParams.get('offset')!) : undefined
+    const search = searchParams.get('search')
 
-    return NextResponse.json({ roles })
+    const where = {
+      OR: [
+        { isSystemDefault: true },
+        { facilityId: user.facilityId },
+      ],
+      ...(search && {
+        name: { contains: search, mode: 'insensitive' as const },
+      }),
+    }
+
+    const [roles, total] = await Promise.all([
+      prisma.role.findMany({
+        where,
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          isSystemDefault: true,
+          permissions: true,
+          _count: {
+            select: { users: true },
+          },
+        },
+        orderBy: { name: 'asc' },
+        ...(limit !== undefined && { take: limit }),
+        ...(offset !== undefined && { skip: offset }),
+      }),
+      prisma.role.count({ where }),
+    ])
+
+    return NextResponse.json({ roles, total, ...(limit !== undefined && { limit, offset: offset || 0 }) })
   } catch (error) {
     console.error('Error fetching roles:', error)
     return NextResponse.json({ error: 'Failed to fetch roles' }, { status: 500 })

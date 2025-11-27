@@ -6,39 +6,56 @@ import { canUserAccess } from '@/lib/permissions'
 export const dynamic = 'force-dynamic'
 
 // GET /api/rinks - List all rinks for the user's facility
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const user = await getSession()
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const rinks = await prisma.rink.findMany({
-      where: {
-        facility: { id: user.facilityId },
-        isActive: true,
-      },
-      select: {
-        id: true,
-        name: true,
-        dimensions: true,
-        surfaceType: true,
-        iceDepthConfig: true,
-        iceDepthConfiguration: {
-          select: {
-            presetType: true,
-            measurementPoints: true,
-            backgroundImage: true,
-            targetDepth: true,
-            optimalTolerance: true,
-            warningTolerance: true,
+    const { searchParams } = new URL(request.url)
+    const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined
+    const offset = searchParams.get('offset') ? parseInt(searchParams.get('offset')!) : undefined
+    const includeInactive = searchParams.get('includeInactive') === 'true'
+    const search = searchParams.get('search')
+
+    const where = {
+      facility: { id: user.facilityId },
+      ...(includeInactive ? {} : { isActive: true }),
+      ...(search && {
+        name: { contains: search, mode: 'insensitive' as const },
+      }),
+    }
+
+    const [rinks, total] = await Promise.all([
+      prisma.rink.findMany({
+        where,
+        select: {
+          id: true,
+          name: true,
+          dimensions: true,
+          surfaceType: true,
+          isActive: true,
+          iceDepthConfig: true,
+          iceDepthConfiguration: {
+            select: {
+              presetType: true,
+              measurementPoints: true,
+              backgroundImage: true,
+              targetDepth: true,
+              optimalTolerance: true,
+              warningTolerance: true,
+            },
           },
         },
-      },
-      orderBy: { name: 'asc' },
-    })
+        orderBy: { name: 'asc' },
+        ...(limit !== undefined && { take: limit }),
+        ...(offset !== undefined && { skip: offset }),
+      }),
+      prisma.rink.count({ where }),
+    ])
 
-    return NextResponse.json({ rinks })
+    return NextResponse.json({ rinks, total, ...(limit !== undefined && { limit, offset: offset || 0 }) })
   } catch (error) {
     console.error('Error fetching rinks:', error)
     return NextResponse.json({ error: 'Failed to fetch rinks' }, { status: 500 })

@@ -19,16 +19,38 @@ export default function AirQualityDetailPage() {
   // Edit form state
   const [editData, setEditData] = useState<any>({})
 
-  const thresholds = {
+  // Thresholds from settings (with defaults)
+  const [thresholds, setThresholds] = useState({
     coWarning: 20,
     coEvacuation: 83,
     no2Warning: 0.3,
     no2Evacuation: 2.0,
-  }
+  })
 
   useEffect(() => {
     fetchSubmission()
+    fetchSettings()
   }, [submissionId])
+
+  const fetchSettings = async () => {
+    try {
+      const response = await fetch('/api/settings')
+      if (response.ok) {
+        const data = await response.json()
+        if (data.settings) {
+          setThresholds({
+            coWarning: data.settings.coWarningPpm ?? 20,
+            coEvacuation: data.settings.coEvacuationPpm ?? 83,
+            no2Warning: data.settings.no2WarningPpm ?? 0.3,
+            no2Evacuation: data.settings.no2EvacuationPpm ?? 2.0,
+          })
+        }
+      }
+    } catch (err) {
+      // Use defaults if settings fetch fails
+      console.error('Failed to fetch settings, using defaults')
+    }
+  }
 
   const fetchSubmission = async () => {
     try {
