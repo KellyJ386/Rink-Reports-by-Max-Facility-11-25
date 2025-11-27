@@ -1,10 +1,29 @@
-import { getSession } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { canUserAccess } from '@/lib/permissions'
-import { redirect } from 'next/navigation'
-import Link from 'next/link'
+'use client'
 
-export const dynamic = 'force-dynamic'
+import { useState, useEffect } from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+
+interface Submission {
+  id: string
+  submittedAt: string
+  rinkId: string
+  data: any
+  rink: { id: string; name: string }
+  submittedBy: { id: string; firstName: string; lastName: string }
+}
+
+interface Rink {
+  id: string
+  name: string
+}
+
+interface Thresholds {
+  coWarning: number
+  coEvacuation: number
+  no2Warning: number
+  no2Evacuation: number
+}
 
 function getCoStatus(ppm: number, warning: number, evacuation: number) {
   if (ppm >= evacuation) return { label: 'EVACUATE', color: 'bg-red-600 text-white', urgent: true }
@@ -18,56 +37,104 @@ function getNo2Status(ppm: number, warning: number, evacuation: number) {
   return { label: 'Normal', color: 'bg-green-500 text-white', urgent: false }
 }
 
-export default async function AirQualityPage() {
-  const user = await getSession()
+const PAGE_SIZE = 20
 
-  if (!user) {
-    redirect('/login')
+export default function AirQualityPage() {
+  const router = useRouter()
+  const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [submissions, setSubmissions] = useState<Submission[]>([])
+  const [rinks, setRinks] = useState<Rink[]>([])
+  const [thresholds, setThresholds] = useState<Thresholds>({
+    coWarning: 20,
+    coEvacuation: 83,
+    no2Warning: 0.3,
+    no2Evacuation: 2.0,
+  })
+  const [canSubmit, setCanSubmit] = useState(false)
+  const [total, setTotal] = useState(0)
+  const [displayCount, setDisplayCount] = useState(PAGE_SIZE)
+
+  useEffect(() => {
+    fetchData()
+  }, [])
+
+  const fetchData = async () => {
+    try {
+      const [submissionsRes, rinksRes, settingsRes, meRes] = await Promise.all([
+        fetch('/api/submissions?moduleType=AIR_QUALITY&limit=100'),
+        fetch('/api/rinks'),
+        fetch('/api/settings'),
+        fetch('/api/auth/me'),
+      ])
+
+      if (!meRes.ok) {
+        router.push('/login')
+        return
+      }
+
+      const meData = await meRes.json()
+      if (!meData.user?.role?.permissions?.airQuality?.access) {
+        router.push('/dashboard')
+        return
+      }
+      setCanSubmit(meData.user?.role?.permissions?.airQuality?.submit || false)
+
+      if (submissionsRes.ok) {
+        const subData = await submissionsRes.json()
+        setSubmissions(subData.submissions || [])
+        setTotal(subData.total || subData.submissions?.length || 0)
+      }
+
+      if (rinksRes.ok) {
+        const rinksData = await rinksRes.json()
+        setRinks(rinksData.rinks || [])
+      }
+
+      if (settingsRes.ok) {
+        const settingsData = await settingsRes.json()
+        if (settingsData.settings) {
+          setThresholds({
+            coWarning: settingsData.settings.coWarningPpm ?? 20,
+            coEvacuation: settingsData.settings.coEvacuationPpm ?? 83,
+            no2Warning: settingsData.settings.no2WarningPpm ?? 0.3,
+            no2Evacuation: settingsData.settings.no2EvacuationPpm ?? 2.0,
+          })
+        }
+      }
+    } catch (err) {
+      console.error('Error loading data:', err)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  if (!canUserAccess(user, 'airQuality', 'access')) {
-    redirect('/dashboard')
+  const loadMore = async () => {
+    setLoadingMore(true)
+    try {
+      const response = await fetch(`/api/submissions?moduleType=AIR_QUALITY&limit=50&offset=${submissions.length}`)
+      if (response.ok) {
+        const data = await response.json()
+        setSubmissions([...submissions, ...(data.submissions || [])])
+        setTotal(data.total || submissions.length + (data.submissions?.length || 0))
+      }
+    } catch (err) {
+      console.error('Error loading more:', err)
+    } finally {
+      setLoadingMore(false)
+    }
   }
 
-  const canSubmit = canUserAccess(user, 'airQuality', 'submit')
-  const canViewAll = canUserAccess(user, 'airQuality', 'viewAll')
-
-  // Get facility settings for thresholds
-  const settings = await prisma.facilitySettings.findUnique({
-    where: { facilityId: user.facilityId },
-  })
-
-  const thresholds = {
-    coWarning: settings?.coWarningPpm || 20,
-    coEvacuation: settings?.coEvacuationPpm || 83,
-    no2Warning: settings?.no2WarningPpm || 0.3,
-    no2Evacuation: settings?.no2EvacuationPpm || 2.0,
+  const handleShowMore = () => {
+    if (displayCount < submissions.length) {
+      setDisplayCount(Math.min(displayCount + PAGE_SIZE, submissions.length))
+    } else if (submissions.length < total) {
+      loadMore()
+    }
   }
-
-  const rinks = await prisma.rink.findMany({
-    where: { facility: { id: user.facilityId }, isActive: true },
-    orderBy: { name: 'asc' },
-  })
-
-  const submissions = await prisma.submission.findMany({
-    where: {
-      formTemplate: {
-        facilityId: user.facilityId,
-        moduleType: 'AIR_QUALITY',
-      },
-      ...(canViewAll ? {} : { submittedById: user.id }),
-      archivedAt: null,
-    },
-    include: {
-      rink: { select: { id: true, name: true } },
-      submittedBy: { select: { id: true, firstName: true, lastName: true } },
-    },
-    orderBy: { submittedAt: 'desc' },
-    take: 50,
-  })
 
   // Find latest reading per rink
-  const latestByRink: Record<string, any> = {}
+  const latestByRink: Record<string, Submission> = {}
   submissions.forEach((s) => {
     if (!latestByRink[s.rinkId]) {
       latestByRink[s.rinkId] = s
@@ -79,6 +146,13 @@ export default async function AirQualityPage() {
     const data = s.data as any
     return (data?.coPpm >= thresholds.coWarning) || (data?.no2Ppm >= thresholds.no2Warning)
   })
+
+  const displayedSubmissions = submissions.slice(0, displayCount)
+  const hasMore = displayCount < submissions.length || submissions.length < total
+
+  if (loading) {
+    return <div className="text-center py-12 text-gray-500">Loading...</div>
+  }
 
   return (
     <div>
@@ -197,58 +271,78 @@ export default async function AirQualityPage() {
 
       {/* Recent Readings */}
       <div className="card">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Readings</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">Recent Readings</h2>
+          {total > 0 && (
+            <span className="text-sm text-gray-500">
+              Showing {displayedSubmissions.length} of {total}
+            </span>
+          )}
+        </div>
         {submissions.length === 0 ? (
           <div className="text-center py-8 text-gray-400">
             <p>No readings recorded yet</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Date/Time</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Rink</th>
-                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">CO (ppm)</th>
-                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">NO2 (ppm)</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Status</th>
-                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {submissions.slice(0, 20).map((s) => {
-                  const data = s.data as any
-                  const coStatus = data?.coPpm !== undefined ? getCoStatus(data.coPpm, thresholds.coWarning, thresholds.coEvacuation) : null
-                  const no2Status = data?.no2Ppm !== undefined ? getNo2Status(data.no2Ppm, thresholds.no2Warning, thresholds.no2Evacuation) : null
-                  const hasAlert = coStatus?.urgent || no2Status?.urgent
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Date/Time</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Rink</th>
+                    <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">CO (ppm)</th>
+                    <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">NO2 (ppm)</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Status</th>
+                    <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {displayedSubmissions.map((s) => {
+                    const data = s.data as any
+                    const coStatus = data?.coPpm !== undefined ? getCoStatus(data.coPpm, thresholds.coWarning, thresholds.coEvacuation) : null
+                    const no2Status = data?.no2Ppm !== undefined ? getNo2Status(data.no2Ppm, thresholds.no2Warning, thresholds.no2Evacuation) : null
+                    const hasAlert = coStatus?.urgent || no2Status?.urgent
 
-                  return (
-                    <tr key={s.id} className={`border-b border-gray-100 ${hasAlert ? 'bg-red-50' : 'hover:bg-gray-50'}`}>
-                      <td className="py-3 px-4">
-                        <div className="text-sm font-medium">{new Date(s.submittedAt).toLocaleDateString()}</div>
-                        <div className="text-xs text-gray-500">{new Date(s.submittedAt).toLocaleTimeString()}</div>
-                      </td>
-                      <td className="py-3 px-4 text-sm">{s.rink.name}</td>
-                      <td className="py-3 px-4 text-right font-mono">{data?.coPpm ?? '--'}</td>
-                      <td className="py-3 px-4 text-right font-mono">{data?.no2Ppm ?? '--'}</td>
-                      <td className="py-3 px-4">
-                        {hasAlert ? (
-                          <span className="px-2 py-1 bg-red-100 text-red-800 rounded text-xs font-medium">Alert</span>
-                        ) : (
-                          <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">Normal</span>
-                        )}
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <Link href={`/dashboard/air-quality/${s.id}`} className="text-blue-600 hover:text-blue-700 text-sm font-medium">
-                          View
-                        </Link>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
+                    return (
+                      <tr key={s.id} className={`border-b border-gray-100 ${hasAlert ? 'bg-red-50' : 'hover:bg-gray-50'}`}>
+                        <td className="py-3 px-4">
+                          <div className="text-sm font-medium">{new Date(s.submittedAt).toLocaleDateString()}</div>
+                          <div className="text-xs text-gray-500">{new Date(s.submittedAt).toLocaleTimeString()}</div>
+                        </td>
+                        <td className="py-3 px-4 text-sm">{s.rink.name}</td>
+                        <td className="py-3 px-4 text-right font-mono">{data?.coPpm ?? '--'}</td>
+                        <td className="py-3 px-4 text-right font-mono">{data?.no2Ppm ?? '--'}</td>
+                        <td className="py-3 px-4">
+                          {hasAlert ? (
+                            <span className="px-2 py-1 bg-red-100 text-red-800 rounded text-xs font-medium">Alert</span>
+                          ) : (
+                            <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">Normal</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <Link href={`/dashboard/air-quality/${s.id}`} className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                            View
+                          </Link>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+            {hasMore && (
+              <div className="text-center pt-4 border-t border-gray-100 mt-4">
+                <button
+                  onClick={handleShowMore}
+                  disabled={loadingMore}
+                  className="btn btn-secondary"
+                >
+                  {loadingMore ? 'Loading...' : 'Load More'}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

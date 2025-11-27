@@ -1,9 +1,20 @@
-import { getSession } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import Link from 'next/link'
-import { canUserAccess } from '@/lib/permissions'
+'use client'
 
-export const dynamic = 'force-dynamic'
+import { useState, useEffect } from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+
+interface FormTemplate {
+  id: string
+  name: string
+  description: string | null
+  moduleType: string
+  version: number
+  isActive: boolean
+  isLocked: boolean
+  updatedAt: string
+  _count: { submissions: number }
+}
 
 const MODULE_LABELS: Record<string, string> = {
   ICE_DEPTH: 'Ice Depth',
@@ -25,37 +36,71 @@ const MODULE_COLORS: Record<string, string> = {
   DAILY_CHECKLIST: 'bg-yellow-100 text-yellow-800',
 }
 
-export default async function FormsListPage() {
-  const user = await getSession()
+export default function FormsListPage() {
+  const router = useRouter()
+  const [forms, setForms] = useState<FormTemplate[]>([])
+  const [loading, setLoading] = useState(true)
+  const [canCreateForms, setCanCreateForms] = useState(false)
+  const [search, setSearch] = useState('')
+  const [moduleFilter, setModuleFilter] = useState('')
 
-  if (!user) {
-    return null
+  useEffect(() => {
+    fetchData()
+  }, [])
+
+  const fetchData = async () => {
+    try {
+      const [formsRes, meRes] = await Promise.all([
+        fetch('/api/forms'),
+        fetch('/api/auth/me'),
+      ])
+
+      if (!meRes.ok) {
+        router.push('/login')
+        return
+      }
+
+      const meData = await meRes.json()
+      setCanCreateForms(meData.user?.role?.permissions?.admin?.createTemplates || false)
+
+      if (formsRes.ok) {
+        const formsData = await formsRes.json()
+        setForms(formsData.forms || [])
+      }
+    } catch (err) {
+      console.error('Error loading data:', err)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const canCreateForms = canUserAccess(user, 'admin', 'createTemplates')
+  // Filter forms based on search and module filter
+  const filteredForms = forms.filter((form) => {
+    const matchesSearch =
+      !search ||
+      form.name.toLowerCase().includes(search.toLowerCase()) ||
+      (form.description && form.description.toLowerCase().includes(search.toLowerCase()))
 
-  const forms = await prisma.formTemplate.findMany({
-    where: {
-      facilityId: user.facilityId,
-      isActive: true,
-    },
-    orderBy: [{ moduleType: 'asc' }, { updatedAt: 'desc' }],
-    include: {
-      _count: {
-        select: { submissions: true },
-      },
-    },
+    const matchesModule = !moduleFilter || form.moduleType === moduleFilter
+
+    return matchesSearch && matchesModule
   })
 
-  // Group forms by module
-  type FormType = (typeof forms)[number]
-  const formsByModule: Record<string, FormType[]> = {}
-  for (const form of forms) {
+  // Group filtered forms by module
+  const formsByModule: Record<string, FormTemplate[]> = {}
+  for (const form of filteredForms) {
     const module = form.moduleType
     if (!formsByModule[module]) {
       formsByModule[module] = []
     }
     formsByModule[module].push(form)
+  }
+
+  // Get unique modules for filter dropdown
+  const uniqueModules = Array.from(new Set(forms.map((f) => f.moduleType))).sort()
+
+  if (loading) {
+    return <div className="text-center py-12 text-gray-500">Loading...</div>
   }
 
   return (
@@ -64,7 +109,7 @@ export default async function FormsListPage() {
         <div>
           <h2 className="text-xl font-semibold text-gray-900">Form Templates</h2>
           <p className="text-sm text-gray-500 mt-1">
-            {forms.length} template{forms.length !== 1 ? 's' : ''} across {Object.keys(formsByModule).length} module{Object.keys(formsByModule).length !== 1 ? 's' : ''}
+            {filteredForms.length} of {forms.length} template{forms.length !== 1 ? 's' : ''} across {Object.keys(formsByModule).length} module{Object.keys(formsByModule).length !== 1 ? 's' : ''}
           </p>
         </div>
         {canCreateForms && (
@@ -80,6 +125,48 @@ export default async function FormsListPage() {
         )}
       </div>
 
+      {/* Search and Filters */}
+      {forms.length > 0 && (
+        <div className="card mb-6">
+          <div className="flex flex-wrap gap-4">
+            <div className="flex-1 min-w-[200px]">
+              <input
+                type="text"
+                placeholder="Search forms..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="input w-full"
+              />
+            </div>
+            <div className="w-48">
+              <select
+                value={moduleFilter}
+                onChange={(e) => setModuleFilter(e.target.value)}
+                className="input w-full"
+              >
+                <option value="">All Modules</option>
+                {uniqueModules.map((module) => (
+                  <option key={module} value={module}>
+                    {MODULE_LABELS[module] || module}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {(search || moduleFilter) && (
+              <button
+                onClick={() => {
+                  setSearch('')
+                  setModuleFilter('')
+                }}
+                className="btn btn-secondary text-sm"
+              >
+                Clear Filters
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {forms.length === 0 ? (
         <div className="card text-center py-12">
           <div className="text-gray-400 text-5xl mb-4">📝</div>
@@ -92,6 +179,10 @@ export default async function FormsListPage() {
               Create First Form
             </Link>
           )}
+        </div>
+      ) : filteredForms.length === 0 ? (
+        <div className="card text-center py-8 text-gray-500">
+          No forms match your filters
         </div>
       ) : (
         <div className="space-y-8">
