@@ -31,6 +31,7 @@ export default function OpenShiftsPage() {
   const [openShifts, setOpenShifts] = useState<OpenShift[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   const [pickingUp, setPickingUp] = useState<string | null>(null)
 
   useEffect(() => {
@@ -67,6 +68,7 @@ export default function OpenShiftsPage() {
 
     setPickingUp(shiftId)
     setError('')
+    setSuccess('')
 
     try {
       const response = await fetch(`/api/schedule/${shiftId}`, {
@@ -85,7 +87,7 @@ export default function OpenShiftsPage() {
       setOpenShifts(openShifts.filter((s) => s.id !== shiftId))
 
       // Show success message
-      alert('Shift picked up successfully! Check your schedule.')
+      setSuccess('Shift picked up successfully! Check your schedule.')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to pick up shift')
     } finally {
@@ -114,6 +116,17 @@ export default function OpenShiftsPage() {
           <p className="text-gray-600 text-sm mt-1">Available shifts needing coverage</p>
         </div>
       </div>
+
+      {success && (
+        <div className="bg-green-50 text-green-700 p-4 rounded-lg mb-6 flex items-center justify-between">
+          <span>{success}</span>
+          <button onClick={() => setSuccess('')} className="text-green-500 hover:text-green-700">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
 
       {error && (
         <div className="bg-red-50 text-red-700 p-4 rounded-lg mb-6">{error}</div>
