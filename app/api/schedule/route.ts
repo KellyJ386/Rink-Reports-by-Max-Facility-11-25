@@ -126,6 +126,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Verify shift belongs to same facility if provided
+    if (shiftId) {
+      const shift = await prisma.shiftDefinition.findFirst({
+        where: { id: shiftId, facilityId: user.facilityId },
+      })
+      if (!shift) {
+        return NextResponse.json({ error: 'Shift not found' }, { status: 404 })
+      }
+    }
+
     const entry = await prisma.scheduleEntry.create({
       data: {
         userId: userId || user.id, // Use current user as placeholder for open shifts

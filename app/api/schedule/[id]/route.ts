@@ -5,6 +5,12 @@ import { canUserAccess } from '@/lib/permissions'
 
 export const dynamic = 'force-dynamic'
 
+// Validate time format (HH:MM) and return true if valid
+function isValidTimeFormat(time: string): boolean {
+  const timeRegex = /^([01]?[0-9]|2[0-3]):([0-5][0-9])$/
+  return timeRegex.test(time)
+}
+
 // GET /api/schedule/[id] - Get a specific schedule entry
 export async function GET(
   request: NextRequest,
@@ -112,6 +118,21 @@ export async function PATCH(
 
     if (!canEdit && !isOwner && !isCreator) {
       return NextResponse.json({ error: 'No permission to update this entry' }, { status: 403 })
+    }
+
+    // Validate startTime format if provided
+    if (updateData.startTime !== undefined && !isValidTimeFormat(updateData.startTime)) {
+      return NextResponse.json({ error: 'Invalid start time format. Use HH:MM.' }, { status: 400 })
+    }
+
+    // Validate endTime format if provided
+    if (updateData.endTime !== undefined && !isValidTimeFormat(updateData.endTime)) {
+      return NextResponse.json({ error: 'Invalid end time format. Use HH:MM.' }, { status: 400 })
+    }
+
+    // Validate notes length if provided
+    if (updateData.notes !== undefined && updateData.notes && updateData.notes.length > 500) {
+      return NextResponse.json({ error: 'Notes must be 500 characters or less' }, { status: 400 })
     }
 
     // Whitelist allowed fields for update
