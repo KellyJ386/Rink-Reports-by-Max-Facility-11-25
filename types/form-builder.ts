@@ -259,3 +259,109 @@ export function calculateFieldValue(
 
   return `${prefix}${rounded}${suffix}`
 }
+
+// Phase 4: Form Submission types
+export type SubmissionStatus = 'draft' | 'submitted' | 'reviewed' | 'approved' | 'rejected'
+
+export interface FormSubmission {
+  id: string
+  templateId: string
+  templateName: string
+  facilityId: string
+  rinkId?: string
+  rinkName?: string
+  submittedBy: string
+  submittedByName: string
+  submittedAt: string
+  status: SubmissionStatus
+  data: Record<string, unknown>
+  reviewedBy?: string
+  reviewedByName?: string
+  reviewedAt?: string
+  reviewNotes?: string
+  version: number
+}
+
+export interface SubmissionListItem {
+  id: string
+  templateName: string
+  rinkName?: string
+  submittedByName: string
+  submittedAt: string
+  status: SubmissionStatus
+}
+
+// Helper to validate form data against schema
+export function validateFormData(
+  schema: FormSchema,
+  data: Record<string, unknown>
+): { valid: boolean; errors: Record<string, string> } {
+  const errors: Record<string, string> = {}
+
+  for (const section of schema.sections) {
+    for (const field of section.fields) {
+      // Skip layout fields
+      if (['heading', 'paragraph', 'divider'].includes(field.type)) continue
+
+      // Skip calculated fields (they're computed, not input)
+      if (field.type === 'calculated') continue
+
+      const value = data[field.name]
+      const validation = field.validation || {}
+
+      // Check conditional logic - skip validation if field should be hidden
+      if (field.conditionalLogic) {
+        const shouldShow = evaluateCondition(field.conditionalLogic, data)
+        if (field.conditionalLogic.action === 'hide' && !shouldShow) continue
+        if (field.conditionalLogic.action === 'show' && !shouldShow) continue
+        // If action is 'require', validation.required will handle it
+      }
+
+      // Required check
+      if (validation.required) {
+        if (value === undefined || value === null || value === '') {
+          errors[field.name] = `${field.label} is required`
+          continue
+        }
+        if (Array.isArray(value) && value.length === 0) {
+          errors[field.name] = `${field.label} is required`
+          continue
+        }
+      }
+
+      // Skip further validation if empty and not required
+      if (value === undefined || value === null || value === '') continue
+
+      // String length validation
+      if (typeof value === 'string') {
+        if (validation.minLength && value.length < validation.minLength) {
+          errors[field.name] = `${field.label} must be at least ${validation.minLength} characters`
+        }
+        if (validation.maxLength && value.length > validation.maxLength) {
+          errors[field.name] = `${field.label} must be at most ${validation.maxLength} characters`
+        }
+        if (validation.pattern) {
+          const regex = new RegExp(validation.pattern)
+          if (!regex.test(value)) {
+            errors[field.name] = validation.patternMessage || `${field.label} format is invalid`
+          }
+        }
+      }
+
+      // Number validation
+      if (typeof value === 'number' || (typeof value === 'string' && field.type === 'number')) {
+        const numValue = Number(value)
+        if (!isNaN(numValue)) {
+          if (validation.min !== undefined && numValue < validation.min) {
+            errors[field.name] = `${field.label} must be at least ${validation.min}`
+          }
+          if (validation.max !== undefined && numValue > validation.max) {
+            errors[field.name] = `${field.label} must be at most ${validation.max}`
+          }
+        }
+      }
+    }
+  }
+
+  return { valid: Object.keys(errors).length === 0, errors }
+}
