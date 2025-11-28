@@ -4,13 +4,15 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
 
+import type { PermissionSet } from '@/types'
+
 interface SidebarProps {
   user: {
     firstName: string
     lastName: string
     role: { name: string }
     facility: { name: string }
-    permissions: any
+    permissions: PermissionSet
   }
 }
 

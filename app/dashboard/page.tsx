@@ -1,6 +1,9 @@
 import { getSession } from '@/lib/auth'
 import { getUserPermissions, getAccessibleModules } from '@/lib/permissions'
 
+// Force dynamic rendering - this page requires database access
+export const dynamic = 'force-dynamic'
+
 export default async function DashboardPage() {
   const user = await getSession()
 
@@ -8,7 +11,7 @@ export default async function DashboardPage() {
     return null
   }
 
-  const permissions = getUserPermissions(user)
+  const _permissions = getUserPermissions(user)
   const accessibleModules = getAccessibleModules(user)
 
   return (

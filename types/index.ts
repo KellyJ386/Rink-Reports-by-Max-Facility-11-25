@@ -1,4 +1,8 @@
-import { User, Role, Facility, Rink } from '@prisma/client'
+// Use local type stubs when Prisma client isn't generated
+// Run `npx prisma generate` to get full Prisma types
+import type { User, Role, Facility, Rink } from '@/lib/prisma-types'
+
+export type { User, Role, Facility, Rink }
 
 export type UserWithRole = User & {
   role: Role

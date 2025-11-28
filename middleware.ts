@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { verifyToken } from './lib/auth'
 
 // Routes that don't require authentication
 const publicRoutes = ['/login', '/api/auth/login']
@@ -14,23 +13,17 @@ export function middleware(request: NextRequest) {
   }
 
   // Check for auth token
+  // Note: Full JWT verification happens in API routes/pages via getSession()
+  // Middleware only checks token existence for Edge runtime compatibility
   const token = request.cookies.get('auth_token')
 
-  if (!token) {
+  if (!token?.value) {
     // Redirect to login if no token
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // Verify token
-  const payload = verifyToken(token.value)
-  if (!payload) {
-    // Clear invalid token and redirect to login
-    const response = NextResponse.redirect(new URL('/login', request.url))
-    response.cookies.delete('auth_token')
-    return response
-  }
-
-  // Token is valid, continue
+  // Token exists, continue
+  // Full verification happens in getSession() on protected pages
   return NextResponse.next()
 }
 
