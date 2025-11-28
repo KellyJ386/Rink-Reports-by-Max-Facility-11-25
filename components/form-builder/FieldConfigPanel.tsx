@@ -1,15 +1,17 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import type { FormField, FieldOption } from '@/types/form-builder'
+import type { FormField, FieldOption, CalculatedFieldConfig, IceDepthGridConfig, BodyDiagramConfig } from '@/types/form-builder'
+import ConditionalLogicBuilder from './ConditionalLogicBuilder'
 
 interface FieldConfigPanelProps {
   field: FormField | null
+  allFields: FormField[]
   onUpdate: (field: FormField) => void
   onClose: () => void
 }
 
-export default function FieldConfigPanel({ field, onUpdate, onClose }: FieldConfigPanelProps) {
+export default function FieldConfigPanel({ field, allFields, onUpdate, onClose }: FieldConfigPanelProps) {
   const [localField, setLocalField] = useState<FormField | null>(field)
 
   useEffect(() => {
@@ -66,6 +68,62 @@ export default function FieldConfigPanel({ field, onUpdate, onClose }: FieldConf
   const hasOptions = ['select', 'multiselect', 'radio'].includes(localField.type)
   const hasMinMax = localField.type === 'number'
   const hasMinMaxLength = ['text', 'textarea', 'email', 'phone'].includes(localField.type)
+  const isTemperature = localField.type === 'temperature'
+  const isCalculated = localField.type === 'calculated'
+  const isIceDepthGrid = localField.type === 'iceDepthGrid'
+  const isBodyDiagram = localField.type === 'bodyDiagram'
+  const supportsConditionalLogic = !['heading', 'paragraph', 'divider'].includes(localField.type)
+
+  const handleCalculatedConfigChange = <K extends keyof CalculatedFieldConfig>(
+    key: K,
+    value: CalculatedFieldConfig[K]
+  ) => {
+    const updated = {
+      ...localField,
+      calculatedConfig: {
+        ...localField.calculatedConfig,
+        [key]: value,
+      } as CalculatedFieldConfig,
+    }
+    setLocalField(updated)
+    onUpdate(updated)
+  }
+
+  const handleIceDepthConfigChange = <K extends keyof IceDepthGridConfig>(
+    key: K,
+    value: IceDepthGridConfig[K]
+  ) => {
+    const updated = {
+      ...localField,
+      iceDepthConfig: {
+        ...localField.iceDepthConfig,
+        [key]: value,
+      } as IceDepthGridConfig,
+    }
+    setLocalField(updated)
+    onUpdate(updated)
+  }
+
+  const handleBodyDiagramConfigChange = <K extends keyof BodyDiagramConfig>(
+    key: K,
+    value: BodyDiagramConfig[K]
+  ) => {
+    const updated = {
+      ...localField,
+      bodyDiagramConfig: {
+        ...localField.bodyDiagramConfig,
+        [key]: value,
+      } as BodyDiagramConfig,
+    }
+    setLocalField(updated)
+    onUpdate(updated)
+  }
+
+  const handleConditionalLogicChange = (rule: typeof localField.conditionalLogic) => {
+    const updated = { ...localField, conditionalLogic: rule }
+    setLocalField(updated)
+    onUpdate(updated)
+  }
 
   return (
     <div className="w-80 bg-gray-50 border-l border-gray-200 overflow-y-auto">
@@ -282,6 +340,267 @@ export default function FieldConfigPanel({ field, onUpdate, onClose }: FieldConf
               ))}
             </div>
           </div>
+        )}
+
+        {/* Temperature Unit */}
+        {isTemperature && (
+          <div className="pt-4 border-t border-gray-200">
+            <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
+              Temperature Settings
+            </h4>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Unit</label>
+              <div className="flex gap-2">
+                {(['F', 'C'] as const).map((unit) => (
+                  <button
+                    key={unit}
+                    onClick={() => handleChange('temperatureUnit', unit)}
+                    className={`flex-1 px-3 py-2 text-sm rounded-md border transition-colors ${
+                      localField.temperatureUnit === unit
+                        ? 'bg-blue-600 text-white border-blue-600'
+                        : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
+                    }`}
+                  >
+                    °{unit}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Calculated Field Config */}
+        {isCalculated && (
+          <div className="pt-4 border-t border-gray-200">
+            <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
+              Calculation Settings
+            </h4>
+
+            <div className="space-y-3">
+              {/* Operation */}
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Operation</label>
+                <select
+                  value={localField.calculatedConfig?.operation || 'sum'}
+                  onChange={(e) => handleCalculatedConfigChange('operation', e.target.value as CalculatedFieldConfig['operation'])}
+                  className="input text-sm"
+                >
+                  <option value="sum">Sum</option>
+                  <option value="average">Average</option>
+                  <option value="min">Minimum</option>
+                  <option value="max">Maximum</option>
+                  <option value="count">Count</option>
+                </select>
+              </div>
+
+              {/* Source Fields */}
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Source Fields</label>
+                <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-md">
+                  {allFields
+                    .filter((f) => f.id !== localField.id && ['number', 'temperature'].includes(f.type))
+                    .map((f) => (
+                      <label
+                        key={f.id}
+                        className="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={localField.calculatedConfig?.sourceFields?.includes(f.name) || false}
+                          onChange={(e) => {
+                            const current = localField.calculatedConfig?.sourceFields || []
+                            const updated = e.target.checked
+                              ? [...current, f.name]
+                              : current.filter((n) => n !== f.name)
+                            handleCalculatedConfigChange('sourceFields', updated)
+                          }}
+                          className="rounded border-gray-300 text-blue-600"
+                        />
+                        <span className="text-xs text-gray-700">{f.label}</span>
+                      </label>
+                    ))}
+                  {allFields.filter((f) => f.id !== localField.id && ['number', 'temperature'].includes(f.type)).length === 0 && (
+                    <p className="text-xs text-gray-400 px-2 py-2">No numeric fields available</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Decimal Places */}
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Decimal Places</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="10"
+                  value={localField.calculatedConfig?.decimalPlaces ?? 2}
+                  onChange={(e) => handleCalculatedConfigChange('decimalPlaces', Number(e.target.value))}
+                  className="input text-sm"
+                />
+              </div>
+
+              {/* Prefix & Suffix */}
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Prefix</label>
+                  <input
+                    type="text"
+                    value={localField.calculatedConfig?.prefix || ''}
+                    onChange={(e) => handleCalculatedConfigChange('prefix', e.target.value)}
+                    className="input text-sm"
+                    placeholder="$"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Suffix</label>
+                  <input
+                    type="text"
+                    value={localField.calculatedConfig?.suffix || ''}
+                    onChange={(e) => handleCalculatedConfigChange('suffix', e.target.value)}
+                    className="input text-sm"
+                    placeholder="°F"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Ice Depth Grid Config */}
+        {isIceDepthGrid && (
+          <div className="pt-4 border-t border-gray-200">
+            <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
+              Ice Depth Grid Settings
+            </h4>
+
+            <div className="space-y-3">
+              {/* Preset */}
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Grid Size</label>
+                <select
+                  value={localField.iceDepthConfig?.preset || '25'}
+                  onChange={(e) => handleIceDepthConfigChange('preset', e.target.value as IceDepthGridConfig['preset'])}
+                  className="input text-sm"
+                >
+                  <option value="25">Small (25 points - 5x5)</option>
+                  <option value="35">Medium (35 points - 7x5)</option>
+                  <option value="47">Large (47 points - 7x7)</option>
+                </select>
+              </div>
+
+              {/* Unit */}
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Unit</label>
+                <div className="flex gap-2">
+                  {(['inches', 'mm'] as const).map((unit) => (
+                    <button
+                      key={unit}
+                      onClick={() => handleIceDepthConfigChange('unit', unit)}
+                      className={`flex-1 px-3 py-2 text-sm rounded-md border transition-colors ${
+                        localField.iceDepthConfig?.unit === unit
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
+                      }`}
+                    >
+                      {unit}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Target Depth */}
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Target Depth</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={localField.iceDepthConfig?.targetDepth ?? ''}
+                  onChange={(e) => handleIceDepthConfigChange('targetDepth', e.target.value ? Number(e.target.value) : undefined)}
+                  className="input text-sm"
+                  placeholder="e.g., 1.25"
+                />
+              </div>
+
+              {/* Warning Threshold */}
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Warning Threshold</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={localField.iceDepthConfig?.warningThreshold ?? ''}
+                  onChange={(e) => handleIceDepthConfigChange('warningThreshold', e.target.value ? Number(e.target.value) : undefined)}
+                  className="input text-sm"
+                  placeholder="e.g., 0.25"
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  Acceptable deviation from target
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Body Diagram Config */}
+        {isBodyDiagram && (
+          <div className="pt-4 border-t border-gray-200">
+            <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
+              Body Diagram Settings
+            </h4>
+
+            <div className="space-y-3">
+              {/* View */}
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">View</label>
+                <select
+                  value={localField.bodyDiagramConfig?.view || 'front'}
+                  onChange={(e) => handleBodyDiagramConfigChange('view', e.target.value as BodyDiagramConfig['view'])}
+                  className="input text-sm"
+                >
+                  <option value="front">Front Only</option>
+                  <option value="back">Back Only</option>
+                  <option value="both">Both Views</option>
+                </select>
+              </div>
+
+              {/* Allow Multiple */}
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={localField.bodyDiagramConfig?.allowMultiple !== false}
+                  onChange={(e) => handleBodyDiagramConfigChange('allowMultiple', e.target.checked)}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700">Allow multiple markers</span>
+              </label>
+
+              {/* Injury Types */}
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Injury Types</label>
+                <textarea
+                  value={(localField.bodyDiagramConfig?.injuryTypes || ['bruise', 'cut', 'sprain', 'fracture', 'other']).join(', ')}
+                  onChange={(e) => handleBodyDiagramConfigChange(
+                    'injuryTypes',
+                    e.target.value.split(',').map((s) => s.trim()).filter(Boolean)
+                  )}
+                  className="input text-sm"
+                  rows={2}
+                  placeholder="bruise, cut, sprain, fracture, other"
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  Comma-separated list of injury types
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Conditional Logic */}
+        {supportsConditionalLogic && (
+          <ConditionalLogicBuilder
+            rule={localField.conditionalLogic}
+            availableFields={allFields}
+            currentFieldId={localField.id}
+            onChange={handleConditionalLogicChange}
+          />
         )}
       </div>
     </div>

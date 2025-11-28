@@ -178,6 +178,7 @@ export default function FormBuilder({
           />
           <FieldConfigPanel
             field={selectedField}
+            allFields={fields}
             onUpdate={handleUpdateField}
             onClose={() => setSelectedFieldId(null)}
           />

@@ -8,6 +8,10 @@ import SelectField from './SelectField'
 import CheckboxField from './CheckboxField'
 import RadioField from './RadioField'
 import DateField from './DateField'
+import TemperatureField from './TemperatureField'
+import CalculatedField from './CalculatedField'
+import IceDepthGridField from './IceDepthGridField'
+import BodyDiagramField from './BodyDiagramField'
 import { HeadingField, ParagraphField, DividerField } from './LayoutFields'
 
 interface FieldRendererProps {
@@ -16,9 +20,10 @@ interface FieldRendererProps {
   onChange: (value: unknown) => void
   error?: string
   disabled?: boolean
+  formData?: Record<string, unknown>
 }
 
-export function FieldRenderer({ field, value, onChange, error, disabled }: FieldRendererProps) {
+export function FieldRenderer({ field, value, onChange, error, disabled, formData = {} }: FieldRendererProps) {
   switch (field.type) {
     case 'text':
     case 'email':
@@ -111,9 +116,51 @@ export function FieldRenderer({ field, value, onChange, error, disabled }: Field
     case 'divider':
       return <DividerField />
 
+    case 'temperature':
+      return (
+        <TemperatureField
+          field={field}
+          value={(value as number | string) ?? ''}
+          onChange={onChange}
+          error={error}
+          disabled={disabled}
+        />
+      )
+
+    case 'calculated':
+      return (
+        <CalculatedField
+          field={field}
+          formData={formData}
+          error={error}
+        />
+      )
+
+    case 'iceDepthGrid':
+      return (
+        <IceDepthGridField
+          field={field}
+          value={value as Record<string, number> | undefined}
+          onChange={onChange}
+          error={error}
+          disabled={disabled}
+        />
+      )
+
+    case 'bodyDiagram':
+      return (
+        <BodyDiagramField
+          field={field}
+          value={value as Array<{ id: string; x: number; y: number; type: string; view: 'front' | 'back'; notes?: string }> | undefined}
+          onChange={onChange}
+          error={error}
+          disabled={disabled}
+        />
+      )
+
     case 'signature':
     case 'photo':
-      // Placeholder for media fields - will be implemented in Phase 3
+      // Placeholder for media fields
       return (
         <div className="w-full p-4 border-2 border-dashed border-gray-300 rounded-lg text-center text-gray-500">
           <p className="text-sm">{field.label}</p>
@@ -131,4 +178,5 @@ export function FieldRenderer({ field, value, onChange, error, disabled }: Field
 }
 
 export { TextField, TextareaField, NumberField, SelectField, CheckboxField, RadioField, DateField }
+export { TemperatureField, CalculatedField, IceDepthGridField, BodyDiagramField }
 export { HeadingField, ParagraphField, DividerField }
