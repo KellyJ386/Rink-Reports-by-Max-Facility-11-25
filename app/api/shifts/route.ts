@@ -74,8 +74,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Name, start time, and end time are required' }, { status: 400 })
     }
 
-    // Validate name length
-    if (name.length > 100) {
+    // Validate name is not just whitespace and check length
+    const trimmedName = name.trim()
+    if (!trimmedName) {
+      return NextResponse.json({ error: 'Shift name cannot be empty' }, { status: 400 })
+    }
+    if (trimmedName.length > 100) {
       return NextResponse.json({ error: 'Shift name must be 100 characters or less' }, { status: 400 })
     }
 

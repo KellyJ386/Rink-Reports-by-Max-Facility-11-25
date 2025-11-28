@@ -75,6 +75,11 @@ export async function PATCH(
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
     }
 
+    // Validate error message length
+    if (errorMessage && errorMessage.length > 500) {
+      return NextResponse.json({ error: 'Error message must be 500 characters or less' }, { status: 400 })
+    }
+
     const smsLog = await prisma.sMSLog.update({
       where: { id },
       data: {

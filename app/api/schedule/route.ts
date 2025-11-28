@@ -101,6 +101,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User ID is required for assigned shifts' }, { status: 400 })
     }
 
+    // Validate notes length if provided
+    if (notes && notes.length > 500) {
+      return NextResponse.json({ error: 'Notes must be 500 characters or less' }, { status: 400 })
+    }
+
     // Verify user belongs to same facility
     if (userId) {
       const targetUser = await prisma.user.findFirst({

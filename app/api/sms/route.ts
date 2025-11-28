@@ -98,6 +98,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Validate phone number format if provided directly
+    if (phoneNumber) {
+      const phoneRegex = /^\+?[1-9]\d{1,14}$/
+      if (!phoneRegex.test(phoneNumber.replace(/[\s\-\(\)]/g, ''))) {
+        return NextResponse.json({ error: 'Invalid phone number format' }, { status: 400 })
+      }
+    }
+
     // Validate notification type
     const validTypes = [
       'INCIDENT_SUBMITTED',
