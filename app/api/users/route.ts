@@ -104,6 +104,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 })
     }
 
+    // Validate name lengths
+    if (firstName.length > 100) {
+      return NextResponse.json({ error: 'First name must be 100 characters or less' }, { status: 400 })
+    }
+    if (lastName.length > 100) {
+      return NextResponse.json({ error: 'Last name must be 100 characters or less' }, { status: 400 })
+    }
+
+    // Validate phone number length if provided
+    if (phone && phone.length > 20) {
+      return NextResponse.json({ error: 'Phone number must be 20 characters or less' }, { status: 400 })
+    }
+
     // Check if email already exists
     const existingUser = await prisma.user.findUnique({
       where: { email },

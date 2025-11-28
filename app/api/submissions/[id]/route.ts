@@ -108,6 +108,22 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     const { data, outsideTemp, outsideTempUnit, status } = body
 
+    // Validate status if provided
+    if (status !== undefined) {
+      const validStatuses = ['DRAFT', 'SUBMITTED', 'PENDING_REVIEW', 'APPROVED', 'REJECTED']
+      if (!validStatuses.includes(status)) {
+        return NextResponse.json({ error: 'Invalid status value' }, { status: 400 })
+      }
+    }
+
+    // Validate outsideTempUnit if provided
+    if (outsideTempUnit !== undefined) {
+      const validUnits = ['F', 'C']
+      if (!validUnits.includes(outsideTempUnit)) {
+        return NextResponse.json({ error: 'Invalid temperature unit. Use F or C.' }, { status: 400 })
+      }
+    }
+
     const previousData = submission.data
 
     const updatedSubmission = await prisma.submission.update({

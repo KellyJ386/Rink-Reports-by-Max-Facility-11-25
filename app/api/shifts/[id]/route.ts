@@ -87,6 +87,21 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Shift name cannot be empty' }, { status: 400 })
     }
 
+    // Validate name length
+    if (name && name.trim().length > 100) {
+      return NextResponse.json({ error: 'Shift name must be 100 characters or less' }, { status: 400 })
+    }
+
+    // Validate rinkId belongs to user's facility if provided
+    if (rinkId !== undefined && rinkId !== null) {
+      const rink = await prisma.rink.findFirst({
+        where: { id: rinkId, facilityId: user.facilityId },
+      })
+      if (!rink) {
+        return NextResponse.json({ error: 'Rink not found' }, { status: 404 })
+      }
+    }
+
     // Validate time format if provided
     if (startTime !== undefined && !isValidTimeFormat(startTime)) {
       return NextResponse.json({ error: 'Invalid start time format. Use HH:MM (e.g., 09:00, 17:30)' }, { status: 400 })
