@@ -114,10 +114,17 @@ export async function PATCH(
       return NextResponse.json({ error: 'No permission to update this entry' }, { status: 403 })
     }
 
-    // General update
+    // Whitelist allowed fields for update
+    const allowedFields: Record<string, any> = {}
+    if (updateData.status !== undefined) allowedFields.status = updateData.status
+    if (updateData.notes !== undefined) allowedFields.notes = updateData.notes
+    if (updateData.startTime !== undefined) allowedFields.startTime = updateData.startTime
+    if (updateData.endTime !== undefined) allowedFields.endTime = updateData.endTime
+
+    // General update with whitelisted fields only
     const updatedEntry = await prisma.scheduleEntry.update({
       where: { id },
-      data: updateData,
+      data: allowedFields,
       include: {
         user: { select: { id: true, firstName: true, lastName: true } },
         rink: { select: { id: true, name: true } },

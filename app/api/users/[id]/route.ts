@@ -132,7 +132,12 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     // Fields any user can update for themselves
     if (firstName) updateData.firstName = firstName
     if (lastName) updateData.lastName = lastName
-    if (phone !== undefined) updateData.phone = phone
+    if (phone !== undefined) {
+      if (phone && phone.length > 20) {
+        return NextResponse.json({ error: 'Phone number must be 20 characters or less' }, { status: 400 })
+      }
+      updateData.phone = phone
+    }
     if (smsOptIn !== undefined) updateData.smsOptIn = smsOptIn
     if (smsPreference) updateData.smsPreference = smsPreference
 

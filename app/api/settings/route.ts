@@ -97,7 +97,21 @@ export async function PUT(request: NextRequest) {
 
     // Update or create settings
     if (settingsData) {
-      // Validate air quality thresholds
+      // Validate air quality thresholds are non-negative
+      if (settingsData.coWarningPpm !== undefined && settingsData.coWarningPpm < 0) {
+        return NextResponse.json({ error: 'CO warning threshold must be non-negative' }, { status: 400 })
+      }
+      if (settingsData.coEvacuationPpm !== undefined && settingsData.coEvacuationPpm < 0) {
+        return NextResponse.json({ error: 'CO evacuation threshold must be non-negative' }, { status: 400 })
+      }
+      if (settingsData.no2WarningPpm !== undefined && settingsData.no2WarningPpm < 0) {
+        return NextResponse.json({ error: 'NO2 warning threshold must be non-negative' }, { status: 400 })
+      }
+      if (settingsData.no2EvacuationPpm !== undefined && settingsData.no2EvacuationPpm < 0) {
+        return NextResponse.json({ error: 'NO2 evacuation threshold must be non-negative' }, { status: 400 })
+      }
+
+      // Validate air quality thresholds order
       if (settingsData.coWarningPpm !== undefined && settingsData.coEvacuationPpm !== undefined) {
         if (settingsData.coWarningPpm >= settingsData.coEvacuationPpm) {
           return NextResponse.json({ error: 'CO warning threshold must be less than evacuation threshold' }, { status: 400 })
