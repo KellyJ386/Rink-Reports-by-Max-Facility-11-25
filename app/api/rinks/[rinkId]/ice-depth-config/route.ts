@@ -16,6 +16,10 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    if (!canUserAccess(user, 'iceDepth', 'access')) {
+      return NextResponse.json({ error: 'No permission to access ice depth configuration' }, { status: 403 })
+    }
+
     const { rinkId } = await params
 
     // Verify rink belongs to user's facility

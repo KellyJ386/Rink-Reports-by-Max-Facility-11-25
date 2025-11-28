@@ -17,6 +17,10 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    if (!canUserAccess(user, 'schedule', 'access')) {
+      return NextResponse.json({ error: 'No permission to access schedule' }, { status: 403 })
+    }
+
     const entry = await prisma.scheduleEntry.findFirst({
       where: {
         id,

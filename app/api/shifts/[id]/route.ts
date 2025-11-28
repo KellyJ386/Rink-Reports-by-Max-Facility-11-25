@@ -29,6 +29,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Shifts are used by schedule module, require schedule or admin access
+    if (!canUserAccess(user, 'schedule', 'access') && !canUserAccess(user, 'admin', 'access')) {
+      return NextResponse.json({ error: 'No permission to access shifts' }, { status: 403 })
+    }
+
     const { id } = await params
 
     const shift = await prisma.shiftDefinition.findFirst({
