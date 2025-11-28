@@ -24,6 +24,28 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status')
     const messageType = searchParams.get('messageType')
 
+    // Validate status filter if provided
+    const validStatuses = ['QUEUED', 'SENT', 'DELIVERED', 'FAILED', 'UNDELIVERED']
+    if (status && !validStatuses.includes(status)) {
+      return NextResponse.json({ error: 'Invalid status filter' }, { status: 400 })
+    }
+
+    // Validate messageType filter if provided
+    const validMessageTypes = [
+      'INCIDENT_SUBMITTED',
+      'INCIDENT_AMBULANCE',
+      'AIR_QUALITY_WARNING',
+      'AIR_QUALITY_EVACUATION',
+      'SCHEDULE_PUBLISHED',
+      'SHIFT_OPEN',
+      'SHIFT_EMERGENCY',
+      'REPORT_REMINDER',
+      'SYSTEM',
+    ]
+    if (messageType && !validMessageTypes.includes(messageType)) {
+      return NextResponse.json({ error: 'Invalid message type filter' }, { status: 400 })
+    }
+
     const where = {
       facilityId: user.facilityId,
       ...(status && { status }),

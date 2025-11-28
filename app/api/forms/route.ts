@@ -5,6 +5,9 @@ import { canUserAccess } from '@/lib/permissions'
 
 export const dynamic = 'force-dynamic'
 
+// Valid module types for form templates
+const VALID_MODULE_TYPES = ['ICE_DEPTH', 'ICE_OPERATIONS', 'REFRIGERATION', 'AIR_QUALITY', 'INCIDENT', 'DAILY_CHECKLIST']
+
 // GET /api/forms - List all form templates for the user's facility
 export async function GET(request: NextRequest) {
   try {
@@ -16,6 +19,11 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const moduleType = searchParams.get('moduleType')
     const activeOnly = searchParams.get('active') !== 'false'
+
+    // Validate moduleType if provided
+    if (moduleType && !VALID_MODULE_TYPES.includes(moduleType)) {
+      return NextResponse.json({ error: 'Invalid module type' }, { status: 400 })
+    }
     const limitParam = searchParams.get('limit')
     const offsetParam = searchParams.get('offset')
     const limit = limitParam ? Math.min(100, Math.max(1, parseInt(limitParam) || 20)) : undefined
@@ -79,6 +87,11 @@ export async function POST(request: NextRequest) {
         { error: 'Name, moduleType, and schema are required' },
         { status: 400 }
       )
+    }
+
+    // Validate moduleType
+    if (!VALID_MODULE_TYPES.includes(moduleType)) {
+      return NextResponse.json({ error: 'Invalid module type' }, { status: 400 })
     }
 
     // Validate input lengths

@@ -94,6 +94,12 @@ export async function PUT(
       warningTolerance,
     } = body
 
+    // Validate presetType if provided
+    const validPresetTypes = ['RINK_9', 'RINK_13', 'RINK_25', 'RINK_49', 'CUSTOM']
+    if (presetType && !validPresetTypes.includes(presetType)) {
+      return NextResponse.json({ error: 'Invalid preset type' }, { status: 400 })
+    }
+
     if (typeof targetDepth !== 'number' || targetDepth < 0.5 || targetDepth > 3) {
       return NextResponse.json(
         { error: 'Target depth must be between 0.5 and 3 inches' },
