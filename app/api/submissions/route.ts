@@ -23,6 +23,12 @@ export async function GET(request: NextRequest) {
     const page = Math.max(1, parseInt(searchParams.get('page') || '1') || 1)
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '20') || 20))
 
+    // Validate status filter if provided
+    const validStatuses = ['DRAFT', 'SUBMITTED', 'PENDING_REVIEW', 'APPROVED', 'REJECTED']
+    if (status && !validStatuses.includes(status)) {
+      return NextResponse.json({ error: 'Invalid status filter' }, { status: 400 })
+    }
+
     // Determine view scope based on permissions
     const permissions = getUserPermissions(user)
     let submittedByFilter = {}
@@ -129,6 +135,22 @@ export async function POST(request: NextRequest) {
     const moduleKey = formTemplate.moduleType.toLowerCase().replace('_', '') as ModuleType
     if (!canUserAccess(user, moduleKey, 'submit')) {
       return NextResponse.json({ error: 'No permission to submit to this module' }, { status: 403 })
+    }
+
+    // Validate status if provided
+    if (status) {
+      const validStatuses = ['DRAFT', 'SUBMITTED', 'PENDING_REVIEW', 'APPROVED', 'REJECTED']
+      if (!validStatuses.includes(status)) {
+        return NextResponse.json({ error: 'Invalid status value' }, { status: 400 })
+      }
+    }
+
+    // Validate outsideTempUnit if provided
+    if (outsideTempUnit) {
+      const validUnits = ['F', 'C']
+      if (!validUnits.includes(outsideTempUnit)) {
+        return NextResponse.json({ error: 'Invalid temperature unit. Use F or C.' }, { status: 400 })
+      }
     }
 
     // Check for duplicate submission (offline sync)
