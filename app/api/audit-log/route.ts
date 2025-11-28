@@ -24,6 +24,18 @@ export async function GET(request: NextRequest) {
     const entityType = searchParams.get('entityType')
     const userId = searchParams.get('userId')
 
+    // Validate action parameter
+    const validActions = ['CREATE', 'UPDATE', 'DELETE', 'ARCHIVE', 'LOGIN', 'LOGOUT']
+    if (action && !validActions.includes(action)) {
+      return NextResponse.json({ error: 'Invalid action filter' }, { status: 400 })
+    }
+
+    // Validate entityType parameter
+    const validEntityTypes = ['User', 'Role', 'FormTemplate', 'Submission', 'Rink', 'ScheduleEntry', 'ShiftDefinition', 'Notification']
+    if (entityType && !validEntityTypes.includes(entityType)) {
+      return NextResponse.json({ error: 'Invalid entity type filter' }, { status: 400 })
+    }
+
     const where: any = {}
 
     // Filter by action

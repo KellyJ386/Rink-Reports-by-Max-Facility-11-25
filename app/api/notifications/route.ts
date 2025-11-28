@@ -89,6 +89,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Validate content is not just whitespace
+    if (!title.trim() || !message.trim()) {
+      return NextResponse.json({ error: 'Title and message cannot be empty' }, { status: 400 })
+    }
+
     // Validate input lengths
     if (title.length > 255) {
       return NextResponse.json({ error: 'Title must be 255 characters or less' }, { status: 400 })
