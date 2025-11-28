@@ -99,13 +99,15 @@ export async function PATCH(
       if (!validStatuses.includes(updateData.status)) {
         return NextResponse.json({ error: 'Invalid status value' }, { status: 400 })
       }
+    }
 
-      const canEdit = canUserAccess(user, 'schedule', 'edit')
-      const isOwner = entry.userId === user.id
+    // Check permission for all updates (not just status)
+    const canEdit = canUserAccess(user, 'schedule', 'edit')
+    const isOwner = entry.userId === user.id
+    const isCreator = entry.createdById === user.id
 
-      if (!canEdit && !isOwner) {
-        return NextResponse.json({ error: 'No permission to update this entry' }, { status: 403 })
-      }
+    if (!canEdit && !isOwner && !isCreator) {
+      return NextResponse.json({ error: 'No permission to update this entry' }, { status: 403 })
     }
 
     // General update

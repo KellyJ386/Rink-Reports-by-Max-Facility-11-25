@@ -109,6 +109,15 @@ export async function PUT(request: NextRequest) {
         }
       }
 
+      // Validate SMS quiet hours format (HH:MM)
+      const timeRegex = /^([01]?[0-9]|2[0-3]):([0-5][0-9])$/
+      if (settingsData.smsQuietHoursStart && !timeRegex.test(settingsData.smsQuietHoursStart)) {
+        return NextResponse.json({ error: 'Invalid quiet hours start time format. Use HH:MM.' }, { status: 400 })
+      }
+      if (settingsData.smsQuietHoursEnd && !timeRegex.test(settingsData.smsQuietHoursEnd)) {
+        return NextResponse.json({ error: 'Invalid quiet hours end time format. Use HH:MM.' }, { status: 400 })
+      }
+
       await prisma.facilitySettings.upsert({
         where: { facilityId: user.facilityId },
         update: {
