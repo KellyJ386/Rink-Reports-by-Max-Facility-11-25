@@ -224,6 +224,11 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
     }
 
+    // Validate reviewNotes length if provided
+    if (reviewNotes && reviewNotes.length > 1000) {
+      return NextResponse.json({ error: 'Review notes must be 1000 characters or less' }, { status: 400 })
+    }
+
     const submission = await prisma.submission.findFirst({
       where: {
         id,

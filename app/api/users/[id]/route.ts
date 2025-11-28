@@ -139,7 +139,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       updateData.phone = phone
     }
     if (smsOptIn !== undefined) updateData.smsOptIn = smsOptIn
-    if (smsPreference) updateData.smsPreference = smsPreference
+    if (smsPreference !== undefined) {
+      const validPreferences = ['ALL', 'CRITICAL_ONLY', 'NONE']
+      if (!validPreferences.includes(smsPreference)) {
+        return NextResponse.json({ error: 'Invalid SMS preference. Use ALL, CRITICAL_ONLY, or NONE.' }, { status: 400 })
+      }
+      updateData.smsPreference = smsPreference
+    }
 
     // Password change
     if (password) {
