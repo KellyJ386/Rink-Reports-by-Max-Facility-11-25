@@ -42,6 +42,24 @@ export default function Sidebar({ user }: SidebarProps) {
       show: true,
     },
     {
+      label: 'Forms',
+      href: '/dashboard/forms',
+      icon: '📋',
+      show: true,
+    },
+    {
+      label: 'My Submissions',
+      href: '/dashboard/submissions',
+      icon: '📝',
+      show: true,
+    },
+    {
+      label: 'Schedule',
+      href: '/dashboard/schedule',
+      icon: '📅',
+      show: true,
+    },
+    {
       label: 'Ice Depth',
       href: '/dashboard/ice-depth',
       icon: '📏',
@@ -70,12 +88,6 @@ export default function Sidebar({ user }: SidebarProps) {
       href: '/dashboard/incidents',
       icon: '⚠️',
       show: user.permissions.incidents?.access,
-    },
-    {
-      label: 'Schedule',
-      href: '/dashboard/schedule',
-      icon: '📅',
-      show: user.permissions.schedule?.access,
     },
     {
       label: 'Checklists',
@@ -124,6 +136,34 @@ export default function Sidebar({ user }: SidebarProps) {
           })}
         </ul>
       </nav>
+
+      {/* Quick Actions */}
+      <div className="p-4 border-t border-gray-800">
+        <div className="flex items-center gap-2 mb-4">
+          <Link
+            href="/dashboard/notifications"
+            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+              pathname === '/dashboard/notifications'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+            }`}
+          >
+            <span>🔔</span>
+            <span className="text-sm">Alerts</span>
+          </Link>
+          <Link
+            href="/dashboard/settings"
+            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+              pathname === '/dashboard/settings'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+            }`}
+          >
+            <span>⚙️</span>
+            <span className="text-sm">Settings</span>
+          </Link>
+        </div>
+      </div>
 
       {/* User Info */}
       <div className="p-4 border-t border-gray-800">

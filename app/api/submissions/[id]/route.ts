@@ -3,6 +3,7 @@ import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { canUserAccess } from '@/lib/permissions'
 import { validateFormData, FormSchema } from '@/types/form-builder'
+import { notifySubmissionReviewed } from '@/lib/notifications/service'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -225,6 +226,11 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const updated = await prisma.formSubmission.update({
       where: { id },
       data: updateData,
+      include: {
+        submitter: {
+          select: { id: true },
+        },
+      },
     })
 
     // Log the action
@@ -240,6 +246,23 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         },
       },
     })
+
+    // Send notification if submission was reviewed (approved or rejected)
+    if (status && ['approved', 'rejected'].includes(status)) {
+      interface UpdatedWithSubmitter {
+        submitter: { id: string } | null
+      }
+      const u = updated as unknown as UpdatedWithSubmitter
+      if (u.submitter?.id) {
+        await notifySubmissionReviewed(
+          user.facilityId,
+          u.submitter.id,
+          id,
+          status as 'approved' | 'rejected',
+          reviewNotes
+        )
+      }
+    }
 
     return NextResponse.json({
       submission: { id: updated.id, status: updated.status },
