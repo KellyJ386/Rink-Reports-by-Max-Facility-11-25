@@ -317,31 +317,150 @@ Route (app)                              Size     First Load JS
 
 ---
 
+## Database Setup Guide
+
+### Prerequisites
+
+- PostgreSQL 14+ installed and running
+- Node.js 18+ and npm
+
+### Step 1: Create Environment File
+
+```bash
+cp .env.example .env
+```
+
+### Step 2: Configure Environment Variables
+
+Edit `.env` with your values:
+
+```env
+# Database (Required)
+DATABASE_URL="postgresql://username:password@localhost:5432/mfo_dev?schema=public"
+
+# Authentication (Required)
+JWT_SECRET="generate-a-secure-random-string-min-32-chars"
+JWT_EXPIRES_IN="7d"
+
+# Email - Resend (Optional, for notifications)
+RESEND_API_KEY="re_xxxxxxxxxxxx"
+EMAIL_FROM="MFO <notifications@yourdomain.com>"
+
+# SMS - Twilio (Optional, for critical alerts)
+TWILIO_ACCOUNT_SID=""
+TWILIO_AUTH_TOKEN=""
+TWILIO_PHONE_NUMBER=""
+
+# Weather API (Optional)
+OPENWEATHER_API_KEY=""
+
+# App URL
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+NODE_ENV="development"
+```
+
+### Step 3: Create PostgreSQL Database
+
+```bash
+# Connect to PostgreSQL
+psql -U postgres
+
+# Create database
+CREATE DATABASE mfo_dev;
+
+# Create user (optional)
+CREATE USER mfo_user WITH PASSWORD 'your_password';
+GRANT ALL PRIVILEGES ON DATABASE mfo_dev TO mfo_user;
+
+# Exit
+\q
+```
+
+### Step 4: Generate Prisma Client
+
+```bash
+npx prisma generate
+```
+
+### Step 5: Run Database Migrations
+
+```bash
+# Development (creates migration files)
+npx prisma migrate dev --name init
+
+# Production (applies existing migrations)
+npx prisma migrate deploy
+```
+
+### Step 6: Seed Demo Data
+
+```bash
+npx prisma db seed
+```
+
+This creates:
+- Demo facility: "Northside Ice Arena"
+- Admin user: `admin@example.com` / `password123`
+- Operator user: `operator@example.com` / `password123`
+- Sample rinks, roles, and form templates
+
+### Step 7: Verify Setup
+
+```bash
+# Start development server
+npm run dev
+
+# Open browser
+open http://localhost:3000
+```
+
+### Prisma Commands Reference
+
+| Command | Description |
+|---------|-------------|
+| `npx prisma generate` | Generate Prisma client |
+| `npx prisma migrate dev` | Create and apply migrations (dev) |
+| `npx prisma migrate deploy` | Apply migrations (production) |
+| `npx prisma db seed` | Seed database with demo data |
+| `npx prisma studio` | Open visual database browser |
+| `npx prisma db push` | Push schema without migrations |
+| `npx prisma migrate reset` | Reset database (WARNING: deletes all data) |
+
+### Database Schema Overview
+
+The schema includes 28 models organized into:
+
+- **Core**: Facility, Rink, FacilitySettings
+- **Auth**: User, Role (with RBAC permissions)
+- **Forms**: FormTemplate, Submission, Attachment
+- **Schedule**: ShiftDefinition, ScheduleEntry
+- **Notifications**: Notification, SMSLog
+- **Audit**: AuditLog
+- **Config**: IceDepthConfiguration
+
+---
+
 ## Recommendations
 
-### Immediate (Pre-Production)
-1. Configure `DATABASE_URL` in `.env`
-2. Run `npx prisma generate`
-3. Run `npx prisma migrate dev`
-4. Run `npx prisma db seed`
-
 ### Short-term
-1. Implement file upload for signature/photo fields
-2. Add email notifications (SendGrid/Resend)
-3. Add comprehensive test suite
+1. Implement file upload for signature/photo fields (S3/Cloudflare R2)
+2. Configure email provider (Resend recommended)
+3. Add comprehensive test suite (Jest + Playwright)
 4. Implement rate limiting on auth endpoints
 
 ### Long-term
 1. Upgrade ESLint 8 → 9
 2. Add real-time updates (WebSockets/SSE)
 3. Implement offline mode (PWA)
-4. Add multi-language support
+4. Add multi-language support (i18n)
 
 ---
 
 ## Git History
 
 ```
+e2b1afd feat: Implement Phase 6 - Notifications & Scheduling System
+b7f0025 docs: Update audit report with complete system documentation
 bf2a09d feat: Implement Phase 5 - Reports & Analytics Dashboard
 b931e7d feat: Implement Phase 4 - Form Submissions
 49ad8c2 feat: Implement Phase 3 - Form Builder Advanced
@@ -377,16 +496,17 @@ npm run prisma:seed
 
 ## Conclusion
 
-The MFO Ice Rink SaaS application is **feature-complete** for its initial release scope. All five development phases have been successfully implemented:
+The MFO Ice Rink SaaS application is **feature-complete** for its initial release scope. All six development phases have been successfully implemented:
 
 1. ✅ Foundation with authentication and RBAC
 2. ✅ Drag-and-drop form builder
 3. ✅ Advanced fields and conditional logic
 4. ✅ Submission workflow with review
 5. ✅ Analytics dashboard with export
+6. ✅ Notifications & scheduling system
 
 The codebase passes all lint and type checks, builds successfully, and follows Next.js 14 best practices. The application is ready for database configuration and production deployment.
 
-**Total Files:** 61 TypeScript/TSX files
-**Total Routes:** 20 (2 static, 18 dynamic)
+**Total Files:** 78 TypeScript/TSX files
+**Total Routes:** 29 (2 static, 27 dynamic)
 **Build Size:** ~87-117 kB per page (optimized)
