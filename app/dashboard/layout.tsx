@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { getSession } from '@/lib/auth'
 import { getUserPermissions } from '@/lib/permissions'
-import Sidebar from '@/components/layout/Sidebar'
+import DashboardHeader from '@/components/layout/DashboardHeader'
 
 export default async function DashboardLayout({
   children,
@@ -17,6 +17,7 @@ export default async function DashboardLayout({
   const permissions = getUserPermissions(user)
 
   const userData = {
+    id: user.id,
     firstName: user.firstName,
     lastName: user.lastName,
     role: {
@@ -29,10 +30,10 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <Sidebar user={userData} />
-      <main className="flex-1 overflow-y-auto">
-        <div className="container mx-auto p-8">{children}</div>
+    <div className="min-h-screen bg-grey-50">
+      <DashboardHeader user={userData} />
+      <main className="container mx-auto px-4 py-8">
+        {children}
       </main>
     </div>
   )
