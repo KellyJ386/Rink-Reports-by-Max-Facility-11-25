@@ -10,7 +10,10 @@ interface FormData {
   description: string
 }
 
-const DEFAULT_PERMISSIONS = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type PermissionSet = any
+
+const DEFAULT_PERMISSIONS: PermissionSet = {
   admin: { access: false, editUsers: false, editForms: false, editSettings: false },
   iceDepth: { access: false, submit: false, viewOwn: false, viewAll: false, edit: false, delete: false, export: false },
   iceOperations: { access: false, submit: false, viewOwn: false, viewAll: false, edit: false, delete: false, export: false },

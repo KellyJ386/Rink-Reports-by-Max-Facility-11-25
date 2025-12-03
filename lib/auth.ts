@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken'
+import jwt, { SignOptions } from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 import { cookies } from 'next/headers'
 import { prisma } from './prisma'
@@ -29,7 +29,8 @@ export async function verifyPassword(
 }
 
 export function generateToken(payload: JWTPayload): string {
-  return jwt.sign(payload, EFFECTIVE_JWT_SECRET, { expiresIn: JWT_EXPIRES_IN })
+  // Cast expiresIn to satisfy the type - it accepts strings like '7d'
+  return jwt.sign(payload, EFFECTIVE_JWT_SECRET, { expiresIn: JWT_EXPIRES_IN } as SignOptions)
 }
 
 export function verifyToken(token: string): JWTPayload | null {

@@ -165,7 +165,7 @@ export default function SettingsPage() {
             scheduleRetention: settings.scheduleRetention,
             checklistRetention: settings.checklistRetention,
           }}
-          onSave={(data) => saveSettings('retention', data)}
+          onSave={(data) => saveSettings('retention', data as unknown as Record<string, unknown>)}
           isLoading={isSaving}
         />
       ),
@@ -182,7 +182,7 @@ export default function SettingsPage() {
             no2EvacuationPpm: settings.no2EvacuationPpm,
             enableAirQualityAlerts: settings.enableAirQualityAlerts,
           }}
-          onSave={(data) => saveSettings('airQuality', data)}
+          onSave={(data) => saveSettings('airQuality', data as unknown as Record<string, unknown>)}
           isLoading={isSaving}
         />
       ),

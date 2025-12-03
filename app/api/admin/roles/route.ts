@@ -32,7 +32,7 @@ export async function GET() {
     })
 
     return NextResponse.json({
-      roles: roles.map((role) => ({
+      roles: roles.map((role: typeof roles[number]) => ({
         id: role.id,
         name: role.name,
         description: role.description,

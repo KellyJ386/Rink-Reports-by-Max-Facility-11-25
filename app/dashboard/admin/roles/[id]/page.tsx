@@ -6,12 +6,15 @@ import { useForm } from 'react-hook-form'
 import PermissionMatrix from '@/components/admin/PermissionMatrix'
 import Badge from '@/components/ui/Badge'
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type PermissionSet = any
+
 interface Role {
   id: string
   name: string
   description: string | null
   isSystemDefault: boolean
-  permissions: Record<string, unknown>
+  permissions: PermissionSet
   userCount: number
 }
 
@@ -27,7 +30,7 @@ export default function EditRolePage({ params }: { params: Promise<{ id: string 
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [permissions, setPermissions] = useState<Record<string, unknown>>({})
+  const [permissions, setPermissions] = useState<PermissionSet>({})
 
   const {
     register,
@@ -185,8 +188,8 @@ export default function EditRolePage({ params }: { params: Promise<{ id: string 
         <div>
           <h3 className="text-lg font-medium text-gray-900 mb-4">Permissions</h3>
           <PermissionMatrix
-            permissions={permissions as Parameters<typeof PermissionMatrix>[0]['permissions']}
-            onChange={setPermissions as Parameters<typeof PermissionMatrix>[0]['onChange']}
+            permissions={permissions}
+            onChange={setPermissions}
             readOnly={role.isSystemDefault}
           />
         </div>

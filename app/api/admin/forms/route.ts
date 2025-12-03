@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
     })
 
     return NextResponse.json({
-      forms: forms.map((form) => ({
+      forms: forms.map((form: typeof forms[number]) => ({
         ...form,
         submissionCount: form._count.submissions,
         _count: undefined,

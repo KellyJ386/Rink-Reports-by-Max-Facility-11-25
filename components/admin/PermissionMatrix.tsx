@@ -123,7 +123,7 @@ export default function PermissionMatrix({
   const handleToggle = (moduleKey: keyof PermissionSet, permission: string) => {
     if (readOnly) return
 
-    const modulePerms = permissions[moduleKey] as Record<string, boolean>
+    const modulePerms = permissions[moduleKey] as unknown as Record<string, boolean>
     const currentValue = modulePerms[permission] ?? false
 
     // If toggling off "access", turn off all other permissions for this module
@@ -169,7 +169,7 @@ export default function PermissionMatrix({
     const moduleConfig = MODULES.find((m) => m.key === moduleKey)
     if (!moduleConfig) return
 
-    const modulePerms = permissions[moduleKey] as Record<string, boolean>
+    const modulePerms = permissions[moduleKey] as unknown as Record<string, boolean>
     const allEnabled = moduleConfig.permissions.every((p) => modulePerms[p])
 
     const newModulePerms: Record<string, boolean> = {}
@@ -212,7 +212,7 @@ export default function PermissionMatrix({
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {MODULES.map((module) => {
-              const modulePerms = permissions[module.key] as Record<string, boolean>
+              const modulePerms = permissions[module.key] as unknown as Record<string, boolean>
               const allEnabled = module.permissions.every((p) => modulePerms[p])
 
               return (
