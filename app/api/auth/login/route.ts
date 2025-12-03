@@ -1,9 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticate, generateToken, setAuthCookie } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { checkRateLimit, RATE_LIMITS, getRateLimitKey } from '@/lib/rateLimit'
 
 export async function POST(request: NextRequest) {
   try {
+    // Get client IP for rate limiting
+    const ip =
+      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+      request.headers.get('x-real-ip') ||
+      'unknown'
+
+    // Check rate limit
+    const rateLimitKey = getRateLimitKey(ip, 'login')
+    const rateLimit = checkRateLimit(rateLimitKey, RATE_LIMITS.login)
+
+    if (!rateLimit.success) {
+      const retryAfter = Math.ceil((rateLimit.resetTime - Date.now()) / 1000)
+      return NextResponse.json(
+        { error: 'Too many login attempts. Please try again later.' },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': retryAfter.toString(),
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': rateLimit.resetTime.toString(),
+          },
+        }
+      )
+    }
+
     const body = await request.json()
     const { email, password } = body
 
@@ -17,9 +43,16 @@ export async function POST(request: NextRequest) {
     const user = await authenticate(email, password)
 
     if (!user) {
+      // Log failed attempt (for security monitoring)
+      console.warn(`Failed login attempt for email: ${email} from IP: ${ip}`)
       return NextResponse.json(
         { error: 'Invalid email or password' },
-        { status: 401 }
+        {
+          status: 401,
+          headers: {
+            'X-RateLimit-Remaining': rateLimit.remaining.toString(),
+          },
+        }
       )
     }
 
@@ -41,6 +74,8 @@ export async function POST(request: NextRequest) {
         action: 'LOGIN',
         entityType: 'User',
         entityId: user.id,
+        ipAddress: ip,
+        userAgent: request.headers.get('user-agent') || undefined,
       },
     })
 

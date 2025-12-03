@@ -4,7 +4,17 @@ import { cookies } from 'next/headers'
 import { prisma } from './prisma'
 import type { JWTPayload, UserWithRole } from '@/types'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key'
+// SECURITY: JWT_SECRET must be set in environment variables
+// In production, this will throw an error if not configured
+const JWT_SECRET = process.env.JWT_SECRET
+if (!JWT_SECRET) {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('JWT_SECRET environment variable is required in production')
+  }
+  // Only allow fallback in development with a warning
+  console.warn('WARNING: Using fallback JWT_SECRET. Set JWT_SECRET in environment variables.')
+}
+const EFFECTIVE_JWT_SECRET = JWT_SECRET || 'dev-only-fallback-secret-key-change-in-production'
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d'
 
 export async function hashPassword(password: string): Promise<string> {
@@ -19,12 +29,12 @@ export async function verifyPassword(
 }
 
 export function generateToken(payload: JWTPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN })
+  return jwt.sign(payload, EFFECTIVE_JWT_SECRET, { expiresIn: JWT_EXPIRES_IN })
 }
 
 export function verifyToken(token: string): JWTPayload | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as JWTPayload
+    return jwt.verify(token, EFFECTIVE_JWT_SECRET) as JWTPayload
   } catch (error) {
     return null
   }
