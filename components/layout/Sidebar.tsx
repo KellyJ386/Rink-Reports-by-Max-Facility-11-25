@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
 
@@ -93,10 +94,18 @@ export default function Sidebar({ user }: SidebarProps) {
 
   return (
     <div className="w-64 bg-gray-900 text-white flex flex-col h-screen">
-      {/* Header */}
-      <div className="p-6 border-b border-gray-800">
-        <h1 className="text-2xl font-bold">MFO</h1>
-        <p className="text-xs text-gray-400 mt-1">{user.facility.name}</p>
+      {/* Header with Logo */}
+      <div className="p-4 border-b border-gray-800">
+        <div className="flex justify-center">
+          <Image
+            src="/logo-white.svg"
+            alt="Max Facility - Rink Reports"
+            width={160}
+            height={112}
+            priority
+          />
+        </div>
+        <p className="text-xs text-gray-400 mt-2 text-center">{user.facility.name}</p>
       </div>
 
       {/* Navigation */}
