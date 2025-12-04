@@ -1,5 +1,6 @@
 import { getSession } from '@/lib/auth'
 import { getUserPermissions, getAccessibleModules } from '@/lib/permissions'
+import SetupStatus from '@/components/SetupStatus'
 
 export default async function DashboardPage() {
   const user = await getSession()
@@ -11,6 +12,10 @@ export default async function DashboardPage() {
   const permissions = getUserPermissions(user)
   const accessibleModules = getAccessibleModules(user)
 
+  // Check if user has admin access to show setup status
+  const rolePermissions = user.role.permissions as Record<string, Record<string, boolean>> | null
+  const isAdmin = rolePermissions?.admin?.access
+
   return (
     <div>
       <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -19,6 +24,12 @@ export default async function DashboardPage() {
       <p className="text-gray-600 mb-8">
         {user.facility.name} • {user.role.name}
       </p>
+
+      {isAdmin && (
+        <div className="mb-8">
+          <SetupStatus />
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         <div className="card">
@@ -61,19 +72,24 @@ export default async function DashboardPage() {
       </div>
 
       <div className="mt-8 card bg-blue-50 border-blue-200">
-        <h2 className="text-xl font-bold mb-2">🚧 Development Status</h2>
+        <h2 className="text-xl font-bold mb-2">Development Status</h2>
         <p className="text-gray-700 mb-4">
           <strong>Phase 1: Foundation - Complete!</strong>
         </p>
         <ul className="list-disc list-inside space-y-1 text-sm text-gray-700">
-          <li>✅ Next.js project initialized</li>
-          <li>✅ Prisma database schema configured</li>
-          <li>✅ Authentication system implemented</li>
-          <li>✅ Role-based access control</li>
-          <li>✅ Basic dashboard layout</li>
+          <li>Next.js project initialized</li>
+          <li>Prisma database schema configured</li>
+          <li>Authentication system implemented</li>
+          <li>Role-based access control</li>
+          <li>Dashboard layout with navigation</li>
+          <li>All module routes configured</li>
+          <li>Health check and setup validation</li>
         </ul>
         <p className="mt-4 text-sm text-gray-600">
           Next up: Form Builder and Report Modules!
+        </p>
+        <p className="mt-2 text-xs text-gray-500">
+          Run <code className="bg-blue-100 px-1 rounded">npm run setup:check</code> to validate your development environment.
         </p>
       </div>
     </div>

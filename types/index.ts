@@ -17,6 +17,12 @@ export interface ModulePermissions {
   createTemplates?: boolean
   create?: boolean
   publish?: boolean
+  // Admin-specific permissions
+  editForms?: boolean
+  editUsers?: boolean
+  editSettings?: boolean
+  manageRoles?: boolean
+  viewAuditLog?: boolean
 }
 
 export interface PermissionSet {
