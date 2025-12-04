@@ -4,6 +4,14 @@ import { useState, useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { UniversalHeaderView } from '@/components/reports/UniversalHeader'
+import { GRID_CONFIGS, type GridType } from '@/components/form-builder/fields/IceDepthGridField'
+
+interface MeasurementPoint {
+  id: string
+  x: number
+  y: number
+  label: string
+}
 
 interface IceDepthSubmission {
   id: string
@@ -17,6 +25,8 @@ interface IceDepthSubmission {
   submittedBy: { firstName: string; lastName: string }
   reviewedBy?: { firstName: string; lastName: string }
   data: {
+    gridType?: GridType
+    customPoints?: MeasurementPoint[]
     measurements: Record<string, number>
     notes?: string
     outsideTemp?: number
@@ -36,40 +46,6 @@ const statusConfig: Record<string, { label: string; color: string; bg: string }>
   APPROVED: { label: 'Approved', color: 'text-green-600', bg: 'bg-green-100' },
   REJECTED: { label: 'Rejected', color: 'text-red-600', bg: 'bg-red-100' },
 }
-
-// Measurement points for display
-const MEASUREMENT_POINTS = [
-  // Row 1
-  { id: 'p1', x: 10, y: 10, label: '1' },
-  { id: 'p2', x: 30, y: 10, label: '2' },
-  { id: 'p3', x: 50, y: 10, label: '3' },
-  { id: 'p4', x: 70, y: 10, label: '4' },
-  { id: 'p5', x: 90, y: 10, label: '5' },
-  // Row 2
-  { id: 'p6', x: 10, y: 30, label: '6' },
-  { id: 'p7', x: 30, y: 30, label: '7' },
-  { id: 'p8', x: 50, y: 30, label: '8' },
-  { id: 'p9', x: 70, y: 30, label: '9' },
-  { id: 'p10', x: 90, y: 30, label: '10' },
-  // Row 3
-  { id: 'p11', x: 10, y: 50, label: '11' },
-  { id: 'p12', x: 30, y: 50, label: '12' },
-  { id: 'p13', x: 50, y: 50, label: '13' },
-  { id: 'p14', x: 70, y: 50, label: '14' },
-  { id: 'p15', x: 90, y: 50, label: '15' },
-  // Row 4
-  { id: 'p16', x: 10, y: 70, label: '16' },
-  { id: 'p17', x: 30, y: 70, label: '17' },
-  { id: 'p18', x: 50, y: 70, label: '18' },
-  { id: 'p19', x: 70, y: 70, label: '19' },
-  { id: 'p20', x: 90, y: 70, label: '20' },
-  // Row 5
-  { id: 'p21', x: 10, y: 90, label: '21' },
-  { id: 'p22', x: 30, y: 90, label: '22' },
-  { id: 'p23', x: 50, y: 90, label: '23' },
-  { id: 'p24', x: 70, y: 90, label: '24' },
-  { id: 'p25', x: 90, y: 90, label: '25' },
-]
 
 export default function IceDepthViewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
@@ -145,6 +121,19 @@ export default function IceDepthViewPage({ params }: { params: Promise<{ id: str
     return 'bg-green-500'
   }
 
+  // Get measurement points based on grid type
+  const getMeasurementPoints = (): MeasurementPoint[] => {
+    if (!submission) return []
+
+    const gridType = submission.data.gridType || '25'
+
+    if (gridType === 'custom') {
+      return submission.data.customPoints || []
+    }
+
+    return GRID_CONFIGS[gridType]?.points || GRID_CONFIGS['25'].points
+  }
+
   if (loading) {
     return (
       <div className="p-6 flex items-center justify-center min-h-[400px]">
@@ -171,6 +160,10 @@ export default function IceDepthViewPage({ params }: { params: Promise<{ id: str
 
   const status = statusConfig[submission.status] || statusConfig.DRAFT
   const stats = submission.data.stats
+  const gridType = submission.data.gridType || '25'
+  const gridConfig = GRID_CONFIGS[gridType]
+  const measurementPoints = getMeasurementPoints()
+  const totalPoints = measurementPoints.length
 
   return (
     <div className="p-6 space-y-6">
@@ -249,6 +242,22 @@ export default function IceDepthViewPage({ params }: { params: Promise<{ id: str
         }}
       />
 
+      {/* Grid Type Info */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="flex items-center gap-3">
+          <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+          </svg>
+          <div>
+            <span className="font-semibold text-blue-900">{gridConfig.label}</span>
+            <span className="text-blue-700 ml-2">- {gridConfig.description}</span>
+            {gridType === 'custom' && (
+              <span className="text-blue-600 ml-2">({totalPoints} custom points)</span>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Statistics Summary */}
       <div className="bg-white rounded-lg shadow-sm border p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Measurement Summary</h2>
@@ -266,7 +275,7 @@ export default function IceDepthViewPage({ params }: { params: Promise<{ id: str
             <div className="text-sm text-gray-500">Maximum (in)</div>
           </div>
           <div className="text-center">
-            <div className="text-3xl font-bold text-gray-600">{stats.count}/25</div>
+            <div className="text-3xl font-bold text-gray-600">{stats.count}/{totalPoints}</div>
             <div className="text-sm text-gray-500">Points Recorded</div>
           </div>
         </div>
@@ -277,23 +286,45 @@ export default function IceDepthViewPage({ params }: { params: Promise<{ id: str
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Ice Depth Map</h2>
         <div className="relative bg-gradient-to-b from-blue-100 to-blue-200 rounded-lg p-4" style={{ aspectRatio: '2/1' }}>
           {/* Rink outline */}
-          <div className="absolute inset-4 border-2 border-blue-400 rounded-full opacity-30" />
-          {/* Center line */}
-          <div className="absolute top-4 bottom-4 left-1/2 w-0.5 bg-red-400 opacity-30" />
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 200 100" preserveAspectRatio="none">
+            {/* Rink border with rounded ends */}
+            <rect
+              x="4"
+              y="4"
+              width="192"
+              height="92"
+              rx="20"
+              ry="20"
+              fill="none"
+              stroke="#3b82f6"
+              strokeWidth="0.5"
+              opacity="0.4"
+            />
+            {/* Center line */}
+            <line x1="100" y1="4" x2="100" y2="96" stroke="#ef4444" strokeWidth="0.5" opacity="0.4" />
+            {/* Center circle */}
+            <circle cx="100" cy="50" r="15" fill="none" stroke="#3b82f6" strokeWidth="0.5" opacity="0.3" />
+            {/* Blue lines */}
+            <line x1="65" y1="4" x2="65" y2="96" stroke="#3b82f6" strokeWidth="0.5" opacity="0.3" />
+            <line x1="135" y1="4" x2="135" y2="96" stroke="#3b82f6" strokeWidth="0.5" opacity="0.3" />
+            {/* Goal creases */}
+            <path d="M 10 40 Q 20 50 10 60" fill="none" stroke="#3b82f6" strokeWidth="0.5" opacity="0.3" />
+            <path d="M 190 40 Q 180 50 190 60" fill="none" stroke="#3b82f6" strokeWidth="0.5" opacity="0.3" />
+          </svg>
 
           {/* Measurement points */}
-          {MEASUREMENT_POINTS.map((point) => {
+          {measurementPoints.map((point) => {
             const value = submission.data.measurements[point.id]
             const hasValue = value !== null && value !== undefined
 
             return (
               <div
                 key={point.id}
-                className={`absolute w-10 h-10 -ml-5 -mt-5 rounded-full flex items-center justify-center text-xs font-bold ${
+                className={`absolute w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold ${
                   hasValue ? `${getDepthColor(value)} text-white` : 'bg-gray-300 text-gray-600'
                 }`}
-                style={{ left: `${point.x}%`, top: `${point.y}%` }}
-                title={`Point ${point.label}: ${hasValue ? value.toFixed(2) : 'No value'}`}
+                style={{ left: `${point.x}%`, top: `${point.y}%`, marginLeft: '-20px', marginTop: '-20px' }}
+                title={`Point ${point.label}: ${hasValue ? value.toFixed(2) + '"' : 'No value'}`}
               >
                 {hasValue ? value.toFixed(1) : point.label}
               </div>
@@ -315,6 +346,65 @@ export default function IceDepthViewPage({ params }: { params: Promise<{ id: str
             <div className="w-4 h-4 rounded-full bg-yellow-500" />
             <span>&gt; 1.25&quot; (Too thick)</span>
           </div>
+        </div>
+      </div>
+
+      {/* Measurement Details Table */}
+      <div className="bg-white rounded-lg shadow-sm border p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Measurement Details</h2>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Point</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Depth</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                {gridType === 'custom' && (
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Position</th>
+                )}
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {measurementPoints.map((point) => {
+                const value = submission.data.measurements[point.id]
+                const hasValue = value !== null && value !== undefined
+
+                let statusLabel = 'Not recorded'
+                let statusColor = 'text-gray-500'
+                if (hasValue) {
+                  if (value < 0.75) {
+                    statusLabel = 'Too thin'
+                    statusColor = 'text-red-600'
+                  } else if (value > 1.25) {
+                    statusLabel = 'Too thick'
+                    statusColor = 'text-yellow-600'
+                  } else {
+                    statusLabel = 'Optimal'
+                    statusColor = 'text-green-600'
+                  }
+                }
+
+                return (
+                  <tr key={point.id}>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                      Point {point.label}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                      {hasValue ? `${value.toFixed(2)}"` : '-'}
+                    </td>
+                    <td className={`px-4 py-3 whitespace-nowrap text-sm font-medium ${statusColor}`}>
+                      {statusLabel}
+                    </td>
+                    {gridType === 'custom' && (
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                        X: {point.x.toFixed(0)}%, Y: {point.y.toFixed(0)}%
+                      </td>
+                    )}
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
         </div>
       </div>
 

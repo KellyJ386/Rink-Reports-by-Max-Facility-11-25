@@ -4,7 +4,12 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { UniversalHeader } from '@/components/reports/UniversalHeader'
-import { IceDepthGridFieldRender } from '@/components/form-builder/fields/IceDepthGridField'
+import {
+  IceDepthGridFieldRender,
+  GridTypeSelector,
+  GRID_CONFIGS,
+  type GridType,
+} from '@/components/form-builder/fields/IceDepthGridField'
 
 interface Facility {
   id: string
@@ -20,6 +25,13 @@ interface HeaderData {
   submittedBy: { id: string; name: string }
 }
 
+interface MeasurementPoint {
+  id: string
+  x: number
+  y: number
+  label: string
+}
+
 export default function NewIceDepthPage() {
   const router = useRouter()
   const [facilities, setFacilities] = useState<Facility[]>([])
@@ -28,6 +40,8 @@ export default function NewIceDepthPage() {
   const [error, setError] = useState<string | null>(null)
 
   const [headerData, setHeaderData] = useState<HeaderData | null>(null)
+  const [gridType, setGridType] = useState<GridType>('25')
+  const [customPoints, setCustomPoints] = useState<MeasurementPoint[]>([])
   const [measurements, setMeasurements] = useState<Record<string, number | null>>({})
   const [notes, setNotes] = useState('')
 
@@ -59,6 +73,15 @@ export default function NewIceDepthPage() {
     setHeaderData(data)
   }, [])
 
+  // Reset measurements when grid type changes
+  const handleGridTypeChange = (newType: GridType) => {
+    setGridType(newType)
+    setMeasurements({}) // Clear measurements when changing grid type
+    if (newType !== 'custom') {
+      setCustomPoints([]) // Clear custom points if not in custom mode
+    }
+  }
+
   const calculateStats = () => {
     const values = Object.values(measurements).filter((v): v is number => v !== null && v !== undefined)
     if (values.length === 0) return { avg: 0, min: 0, max: 0, count: 0 }
@@ -68,6 +91,11 @@ export default function NewIceDepthPage() {
       max: Math.max(...values),
       count: values.length,
     }
+  }
+
+  const getTotalPoints = () => {
+    if (gridType === 'custom') return customPoints.length
+    return GRID_CONFIGS[gridType].points.length
   }
 
   const handleSubmit = async (asDraft = false) => {
@@ -81,8 +109,16 @@ export default function NewIceDepthPage() {
     }
 
     const stats = calculateStats()
-    if (!asDraft && stats.count < 5) {
-      setError('Please record at least 5 measurement points')
+    const totalPoints = getTotalPoints()
+    const minRequired = Math.min(5, totalPoints)
+
+    if (!asDraft && stats.count < minRequired) {
+      setError(`Please record at least ${minRequired} measurement points`)
+      return
+    }
+
+    if (gridType === 'custom' && customPoints.length === 0 && !asDraft) {
+      setError('Please add at least one measurement point to the custom diagram')
       return
     }
 
@@ -99,6 +135,8 @@ export default function NewIceDepthPage() {
           rinkId: headerData.rinkId,
           status: asDraft ? 'DRAFT' : 'SUBMITTED',
           data: {
+            gridType,
+            customPoints: gridType === 'custom' ? customPoints : undefined,
             measurements,
             notes,
             outsideTemp: headerData.outsideTemp,
@@ -122,6 +160,7 @@ export default function NewIceDepthPage() {
   }
 
   const stats = calculateStats()
+  const totalPoints = getTotalPoints()
 
   if (loading) {
     return (
@@ -170,11 +209,27 @@ export default function NewIceDepthPage() {
         disabled={submitting}
       />
 
+      {/* Grid Type Selection */}
+      <div className="bg-white rounded-lg shadow-sm border p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Measurement Grid Type</h2>
+        <p className="text-sm text-gray-500 mb-4">
+          Select the measurement grid pattern for this reading. Use Custom Diagram to place points at specific locations.
+        </p>
+        <GridTypeSelector
+          value={gridType}
+          onChange={handleGridTypeChange}
+          disabled={submitting}
+        />
+      </div>
+
       {/* Ice Depth Grid */}
       <div className="bg-white rounded-lg shadow-sm border p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Ice Depth Measurements</h2>
         <p className="text-sm text-gray-500 mb-4">
-          Click on a measurement point to enter its ice depth. Target depth is typically 0.75&quot; - 1.25&quot;.
+          {gridType === 'custom'
+            ? 'Click "Add Measurement Point" to place custom measurement locations on the rink diagram.'
+            : 'Click on a measurement point to enter its ice depth. Target depth is typically 0.75" - 1.25".'
+          }
         </p>
 
         <IceDepthGridFieldRender
@@ -187,13 +242,21 @@ export default function NewIceDepthPage() {
           value={measurements}
           onChange={(value) => setMeasurements(value as Record<string, number | null>)}
           disabled={submitting}
+          gridType={gridType}
+          customPoints={customPoints}
+          onCustomPointsChange={setCustomPoints}
+          allowAddPoints={true}
         />
       </div>
 
       {/* Summary Card */}
       <div className="bg-white rounded-lg shadow-sm border p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Reading Summary</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-gray-600">{GRID_CONFIGS[gridType].label}</div>
+            <div className="text-sm text-gray-500">Grid Type</div>
+          </div>
           <div className="text-center">
             <div className="text-3xl font-bold text-blue-600">
               {stats.count > 0 ? stats.avg.toFixed(2) : '-'}
@@ -213,7 +276,9 @@ export default function NewIceDepthPage() {
             <div className="text-sm text-gray-500">Maximum (in)</div>
           </div>
           <div className="text-center">
-            <div className="text-3xl font-bold text-gray-600">{stats.count}/25</div>
+            <div className="text-3xl font-bold text-gray-600">
+              {stats.count}/{totalPoints || '0'}
+            </div>
             <div className="text-sm text-gray-500">Points Recorded</div>
           </div>
         </div>
@@ -274,7 +339,7 @@ export default function NewIceDepthPage() {
         </button>
         <button
           onClick={() => handleSubmit(false)}
-          disabled={submitting || stats.count < 5}
+          disabled={submitting || (gridType !== 'custom' && stats.count < Math.min(5, totalPoints)) || (gridType === 'custom' && customPoints.length === 0)}
           className="btn btn-primary"
         >
           {submitting ? 'Submitting...' : 'Submit Reading'}
