@@ -93,7 +93,7 @@ export const CreateFacilitySchema = z.object({
   city: z.string().min(1, 'City is required').max(100),
   state: z.string().min(1, 'State is required').max(50),
   zipCode: z.string().min(1, 'Zip code is required').max(20),
-  country: z.string().default('US').max(50),
+  country: z.string().max(50).default('US'),
   timezone: z.string().default('America/New_York'),
 })
 
