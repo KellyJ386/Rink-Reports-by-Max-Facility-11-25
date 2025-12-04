@@ -10,6 +10,8 @@ import {
   GRID_CONFIGS,
   type GridType,
 } from '@/components/form-builder/fields/IceDepthGridField'
+import { BluetoothConnect } from '@/components/bluetooth'
+import { useBluetooth, useSimulatedBluetooth, type BluetoothMeasurement } from '@/hooks/useBluetooth'
 
 interface Facility {
   id: string
@@ -32,6 +34,9 @@ interface MeasurementPoint {
   label: string
 }
 
+// Use simulated Bluetooth in development for testing
+const USE_SIMULATED_BLUETOOTH = process.env.NODE_ENV === 'development'
+
 export default function NewIceDepthPage() {
   const router = useRouter()
   const [facilities, setFacilities] = useState<Facility[]>([])
@@ -45,8 +50,50 @@ export default function NewIceDepthPage() {
   const [measurements, setMeasurements] = useState<Record<string, number | null>>({})
   const [notes, setNotes] = useState('')
 
+  // Bluetooth state
+  const [selectedPointForBluetooth, setSelectedPointForBluetooth] = useState<string | null>(null)
+  const [bluetoothMeasurementHistory, setBluetoothMeasurementHistory] = useState<Array<{
+    pointId: string
+    value: number
+    timestamp: Date
+  }>>([])
+
   // Mock current user - in real app, get from auth context
   const currentUser = { id: 'user_1', name: 'John Doe' }
+
+  // Bluetooth hook - handles measurement from connected gauges
+  const handleBluetoothMeasurement = useCallback((measurement: BluetoothMeasurement) => {
+    if (selectedPointForBluetooth) {
+      // Auto-apply measurement to selected point
+      setMeasurements((prev) => ({
+        ...prev,
+        [selectedPointForBluetooth]: measurement.value,
+      }))
+
+      // Add to history
+      setBluetoothMeasurementHistory((prev) => [
+        ...prev,
+        {
+          pointId: selectedPointForBluetooth,
+          value: measurement.value,
+          timestamp: measurement.timestamp,
+        },
+      ])
+
+      // Auto-advance to next point
+      const points = gridType === 'custom' ? customPoints : GRID_CONFIGS[gridType].points
+      const currentIndex = points.findIndex((p) => p.id === selectedPointForBluetooth)
+      if (currentIndex < points.length - 1) {
+        setSelectedPointForBluetooth(points[currentIndex + 1].id)
+      }
+    }
+  }, [selectedPointForBluetooth, gridType, customPoints])
+
+  // Use simulated or real Bluetooth based on environment
+  const bluetoothHook = USE_SIMULATED_BLUETOOTH ? useSimulatedBluetooth : useBluetooth
+  const bluetooth = bluetoothHook({
+    onMeasurement: handleBluetoothMeasurement,
+  })
 
   useEffect(() => {
     fetchFacilities()
@@ -77,6 +124,7 @@ export default function NewIceDepthPage() {
   const handleGridTypeChange = (newType: GridType) => {
     setGridType(newType)
     setMeasurements({}) // Clear measurements when changing grid type
+    setSelectedPointForBluetooth(null)
     if (newType !== 'custom') {
       setCustomPoints([]) // Clear custom points if not in custom mode
     }
@@ -97,6 +145,16 @@ export default function NewIceDepthPage() {
     if (gridType === 'custom') return customPoints.length
     return GRID_CONFIGS[gridType].points.length
   }
+
+  // Handle capturing a measurement to a specific point
+  const handleCaptureToPoint = useCallback((value: number) => {
+    if (selectedPointForBluetooth) {
+      setMeasurements((prev) => ({
+        ...prev,
+        [selectedPointForBluetooth]: value,
+      }))
+    }
+  }, [selectedPointForBluetooth])
 
   const handleSubmit = async (asDraft = false) => {
     if (!headerData?.facilityId) {
@@ -141,6 +199,8 @@ export default function NewIceDepthPage() {
             notes,
             outsideTemp: headerData.outsideTemp,
             stats: calculateStats(),
+            bluetoothUsed: bluetoothMeasurementHistory.length > 0,
+            bluetoothHistory: bluetoothMeasurementHistory.length > 0 ? bluetoothMeasurementHistory : undefined,
           },
         }),
       })
@@ -161,6 +221,7 @@ export default function NewIceDepthPage() {
 
   const stats = calculateStats()
   const totalPoints = getTotalPoints()
+  const points = gridType === 'custom' ? customPoints : GRID_CONFIGS[gridType].points
 
   if (loading) {
     return (
@@ -209,6 +270,83 @@ export default function NewIceDepthPage() {
         disabled={submitting}
       />
 
+      {/* Bluetooth Connection */}
+      <div className="bg-white rounded-lg shadow-sm border p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Bluetooth Ice Depth Gauge</h2>
+        <BluetoothConnect
+          isSupported={bluetooth.isSupported}
+          isScanning={bluetooth.isScanning}
+          isConnecting={bluetooth.isConnecting}
+          isConnected={bluetooth.isConnected}
+          device={bluetooth.device}
+          lastMeasurement={bluetooth.lastMeasurement}
+          error={bluetooth.error}
+          onScan={bluetooth.scan}
+          onConnect={bluetooth.connect}
+          onDisconnect={bluetooth.disconnect}
+          onRequestMeasurement={bluetooth.requestMeasurement}
+          onClearError={bluetooth.clearError}
+          onCaptureMeasurement={handleCaptureToPoint}
+          disabled={submitting}
+        />
+
+        {/* Selected Point for Bluetooth */}
+        {bluetooth.isConnected && (
+          <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-medium text-blue-900">Active Measurement Point</h3>
+                <p className="text-sm text-blue-700 mt-1">
+                  {selectedPointForBluetooth
+                    ? `Point ${points.find((p) => p.id === selectedPointForBluetooth)?.label || selectedPointForBluetooth} selected - readings will be recorded here`
+                    : 'Select a point on the grid below to record Bluetooth measurements'
+                  }
+                </p>
+              </div>
+              {selectedPointForBluetooth && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedPointForBluetooth(null)}
+                  className="text-sm text-blue-600 hover:text-blue-800"
+                >
+                  Clear Selection
+                </button>
+              )}
+            </div>
+
+            {/* Quick point selector */}
+            {points.length > 0 && (
+              <div className="mt-3">
+                <div className="text-xs text-blue-600 mb-2">Quick Select Point:</div>
+                <div className="flex flex-wrap gap-1">
+                  {points.slice(0, 15).map((point) => (
+                    <button
+                      key={point.id}
+                      type="button"
+                      onClick={() => setSelectedPointForBluetooth(point.id)}
+                      className={`w-8 h-8 rounded-full text-xs font-medium transition-colors ${
+                        selectedPointForBluetooth === point.id
+                          ? 'bg-blue-600 text-white'
+                          : measurements[point.id] != null
+                          ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {point.label}
+                    </button>
+                  ))}
+                  {points.length > 15 && (
+                    <span className="text-xs text-blue-500 self-center ml-2">
+                      +{points.length - 15} more
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Grid Type Selection */}
       <div className="bg-white rounded-lg shadow-sm border p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Measurement Grid Type</h2>
@@ -224,13 +362,27 @@ export default function NewIceDepthPage() {
 
       {/* Ice Depth Grid */}
       <div className="bg-white rounded-lg shadow-sm border p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Ice Depth Measurements</h2>
-        <p className="text-sm text-gray-500 mb-4">
-          {gridType === 'custom'
-            ? 'Click "Add Measurement Point" to place custom measurement locations on the rink diagram.'
-            : 'Click on a measurement point to enter its ice depth. Target depth is typically 0.75" - 1.25".'
-          }
-        </p>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Ice Depth Measurements</h2>
+            <p className="text-sm text-gray-500 mt-1">
+              {gridType === 'custom'
+                ? 'Click "Add Measurement Point" to place custom measurement locations on the rink diagram.'
+                : bluetooth.isConnected
+                ? 'Click a point to select it for Bluetooth measurement, or click to enter manually.'
+                : 'Click on a measurement point to enter its ice depth. Target depth is typically 0.75" - 1.25".'
+              }
+            </p>
+          </div>
+          {bluetoothMeasurementHistory.length > 0 && (
+            <div className="text-sm text-blue-600 flex items-center gap-2">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M17.71 7.71L12 2h-1v7.59L6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 11 14.41V22h1l5.71-5.71-4.3-4.29 4.3-4.29zM13 5.83l1.88 1.88L13 9.59V5.83zm1.88 10.46L13 18.17v-3.76l1.88 1.88z"/>
+              </svg>
+              {bluetoothMeasurementHistory.length} Bluetooth readings
+            </div>
+          )}
+        </div>
 
         <IceDepthGridFieldRender
           field={{
