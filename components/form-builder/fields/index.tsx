@@ -23,6 +23,8 @@ import {
 import { SignatureFieldRender, SignatureFieldEdit, PhotoFieldRender, PhotoFieldEdit } from './MediaFields'
 import { SectionFieldRender, SectionFieldEdit } from './SectionField'
 import { IceDepthGridFieldRender, IceDepthGridFieldEdit } from './IceDepthGridField'
+import { BodyDiagramFieldRender, BodyDiagramFieldEdit } from './BodyDiagramField'
+import { WeatherFieldRender, WeatherFieldEdit } from './WeatherField'
 
 // Field type icons as SVG components
 const icons = {
@@ -114,6 +116,21 @@ const icons = {
   weather: (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+    </svg>
+  ),
+  calculated: (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+    </svg>
+  ),
+  temperature: (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9V3m0 0L9 6m3-3l3 3M12 21a4 4 0 100-8 4 4 0 000 8z" />
+    </svg>
+  ),
+  measurement: (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
     </svg>
   ),
 }
@@ -280,9 +297,9 @@ export const fieldRegistry: Record<FieldType, FieldTypeConfig> = {
     label: 'Body Diagram',
     icon: icons.bodyDiagram,
     category: 'special',
-    defaultField: { label: 'Injury Location' },
-    EditComponent: SectionFieldEdit, // Placeholder
-    RenderComponent: SectionFieldRender, // Placeholder
+    defaultField: { label: 'Injury Location', bodyDiagramConfig: { view: 'front', markers: [] } },
+    EditComponent: BodyDiagramFieldEdit,
+    RenderComponent: BodyDiagramFieldRender,
   },
   section: {
     type: 'section',
@@ -298,9 +315,36 @@ export const fieldRegistry: Record<FieldType, FieldTypeConfig> = {
     label: 'Weather',
     icon: icons.weather,
     category: 'special',
-    defaultField: { label: 'Current Weather' },
-    EditComponent: SectionFieldEdit, // Placeholder
-    RenderComponent: SectionFieldRender, // Placeholder
+    defaultField: { label: 'Current Weather', weatherConfig: { autoFetch: true, units: 'imperial', fields: ['temperature', 'humidity', 'conditions', 'wind'] } },
+    EditComponent: WeatherFieldEdit,
+    RenderComponent: WeatherFieldRender,
+  },
+  calculated: {
+    type: 'calculated',
+    label: 'Calculated',
+    icon: icons.calculated,
+    category: 'special',
+    defaultField: { label: 'Calculated Value', calculatedConfig: { operation: 'sum', sourceFields: [], formula: '', decimalPlaces: 2 } },
+    EditComponent: NumberFieldEdit,
+    RenderComponent: NumberFieldRender,
+  },
+  temperature: {
+    type: 'temperature',
+    label: 'Temperature',
+    icon: icons.temperature,
+    category: 'special',
+    defaultField: { label: 'Temperature', placeholder: '0', measurementConfig: { unit: '°F', precision: 1 } },
+    EditComponent: NumberFieldEdit,
+    RenderComponent: NumberFieldRender,
+  },
+  measurement: {
+    type: 'measurement',
+    label: 'Measurement',
+    icon: icons.measurement,
+    category: 'special',
+    defaultField: { label: 'Measurement', placeholder: '0', measurementConfig: { unit: 'in', precision: 2 } },
+    EditComponent: NumberFieldEdit,
+    RenderComponent: NumberFieldRender,
   },
 }
 
@@ -363,4 +407,8 @@ export {
   SectionFieldEdit,
   IceDepthGridFieldRender,
   IceDepthGridFieldEdit,
+  BodyDiagramFieldRender,
+  BodyDiagramFieldEdit,
+  WeatherFieldRender,
+  WeatherFieldEdit,
 }

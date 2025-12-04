@@ -1,16 +1,21 @@
 'use client'
 
 import { useState } from 'react'
-import type { FormField, FieldOption } from './types'
+import type { FormField, FormSchema, FieldOption, ConditionalRule, CalculatedFieldConfig, WeatherFieldConfig } from './types'
 import { fieldRegistry } from './fields'
+import { ConditionalLogicBuilder } from './ConditionalLogicBuilder'
+import { CalculatedFieldBuilder } from './CalculatedFieldBuilder'
+import { WeatherFieldConfigPanel } from './fields/WeatherField'
+import { BodyDiagramConfig as BodyDiagramConfigPanel } from './fields/BodyDiagramField'
 
 interface FieldConfigPanelProps {
   field: FormField
+  allFields?: FormField[]
   onUpdate: (updates: Partial<FormField>) => void
   onClose: () => void
 }
 
-export function FieldConfigPanel({ field, onUpdate, onClose }: FieldConfigPanelProps) {
+export function FieldConfigPanel({ field, allFields = [], onUpdate, onClose }: FieldConfigPanelProps) {
   const config = fieldRegistry[field.type]
   const [newOption, setNewOption] = useState('')
 
@@ -313,7 +318,7 @@ export function FieldConfigPanel({ field, onUpdate, onClose }: FieldConfigPanelP
         )}
 
         {/* Default value */}
-        {!['signature', 'photo', 'iceDepthGrid', 'bodyDiagram', 'section'].includes(field.type) && (
+        {!['signature', 'photo', 'iceDepthGrid', 'bodyDiagram', 'section', 'calculated', 'weather'].includes(field.type) && (
           <div className="space-y-4">
             <h4 className="text-sm font-medium text-gray-700">Default Value</h4>
             <div>
@@ -365,6 +370,50 @@ export function FieldConfigPanel({ field, onUpdate, onClose }: FieldConfigPanelP
                 />
               )}
             </div>
+          </div>
+        )}
+
+        {/* Calculated Field Configuration */}
+        {field.type === 'calculated' && (
+          <div className="space-y-4 border-t pt-4">
+            <CalculatedFieldBuilder
+              field={field}
+              allFields={allFields}
+              onUpdate={(calculatedConfig) => onUpdate({ calculatedConfig })}
+            />
+          </div>
+        )}
+
+        {/* Weather Field Configuration */}
+        {field.type === 'weather' && (
+          <div className="space-y-4 border-t pt-4">
+            <h4 className="text-sm font-medium text-gray-700">Weather Settings</h4>
+            <WeatherFieldConfigPanel
+              field={field}
+              onUpdate={(weatherConfig) => onUpdate({ weatherConfig })}
+            />
+          </div>
+        )}
+
+        {/* Body Diagram Configuration */}
+        {field.type === 'bodyDiagram' && (
+          <div className="space-y-4 border-t pt-4">
+            <h4 className="text-sm font-medium text-gray-700">Body Diagram Settings</h4>
+            <BodyDiagramConfigPanel
+              field={field}
+              onUpdate={(config) => onUpdate({ bodyDiagramConfig: { ...config, markers: field.bodyDiagramConfig?.markers || [] } })}
+            />
+          </div>
+        )}
+
+        {/* Conditional Logic - available for all non-section fields */}
+        {field.type !== 'section' && allFields.length > 1 && (
+          <div className="space-y-4 border-t pt-4">
+            <ConditionalLogicBuilder
+              field={field}
+              allFields={allFields}
+              onUpdate={(conditionalRules) => onUpdate({ conditionalRules })}
+            />
           </div>
         )}
       </div>

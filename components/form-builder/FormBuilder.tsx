@@ -255,6 +255,7 @@ export function FormBuilder({ initialSchema, onChange, onSave }: FormBuilderProp
           {selectedField ? (
             <FieldConfigPanel
               field={selectedField}
+              allFields={schema.sections.flatMap((s) => s.fields)}
               onUpdate={handleFieldUpdate}
               onClose={() => handleFieldSelect(null, null)}
             />

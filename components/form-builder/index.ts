@@ -15,6 +15,36 @@ export {
   createField,
 } from './fields'
 
+// Conditional logic
+export {
+  ConditionalLogicBuilder,
+  evaluateConditions,
+  getDependentFields
+} from './ConditionalLogicBuilder'
+
+// Calculated fields
+export {
+  CalculatedFieldBuilder,
+  calculateFieldValue,
+  getCalculationDependencies
+} from './CalculatedFieldBuilder'
+
+// Form preview and versioning
+export { FormPreview } from './FormPreview'
+export { FormVersioning } from './FormVersioning'
+
+// Specialized fields
+export {
+  BodyDiagramFieldEdit,
+  BodyDiagramFieldRender,
+  BodyDiagramConfig as BodyDiagramConfigPanel
+} from './fields/BodyDiagramField'
+export {
+  WeatherFieldEdit,
+  WeatherFieldRender,
+  WeatherFieldConfigPanel
+} from './fields/WeatherField'
+
 // Types
 export type {
   FieldType,
@@ -24,6 +54,10 @@ export type {
   FieldOption,
   FieldValidation,
   ConditionalRule,
+  CalculatedFieldConfig,
+  WeatherFieldConfig,
+  BodyDiagramConfig,
+  BodyDiagramMarker,
   FieldTypeConfig,
   FieldEditProps,
   FieldRenderProps,

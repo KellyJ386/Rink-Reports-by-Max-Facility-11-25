@@ -20,6 +20,9 @@ export type FieldType =
   | 'bodyDiagram'
   | 'section'
   | 'weather'
+  | 'calculated'
+  | 'temperature'
+  | 'measurement'
 
 // Field option for select, radio, checkbox groups
 export interface FieldOption {
@@ -45,6 +48,40 @@ export interface ConditionalRule {
   action: 'show' | 'hide' | 'require' | 'disable'
 }
 
+// Calculated field configuration
+export interface CalculatedFieldConfig {
+  operation: 'sum' | 'average' | 'min' | 'max' | 'count' | 'custom'
+  sourceFields: string[]
+  formula: string
+  decimalPlaces: number
+}
+
+// Weather field configuration
+export interface WeatherFieldConfig {
+  autoFetch: boolean
+  location?: {
+    latitude?: number
+    longitude?: number
+  }
+  units: 'metric' | 'imperial'
+  fields: ('temperature' | 'humidity' | 'conditions' | 'wind')[]
+}
+
+// Body diagram configuration
+export interface BodyDiagramConfig {
+  view: 'front' | 'back' | 'both'
+  markers: BodyDiagramMarker[]
+}
+
+export interface BodyDiagramMarker {
+  id: string
+  x: number
+  y: number
+  view: 'front' | 'back'
+  label?: string
+  severity?: 'minor' | 'moderate' | 'severe'
+}
+
 // Base field definition
 export interface FormField {
   id: string
@@ -63,6 +100,17 @@ export interface FormField {
   gridConfig?: {
     columns?: number
     rows?: number
+  }
+  // For calculated fields
+  calculatedConfig?: CalculatedFieldConfig
+  // For weather fields
+  weatherConfig?: WeatherFieldConfig
+  // For body diagram fields
+  bodyDiagramConfig?: BodyDiagramConfig
+  // For measurement fields
+  measurementConfig?: {
+    unit: string
+    precision: number
   }
 }
 
