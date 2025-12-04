@@ -1,0 +1,126 @@
+import { ReactNode } from 'react'
+
+// Field types supported by the form builder
+export type FieldType =
+  | 'text'
+  | 'textarea'
+  | 'number'
+  | 'email'
+  | 'phone'
+  | 'select'
+  | 'checkbox'
+  | 'checkboxGroup'
+  | 'radioGroup'
+  | 'date'
+  | 'time'
+  | 'datetime'
+  | 'signature'
+  | 'photo'
+  | 'iceDepthGrid'
+  | 'bodyDiagram'
+  | 'section'
+  | 'weather'
+
+// Field option for select, radio, checkbox groups
+export interface FieldOption {
+  value: string
+  label: string
+}
+
+// Validation rules
+export interface FieldValidation {
+  min?: number
+  max?: number
+  minLength?: number
+  maxLength?: number
+  pattern?: string
+  patternMessage?: string
+}
+
+// Conditional rule for showing/hiding fields
+export interface ConditionalRule {
+  field: string
+  operator: 'equals' | 'notEquals' | 'contains' | 'greaterThan' | 'lessThan' | 'isEmpty' | 'isNotEmpty'
+  value: unknown
+  action: 'show' | 'hide' | 'require' | 'disable'
+}
+
+// Base field definition
+export interface FormField {
+  id: string
+  type: FieldType
+  label: string
+  placeholder?: string
+  helpText?: string
+  required?: boolean
+  disabled?: boolean
+  hidden?: boolean
+  defaultValue?: unknown
+  validation?: FieldValidation
+  options?: FieldOption[]
+  conditionalRules?: ConditionalRule[]
+  // For grid fields
+  gridConfig?: {
+    columns?: number
+    rows?: number
+  }
+}
+
+// Form section containing fields
+export interface FormSection {
+  id: string
+  title: string
+  description?: string
+  fields: FormField[]
+}
+
+// Complete form schema
+export interface FormSchema {
+  sections: FormSection[]
+}
+
+// Props for field components in edit mode (form builder)
+export interface FieldEditProps {
+  field: FormField
+  isSelected: boolean
+  onSelect: () => void
+  onUpdate: (field: FormField) => void
+  onDelete: () => void
+}
+
+// Props for field components in render mode (form submission)
+export interface FieldRenderProps {
+  field: FormField
+  value: unknown
+  onChange: (value: unknown) => void
+  error?: string
+  disabled?: boolean
+}
+
+// Field component registry entry
+export interface FieldTypeConfig {
+  type: FieldType
+  label: string
+  icon: ReactNode
+  category: 'basic' | 'choice' | 'date' | 'media' | 'special' | 'layout'
+  defaultField: Partial<FormField>
+  EditComponent: React.ComponentType<FieldEditProps>
+  RenderComponent: React.ComponentType<FieldRenderProps>
+}
+
+// Drag and drop types
+export interface DragItem {
+  id: string
+  type: 'field' | 'palette-item'
+  fieldType?: FieldType
+  sectionId?: string
+  index?: number
+}
+
+// Form builder state
+export interface FormBuilderState {
+  schema: FormSchema
+  selectedFieldId: string | null
+  selectedSectionId: string | null
+  isDragging: boolean
+}
