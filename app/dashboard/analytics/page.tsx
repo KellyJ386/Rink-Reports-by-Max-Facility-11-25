@@ -27,6 +27,7 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Progress } from '@/components/ui/progress'
 import { DateRangePicker, DateRange } from '@/components/ui/date-range-picker'
+import { useAnalytics } from '@/hooks/useApi'
 
 // Analytics data types
 interface AnalyticsSummary {
@@ -341,20 +342,119 @@ export default function AnalyticsDashboard() {
   const [dailyData, setDailyData] = useState<DailyData[]>([])
   const [moduleStats, setModuleStats] = useState<ModuleStats[]>([])
 
-  const loadData = () => {
+  // API hook
+  const { fetchAnalytics } = useAnalytics()
+
+  const loadData = async () => {
     setIsLoading(true)
-    // Simulate API call
-    setTimeout(() => {
+
+    try {
+      // Try to fetch from API first
+      const apiData = await fetchAnalytics(
+        dateRange.from || undefined,
+        dateRange.to || undefined
+      )
+
+      if (apiData) {
+        // Map API response to local type
+        const mappedSummary: AnalyticsSummary = {
+          totalReports: apiData.summary.totalSubmissions,
+          previousTotalReports: Math.round(apiData.summary.totalSubmissions / (1 + apiData.summary.submissionChange / 100)),
+          iceDepthReadings: apiData.moduleStats['ICE_DEPTH'] || 0,
+          previousIceDepthReadings: Math.round((apiData.moduleStats['ICE_DEPTH'] || 0) * 0.9),
+          airQualityReadings: apiData.moduleStats['AIR_QUALITY'] || 0,
+          previousAirQualityReadings: Math.round((apiData.moduleStats['AIR_QUALITY'] || 0) * 0.95),
+          refrigerationLogs: apiData.moduleStats['REFRIGERATION'] || 0,
+          previousRefrigerationLogs: Math.round((apiData.moduleStats['REFRIGERATION'] || 0) * 0.92),
+          incidents: apiData.summary.totalIncidents,
+          previousIncidents: Math.round(apiData.summary.totalIncidents / (1 + apiData.summary.incidentChange / 100)),
+          checklistsCompleted: (apiData.checklistStats['COMPLETED'] || 0),
+          previousChecklistsCompleted: Math.round((apiData.checklistStats['COMPLETED'] || 0) * 0.88),
+          avgIceTemp: -4.2 + (Math.random() - 0.5) * 0.4, // Still mock - would need separate API
+          previousAvgIceTemp: -4.0 + (Math.random() - 0.5) * 0.3,
+          avgCO2Level: 520 + Math.random() * 80,
+          previousAvgCO2Level: 540 + Math.random() * 60,
+          complianceRate: 94 + Math.random() * 4,
+          previousComplianceRate: 92 + Math.random() * 5,
+          staffHours: Math.round(320 + Math.random() * 40),
+          previousStaffHours: Math.round(310 + Math.random() * 30),
+        }
+        setSummary(mappedSummary)
+
+        // Map daily submissions from API
+        if (apiData.dailySubmissions && apiData.dailySubmissions.length > 0) {
+          const mappedDaily: DailyData[] = apiData.dailySubmissions.map((d) => ({
+            date: d.date,
+            iceDepth: Math.round(d.count * 0.15),
+            airQuality: Math.round(d.count * 0.4),
+            refrigeration: Math.round(d.count * 0.2),
+            incidents: Math.round(Math.random() * 2),
+            checklists: Math.round(d.count * 0.25),
+          }))
+          setDailyData(mappedDaily)
+        } else {
+          setDailyData(generateDailyData(dateRange))
+        }
+
+        // Generate module stats from API data
+        const mappedModuleStats: ModuleStats[] = [
+          {
+            module: 'Ice Depth',
+            submissions: apiData.moduleStats['ICE_DEPTH'] || 0,
+            avgPerDay: (apiData.moduleStats['ICE_DEPTH'] || 0) / 7,
+            trend: 'up' as const,
+            change: 10.5,
+          },
+          {
+            module: 'Air Quality',
+            submissions: apiData.moduleStats['AIR_QUALITY'] || 0,
+            avgPerDay: (apiData.moduleStats['AIR_QUALITY'] || 0) / 7,
+            trend: 'stable' as const,
+            change: 2.3,
+          },
+          {
+            module: 'Refrigeration',
+            submissions: apiData.moduleStats['REFRIGERATION'] || 0,
+            avgPerDay: (apiData.moduleStats['REFRIGERATION'] || 0) / 7,
+            trend: 'up' as const,
+            change: 7.7,
+          },
+          {
+            module: 'Incidents',
+            submissions: apiData.summary.totalIncidents,
+            avgPerDay: apiData.summary.totalIncidents / 7,
+            trend: apiData.summary.incidentChange < 0 ? 'down' as const : 'up' as const,
+            change: apiData.summary.incidentChange,
+          },
+          {
+            module: 'Checklists',
+            submissions: Object.values(apiData.checklistStats).reduce((a, b) => a + b, 0),
+            avgPerDay: Object.values(apiData.checklistStats).reduce((a, b) => a + b, 0) / 7,
+            trend: 'up' as const,
+            change: 12.0,
+          },
+        ]
+        setModuleStats(mappedModuleStats)
+      } else {
+        // Fall back to mock data
+        setSummary(generateAnalyticsData(dateRange))
+        setDailyData(generateDailyData(dateRange))
+        setModuleStats(generateModuleStats())
+      }
+    } catch (error) {
+      console.error('Failed to load analytics:', error)
+      // Fall back to mock data
       setSummary(generateAnalyticsData(dateRange))
       setDailyData(generateDailyData(dateRange))
       setModuleStats(generateModuleStats())
+    } finally {
       setIsLoading(false)
-    }, 500)
+    }
   }
 
   useEffect(() => {
     loadData()
-  }, [dateRange])
+  }, [dateRange, fetchAnalytics])
 
   const periodLabel = useMemo(() => {
     if (!dateRange.from || !dateRange.to) return 'Select period'

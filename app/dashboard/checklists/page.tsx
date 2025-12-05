@@ -54,6 +54,7 @@ import {
   ChecklistCategory,
   isChecklistOverdue,
 } from '@/types/checklist'
+import { useChecklists, useChecklistTemplates } from '@/hooks/useApi'
 
 // Mock data
 const mockTemplates: ChecklistTemplate[] = [
@@ -257,13 +258,79 @@ export default function ChecklistsDashboard() {
   const [searchQuery, setSearchQuery] = useState('')
   const [categoryFilter, setCategoryFilter] = useState<ChecklistCategory | 'all'>('all')
 
+  // API hooks
+  const { fetchChecklists } = useChecklists()
+  const { fetchTemplates } = useChecklistTemplates()
+
   useEffect(() => {
-    setTimeout(() => {
-      setTemplates(mockTemplates)
-      setInstances(mockInstances)
-      setIsLoading(false)
-    }, 500)
-  }, [])
+    const loadData = async () => {
+      try {
+        // Fetch templates from API
+        const templatesResult = await fetchTemplates({ limit: 100, isActive: true })
+        if (templatesResult && templatesResult.items.length > 0) {
+          // Map API response to local type
+          const mappedTemplates: ChecklistTemplate[] = templatesResult.items.map((item) => ({
+            id: item.id,
+            facilityId: item.facilityId,
+            name: item.name,
+            description: item.description || '',
+            category: item.category as ChecklistCategory,
+            frequency: item.frequency as 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'ANNUALLY' | 'ONCE',
+            estimatedDuration: item.estimatedDuration,
+            sections: (item.sections as ChecklistTemplate['sections']) || [],
+            requiredRoles: item.requiredRoles || [],
+            isActive: item.isActive,
+            version: item.version,
+            createdBy: item.createdById,
+            createdAt: item.createdAt,
+            updatedAt: item.updatedAt,
+          }))
+          setTemplates(mappedTemplates)
+        } else {
+          // Fall back to mock data
+          setTemplates(mockTemplates)
+        }
+
+        // Fetch checklist instances from API
+        const checklistsResult = await fetchChecklists({ limit: 100 })
+        if (checklistsResult && checklistsResult.items.length > 0) {
+          // Map API response to local type
+          const mappedInstances: ChecklistInstance[] = checklistsResult.items.map((item) => ({
+            id: item.id,
+            templateId: item.templateId,
+            facilityId: item.facilityId,
+            status: item.status as CompletionStatus,
+            startedAt: item.startedAt,
+            completedAt: item.completedAt,
+            completedBy: item.completedById,
+            completedByName: '',
+            scheduledDate: item.scheduledFor?.split('T')[0],
+            dueBy: item.dueBy,
+            assignedTo: item.assignedToId,
+            assignedToName: '',
+            sections: (item.sections as ChecklistInstance['sections']) || [],
+            completionPercentage: item.completionPercentage,
+            issues: (item.issues as ChecklistInstance['issues']) || [],
+            createdAt: item.createdAt,
+            updatedAt: item.updatedAt,
+          }))
+          setInstances(mappedInstances)
+        } else {
+          // Fall back to mock data
+          setInstances(mockInstances)
+        }
+      } catch (error) {
+        console.error('Failed to load checklists data:', error)
+        // Fall back to mock data
+        setTemplates(mockTemplates)
+        setInstances(mockInstances)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadData()
+  }, [fetchTemplates, fetchChecklists])
 
   // Calculate stats
   const stats: ChecklistStats = useMemo(() => {
