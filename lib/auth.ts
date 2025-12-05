@@ -1,11 +1,11 @@
-import jwt from 'jsonwebtoken'
+import jwt, { SignOptions } from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 import { cookies } from 'next/headers'
 import { prisma } from './prisma'
 import type { JWTPayload, UserWithRole } from '@/types'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key'
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d'
+const JWT_EXPIRES_IN: SignOptions['expiresIn'] = (process.env.JWT_EXPIRES_IN || '7d') as SignOptions['expiresIn']
 
 export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, 10)
