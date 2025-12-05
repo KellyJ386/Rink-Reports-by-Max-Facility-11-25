@@ -112,6 +112,8 @@ export interface FormField {
     unit: string
     precision: number
   }
+  // Generic config for custom field types
+  config?: Record<string, unknown>
 }
 
 // Form section containing fields

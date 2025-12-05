@@ -73,7 +73,7 @@ export class NotificationService {
       throw new Error(`Unknown notification type: ${input.type}`)
     }
 
-    const notifications: Notification[] = []
+    const createdNotifications: Notification[] = []
 
     // Determine recipients
     const recipientIds = input.recipientIds || (input.recipientId ? [input.recipientId] : [])
@@ -149,13 +149,13 @@ export class NotificationService {
 
       // Store notification
       notifications.set(notification.id, notification)
-      notifications.push(notification)
+      createdNotifications.push(notification)
 
       // Send through channels
       await this.sendThroughChannels(notification, prefs, template)
     }
 
-    return notifications
+    return createdNotifications
   }
 
   /**
@@ -622,5 +622,3 @@ export async function notifySchedulePublished(
     })
   }
 }
-
-export { NotificationService }

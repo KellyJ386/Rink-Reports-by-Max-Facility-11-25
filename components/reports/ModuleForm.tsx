@@ -21,6 +21,12 @@ interface HeaderData {
   submittedBy: { id: string; name: string }
 }
 
+type RenderProps = {
+  customData: Record<string, unknown>
+  setCustomData: (data: Record<string, unknown>) => void
+  submitting: boolean
+}
+
 interface ModuleFormProps {
   moduleType: string
   title: string
@@ -29,7 +35,7 @@ interface ModuleFormProps {
   schema?: FormSchema
   requireRink?: boolean
   showWeather?: boolean
-  children?: React.ReactNode
+  children?: React.ReactNode | ((props: RenderProps) => React.ReactNode)
   onSubmit?: (data: { header: HeaderData; formData: Record<string, unknown> }) => Record<string, unknown>
 }
 

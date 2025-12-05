@@ -116,12 +116,12 @@ export function getWeekNumber(date: Date): number {
  */
 export function formatDateDisplay(date: Date | string, format: 'short' | 'medium' | 'long' = 'medium'): string {
   const d = typeof date === 'string' ? parseDate(date) : date
-  const options: Intl.DateTimeFormatOptions = {
+  const optionsMap: Record<'short' | 'medium' | 'long', Intl.DateTimeFormatOptions> = {
     short: { month: 'numeric', day: 'numeric' },
     medium: { month: 'short', day: 'numeric' },
     long: { weekday: 'long', month: 'long', day: 'numeric' },
-  }[format]
-  return d.toLocaleDateString('en-US', options)
+  }
+  return d.toLocaleDateString('en-US', optionsMap[format])
 }
 
 /**

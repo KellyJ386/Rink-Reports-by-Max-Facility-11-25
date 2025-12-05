@@ -7,7 +7,7 @@ export { CalendarMonthView, MiniCalendar, CalendarYearView } from './CalendarMon
 
 // Shift Components
 export { ShiftCard, ShiftIndicator, ShiftListItem } from './ShiftCard'
-export { ShiftTemplateManager, TemplatePalette } from './ShiftTemplateManager'
+export { ShiftTemplateManager } from './ShiftTemplateManager'
 
 // Availability
 export { AvailabilityManager, WeeklyAvailabilityGrid } from './AvailabilityManager'

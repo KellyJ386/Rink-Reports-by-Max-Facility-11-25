@@ -63,23 +63,23 @@ export default function AirQualityViewPage({ params }: { params: Promise<{ id: s
             </div>
 
             {/* Additional Info */}
-            {(data.location || data.meterUsed || data.notes) && (
+            {Boolean(data.location || data.meterUsed || data.notes) && (
               <div className="bg-white rounded-lg shadow-sm border p-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Additional Information</h2>
                 <dl className="space-y-3">
-                  {data.location && (
+                  {Boolean(data.location) && (
                     <div className="flex gap-4">
                       <dt className="text-sm font-medium text-gray-500 w-1/3">Location</dt>
                       <dd className="text-sm text-gray-900">{String(data.location).replace(/_/g, ' ')}</dd>
                     </div>
                   )}
-                  {data.meterUsed && (
+                  {Boolean(data.meterUsed) && (
                     <div className="flex gap-4">
                       <dt className="text-sm font-medium text-gray-500 w-1/3">Meter Used</dt>
                       <dd className="text-sm text-gray-900">{String(data.meterUsed)}</dd>
                     </div>
                   )}
-                  {data.notes && (
+                  {Boolean(data.notes) && (
                     <div className="flex flex-col gap-1">
                       <dt className="text-sm font-medium text-gray-500">Notes</dt>
                       <dd className="text-sm text-gray-900">{String(data.notes)}</dd>

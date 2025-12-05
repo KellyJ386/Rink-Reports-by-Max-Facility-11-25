@@ -19,7 +19,9 @@ export async function verifyPassword(
 }
 
 export function generateToken(payload: JWTPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN })
+  // Cast the options to satisfy TypeScript
+  const options = { expiresIn: JWT_EXPIRES_IN } as jwt.SignOptions
+  return jwt.sign(payload, JWT_SECRET, options)
 }
 
 export function verifyToken(token: string): JWTPayload | null {

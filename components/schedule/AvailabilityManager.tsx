@@ -42,7 +42,7 @@ import {
   CreateAvailabilityInput,
   AVAILABILITY_COLORS,
 } from '@/types/schedule'
-import { formatDate, formatTime } from '@/lib/schedule-utils'
+import { formatDate, formatTimeDisplay } from '@/lib/schedule-utils'
 
 interface AvailabilityManagerProps {
   employeeId: string
@@ -506,7 +506,7 @@ function AvailabilityCard({
             {!availability.allDay && availability.startTime && availability.endTime && (
               <div className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
                 <Clock className="h-3 w-3" />
-                {formatTime(availability.startTime)} - {formatTime(availability.endTime)}
+                {formatTimeDisplay(availability.startTime)} - {formatTimeDisplay(availability.endTime)}
               </div>
             )}
             {availability.reason && (
@@ -599,7 +599,7 @@ export function WeeklyAvailabilityGrid({
           {hours.map((hour) => (
             <tr key={hour}>
               <td className="p-1 text-xs text-muted-foreground border-t">
-                {formatTime(`${hour.toString().padStart(2, '0')}:00`)}
+                {formatTimeDisplay(`${hour.toString().padStart(2, '0')}:00`)}
               </td>
               {DAYS_OF_WEEK.map((day) => {
                 const key = `${day.value}-${hour}`

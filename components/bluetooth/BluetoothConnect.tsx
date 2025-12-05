@@ -1,14 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import type { BluetoothDevice, BluetoothMeasurement } from '@/hooks/useBluetooth'
+import type { BluetoothDeviceInfo, BluetoothMeasurement } from '@/hooks/useBluetooth'
 
 interface BluetoothConnectProps {
   isSupported: boolean
   isScanning: boolean
   isConnecting: boolean
   isConnected: boolean
-  device: BluetoothDevice | null
+  device: BluetoothDeviceInfo | null
   lastMeasurement: BluetoothMeasurement | null
   error: string | null
   onScan: () => Promise<void>
@@ -328,7 +328,7 @@ export function BluetoothStatus({
   onClick,
 }: {
   isConnected: boolean
-  device: BluetoothDevice | null
+  device: BluetoothDeviceInfo | null
   lastMeasurement: BluetoothMeasurement | null
   onClick: () => void
 }) {

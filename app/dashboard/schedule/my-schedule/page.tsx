@@ -32,7 +32,7 @@ import {
   CreateSwapRequestInput,
   CreateAvailabilityInput,
 } from '@/types/schedule'
-import { formatDate, formatTime, calculateDuration, getWeekStart, getWeekEnd } from '@/lib/schedule-utils'
+import { formatDate, formatTimeDisplay, calculateDuration, getWeekStart, getWeekEnd } from '@/lib/schedule-utils'
 
 // Sample employee data
 const currentEmployee = {
@@ -416,7 +416,7 @@ export default function MySchedulePage() {
                             {formatDate(new Date(shift.date))}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {formatTime(shift.startTime)} - {formatTime(shift.endTime)}
+                            {formatTimeDisplay(shift.startTime)} - {formatTimeDisplay(shift.endTime)}
                           </p>
                         </div>
                         <Badge variant="outline" className="text-xs shrink-0">
@@ -462,7 +462,7 @@ export default function MySchedulePage() {
                             {formatDate(new Date(shift.date))}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {formatTime(shift.startTime)} - {formatTime(shift.endTime)}
+                            {formatTimeDisplay(shift.startTime)} - {formatTimeDisplay(shift.endTime)}
                           </p>
                         </div>
                         <Button size="sm" variant="outline" className="shrink-0">

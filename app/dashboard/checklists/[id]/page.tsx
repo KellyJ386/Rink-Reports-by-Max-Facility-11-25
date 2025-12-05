@@ -43,7 +43,7 @@ export default function ChecklistViewPage({ params }: { params: Promise<{ id: st
             </div>
 
             {/* Checked Items */}
-            {checkedItems.length > 0 && (
+            {Boolean(checkedItems.length > 0) && (
               <div className="bg-white rounded-lg shadow-sm border p-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Completed Items</h2>
                 <div className="space-y-2">
@@ -62,7 +62,7 @@ export default function ChecklistViewPage({ params }: { params: Promise<{ id: st
             )}
 
             {/* Notes */}
-            {data.notes && (
+            {Boolean(data.notes) && (
               <div className="bg-white rounded-lg shadow-sm border p-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-2">Notes</h2>
                 <p className="text-gray-700 whitespace-pre-wrap">{String(data.notes)}</p>

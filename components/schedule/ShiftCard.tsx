@@ -285,7 +285,7 @@ export function ShiftListItem({
   isActive,
 }: {
   shift: Shift
-  onClick?: () => void
+  onClick?: (shift: Shift) => void
   onEdit?: () => void
   isActive?: boolean
 }) {
@@ -297,7 +297,7 @@ export function ShiftListItem({
       className={`p-3 rounded-lg border cursor-pointer transition-all ${
         isActive ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300 bg-white'
       }`}
-      onClick={onClick}
+      onClick={() => onClick?.(shift)}
     >
       <div className="flex items-center gap-3">
         <div

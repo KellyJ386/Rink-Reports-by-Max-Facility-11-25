@@ -22,7 +22,7 @@ export const BLUETOOTH_CHARACTERISTICS = {
   DEVICE_NAME: '00002a00-0000-1000-8000-00805f9b34fb',
 }
 
-export interface BluetoothDevice {
+export interface BluetoothDeviceInfo {
   id: string
   name: string
   connected: boolean
@@ -52,7 +52,7 @@ interface UseBluetoothReturn {
   isScanning: boolean
   isConnecting: boolean
   isConnected: boolean
-  device: BluetoothDevice | null
+  device: BluetoothDeviceInfo | null
   lastMeasurement: BluetoothMeasurement | null
   error: string | null
 
@@ -78,21 +78,25 @@ export function useBluetooth(options: UseBluetoothOptions = {}): UseBluetoothRet
   const [isScanning, setIsScanning] = useState(false)
   const [isConnecting, setIsConnecting] = useState(false)
   const [isConnected, setIsConnected] = useState(false)
-  const [device, setDevice] = useState<BluetoothDevice | null>(null)
+  const [device, setDevice] = useState<BluetoothDeviceInfo | null>(null)
   const [lastMeasurement, setLastMeasurement] = useState<BluetoothMeasurement | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  // Refs for Bluetooth objects
-  const bluetoothDeviceRef = useRef<globalThis.BluetoothDevice | null>(null)
-  const gattServerRef = useRef<BluetoothRemoteGATTServer | null>(null)
-  const characteristicRef = useRef<BluetoothRemoteGATTCharacteristic | null>(null)
+  // Refs for Bluetooth objects - using 'any' to avoid Web Bluetooth API type conflicts
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const bluetoothDeviceRef = useRef<any>(null)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const gattServerRef = useRef<any>(null)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const characteristicRef = useRef<any>(null)
 
   // Check Bluetooth support on mount
   useEffect(() => {
     const checkSupport = async () => {
       if (typeof window !== 'undefined' && 'bluetooth' in navigator) {
         try {
-          const available = await navigator.bluetooth.getAvailability()
+          const bluetooth = (navigator as Navigator & { bluetooth?: { getAvailability: () => Promise<boolean> } }).bluetooth
+          const available = await bluetooth!.getAvailability()
           setIsSupported(available)
         } catch {
           // Some browsers support the API but getAvailability fails
@@ -107,7 +111,8 @@ export function useBluetooth(options: UseBluetoothOptions = {}): UseBluetoothRet
 
   // Handle measurement notifications
   const handleMeasurementNotification = useCallback((event: Event) => {
-    const characteristic = event.target as BluetoothRemoteGATTCharacteristic
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const characteristic = event.target as any
     const value = characteristic.value
 
     if (value) {
@@ -173,7 +178,9 @@ export function useBluetooth(options: UseBluetoothOptions = {}): UseBluetoothRet
 
     try {
       // Request device with specified services
-      const requestedDevice = await navigator.bluetooth.requestDevice({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const bluetooth = (navigator as any).bluetooth
+      const requestedDevice = await bluetooth.requestDevice({
         filters: [
           { services: services },
           // Also accept devices by name pattern (common gauge names)
@@ -235,7 +242,8 @@ export function useBluetooth(options: UseBluetoothOptions = {}): UseBluetoothRet
       gattServerRef.current = server
 
       // Try to get the measurement service
-      let service: BluetoothRemoteGATTService | null = null
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let service: any = null
       for (const serviceUuid of services) {
         try {
           service = await server.getPrimaryService(serviceUuid)
@@ -391,7 +399,7 @@ export function useSimulatedBluetooth(options: UseBluetoothOptions = {}): UseBlu
   const { onMeasurement, onConnectionChange } = options
 
   const [isConnected, setIsConnected] = useState(false)
-  const [device, setDevice] = useState<BluetoothDevice | null>(null)
+  const [device, setDevice] = useState<BluetoothDeviceInfo | null>(null)
   const [lastMeasurement, setLastMeasurement] = useState<BluetoothMeasurement | null>(null)
   const [isScanning, setIsScanning] = useState(false)
   const [isConnecting, setIsConnecting] = useState(false)

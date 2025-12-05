@@ -559,17 +559,24 @@ export default function ScheduleDashboard() {
                 <div className="p-4">
                   <ShiftTemplateManager
                     templates={templates}
-                    onSave={(template) => {
-                      if (templates.find((t) => t.id === template.id)) {
-                        setTemplates((prev) =>
-                          prev.map((t) => (t.id === template.id ? template : t))
-                        )
-                      } else {
-                        setTemplates((prev) => [...prev, template])
-                      }
+                    onCreateTemplate={async (template) => {
+                      const newTemplate = { ...template, id: `template_${Date.now()}`, isActive: true } as import('@/types/schedule').ShiftTemplate
+                      setTemplates((prev) => [...prev, newTemplate])
                     }}
-                    onDelete={(id) => {
+                    onUpdateTemplate={async (id, updates) => {
+                      setTemplates((prev) =>
+                        prev.map((t) => (t.id === id ? { ...t, ...updates } : t))
+                      )
+                    }}
+                    onDeleteTemplate={async (id) => {
                       setTemplates((prev) => prev.filter((t) => t.id !== id))
+                    }}
+                    onDuplicateTemplate={async (id) => {
+                      const original = templates.find((t) => t.id === id)
+                      if (original) {
+                        const copy = { ...original, id: `template_${Date.now()}`, name: `${original.name} (Copy)` }
+                        setTemplates((prev) => [...prev, copy])
+                      }
                     }}
                   />
                 </div>

@@ -46,7 +46,7 @@ import {
   CreateSwapRequestInput,
   SwapRequestStatus,
 } from '@/types/schedule'
-import { formatDate, formatTime, calculateDuration } from '@/lib/schedule-utils'
+import { formatDate, formatTimeDisplay, calculateDuration } from '@/lib/schedule-utils'
 
 // Types for swap request management
 type SwapType = 'SWAP' | 'GIVEAWAY' | 'PICKUP'
@@ -368,7 +368,7 @@ function ShiftPreview({ shift, compact = false }: ShiftPreviewProps) {
         </div>
         <div className="text-right text-sm">
           <p>
-            {formatTime(shift.startTime)} - {formatTime(shift.endTime)}
+            {formatTimeDisplay(shift.startTime)} - {formatTimeDisplay(shift.endTime)}
           </p>
           <p className="text-muted-foreground">{duration.toFixed(1)}h</p>
         </div>
@@ -394,7 +394,7 @@ function ShiftPreview({ shift, compact = false }: ShiftPreviewProps) {
           </span>
           <span className="flex items-center gap-1">
             <Clock className="h-4 w-4" />
-            {formatTime(shift.startTime)} - {formatTime(shift.endTime)}
+            {formatTimeDisplay(shift.startTime)} - {formatTimeDisplay(shift.endTime)}
           </span>
           <span>{duration.toFixed(1)} hours</span>
         </div>

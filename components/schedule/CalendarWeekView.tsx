@@ -28,6 +28,7 @@ interface CalendarWeekViewProps {
   showTimeSlots?: boolean
   startHour?: number
   endHour?: number
+  className?: string
 }
 
 export function CalendarWeekView({

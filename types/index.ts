@@ -1,10 +1,4 @@
-import { User, Role, Facility, Rink } from '@prisma/client'
-
-export type UserWithRole = User & {
-  role: Role
-  facility: Facility
-}
-
+// Forward declaration of PermissionSet for Role type
 export interface ModulePermissions {
   access: boolean
   submit?: boolean
@@ -28,6 +22,55 @@ export interface PermissionSet {
   incidents: ModulePermissions
   schedule: ModulePermissions
   dailyChecklist: ModulePermissions
+}
+
+// Mock Prisma types until database is set up
+export interface User {
+  id: string
+  email: string
+  firstName: string
+  lastName: string
+  phone?: string
+  avatar?: string
+  facilityId: string
+  roleId: string
+  permissionOverrides?: Partial<PermissionSet>
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface Role {
+  id: string
+  name: string
+  description?: string
+  permissions: PermissionSet
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface Facility {
+  id: string
+  name: string
+  address?: string
+  city?: string
+  state?: string
+  zipCode?: string
+  timezone: string
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface Rink {
+  id: string
+  name: string
+  facilityId: string
+  createdAt: Date
+  updatedAt: Date
+}
+
+export type UserWithRole = User & {
+  role: Role
+  facility: Facility
 }
 
 export type ModuleType =

@@ -39,7 +39,7 @@ export default function RefrigerationViewPage({ params }: { params: Promise<{ id
         return (
           <div className="space-y-6">
             {/* Warning Banner */}
-            {hasWarnings && (
+            {Boolean(hasWarnings) && (
               <div className="bg-red-50 border-2 border-red-500 rounded-lg p-4">
                 <div className="flex items-start gap-3">
                   <svg className="w-6 h-6 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -54,7 +54,7 @@ export default function RefrigerationViewPage({ params }: { params: Promise<{ id
             )}
 
             {/* System Status */}
-            {data.systemStatus && (
+            {Boolean(data.systemStatus) && (
               <div className={`rounded-lg p-4 border ${
                 data.systemStatus === 'RUNNING' ? 'bg-green-50 border-green-300' :
                 data.systemStatus === 'STANDBY' ? 'bg-yellow-50 border-yellow-300' :
@@ -150,7 +150,7 @@ export default function RefrigerationViewPage({ params }: { params: Promise<{ id
             </div>
 
             {/* Pressure Readings */}
-            {(suctionPressure || dischargePressure) && (
+            {Boolean(suctionPressure || dischargePressure) && (
               <div className="bg-white rounded-lg shadow-sm border p-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-6">Pressure Readings</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -171,23 +171,23 @@ export default function RefrigerationViewPage({ params }: { params: Promise<{ id
             )}
 
             {/* Compressor Info */}
-            {(data.compressorNumber || data.oilLevel || data.runHours) && (
+            {Boolean(data.compressorNumber || data.oilLevel || data.runHours) && (
               <div className="bg-white rounded-lg shadow-sm border p-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Compressor Information</h2>
                 <dl className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {data.compressorNumber && (
+                  {Boolean(data.compressorNumber) && (
                     <div>
                       <dt className="text-sm font-medium text-gray-500">Compressor #</dt>
                       <dd className="text-lg font-semibold text-gray-900 mt-1">{String(data.compressorNumber)}</dd>
                     </div>
                   )}
-                  {data.oilLevel && (
+                  {Boolean(data.oilLevel) && (
                     <div>
                       <dt className="text-sm font-medium text-gray-500">Oil Level</dt>
                       <dd className="text-lg font-semibold text-gray-900 mt-1 capitalize">{String(data.oilLevel)}</dd>
                     </div>
                   )}
-                  {data.runHours && (
+                  {Boolean(data.runHours) && (
                     <div>
                       <dt className="text-sm font-medium text-gray-500">Run Hours</dt>
                       <dd className="text-lg font-semibold text-gray-900 mt-1">{String(data.runHours)}</dd>
@@ -198,7 +198,7 @@ export default function RefrigerationViewPage({ params }: { params: Promise<{ id
             )}
 
             {/* Notes */}
-            {data.notes && (
+            {Boolean(data.notes) && (
               <div className="bg-white rounded-lg shadow-sm border p-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-2">Notes</h2>
                 <p className="text-gray-700 whitespace-pre-wrap">{String(data.notes)}</p>

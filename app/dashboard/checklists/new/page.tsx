@@ -36,7 +36,8 @@ export default function NewChecklistPage() {
       title="New Checklist"
       description="Complete opening, closing, or custom facility checklist"
       basePath="/dashboard/checklists"
-      onSubmit={({ customData }) => {
+      onSubmit={({ formData }) => {
+        const customData = formData
         const checkedItems = Object.entries(customData)
           .filter(([key, value]) => key.startsWith('item_') && value === true)
           .map(([key]) => key.replace('item_', ''))
@@ -145,7 +146,7 @@ export default function NewChecklistPage() {
                             }`}>
                               {item.label}
                             </span>
-                            {customData[`item_${item.id}`] && (
+                            {Boolean(customData[`item_${item.id}`]) && (
                               <svg className="w-5 h-5 text-green-600 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                               </svg>

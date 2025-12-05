@@ -25,13 +25,13 @@ export default function IceOperationViewPage({ params }: { params: Promise<{ id:
                   <div className="text-sm text-blue-600 font-medium">Operation Type</div>
                   <div className="text-xl font-bold text-blue-900 mt-1 capitalize">{operationType || '-'}</div>
                 </div>
-                {duration && (
+                {Boolean(duration) && (
                   <div className="bg-green-50 rounded-lg p-4">
                     <div className="text-sm text-green-600 font-medium">Duration</div>
                     <div className="text-xl font-bold text-green-900 mt-1">{duration} min</div>
                   </div>
                 )}
-                {data.iceSheet && (
+                {Boolean(data.iceSheet) && (
                   <div className="bg-purple-50 rounded-lg p-4">
                     <div className="text-sm text-purple-600 font-medium">Ice Sheet</div>
                     <div className="text-xl font-bold text-purple-900 mt-1">{String(data.iceSheet)}</div>
@@ -41,29 +41,29 @@ export default function IceOperationViewPage({ params }: { params: Promise<{ id:
             </div>
 
             {/* Equipment & Settings */}
-            {(data.equipment || data.waterTemperature || data.bladeCondition) && (
+            {Boolean(data.equipment || data.waterTemperature || data.bladeCondition) && (
               <div className="bg-white rounded-lg shadow-sm border p-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Equipment & Settings</h2>
                 <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {data.equipment && (
+                  {Boolean(data.equipment) && (
                     <div>
                       <dt className="text-sm font-medium text-gray-500">Equipment Used</dt>
                       <dd className="text-sm text-gray-900 mt-1">{String(data.equipment)}</dd>
                     </div>
                   )}
-                  {data.waterTemperature && (
+                  {Boolean(data.waterTemperature) && (
                     <div>
                       <dt className="text-sm font-medium text-gray-500">Water Temperature</dt>
                       <dd className="text-sm text-gray-900 mt-1">{String(data.waterTemperature)}°F</dd>
                     </div>
                   )}
-                  {data.bladeCondition && (
+                  {Boolean(data.bladeCondition) && (
                     <div>
                       <dt className="text-sm font-medium text-gray-500">Blade Condition</dt>
                       <dd className="text-sm text-gray-900 mt-1 capitalize">{String(data.bladeCondition).replace(/_/g, ' ')}</dd>
                     </div>
                   )}
-                  {data.waterUsage && (
+                  {Boolean(data.waterUsage) && (
                     <div>
                       <dt className="text-sm font-medium text-gray-500">Water Usage</dt>
                       <dd className="text-sm text-gray-900 mt-1">{String(data.waterUsage)} gallons</dd>
@@ -74,11 +74,11 @@ export default function IceOperationViewPage({ params }: { params: Promise<{ id:
             )}
 
             {/* Ice Conditions */}
-            {(data.iceConditionBefore || data.iceConditionAfter) && (
+            {Boolean(data.iceConditionBefore || data.iceConditionAfter) && (
               <div className="bg-white rounded-lg shadow-sm border p-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Ice Conditions</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {data.iceConditionBefore && (
+                  {Boolean(data.iceConditionBefore) && (
                     <div>
                       <h3 className="text-sm font-medium text-gray-500 mb-2">Before Operation</h3>
                       <div className="bg-gray-50 rounded p-3">
@@ -86,7 +86,7 @@ export default function IceOperationViewPage({ params }: { params: Promise<{ id:
                       </div>
                     </div>
                   )}
-                  {data.iceConditionAfter && (
+                  {Boolean(data.iceConditionAfter) && (
                     <div>
                       <h3 className="text-sm font-medium text-gray-500 mb-2">After Operation</h3>
                       <div className="bg-green-50 rounded p-3">
@@ -99,7 +99,7 @@ export default function IceOperationViewPage({ params }: { params: Promise<{ id:
             )}
 
             {/* Notes */}
-            {data.notes && (
+            {Boolean(data.notes) && (
               <div className="bg-white rounded-lg shadow-sm border p-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-2">Notes</h2>
                 <p className="text-gray-700 whitespace-pre-wrap">{String(data.notes)}</p>
@@ -107,7 +107,7 @@ export default function IceOperationViewPage({ params }: { params: Promise<{ id:
             )}
 
             {/* Issues Reported */}
-            {data.issues && (
+            {Boolean(data.issues) && (
               <div className="bg-yellow-50 rounded-lg border border-yellow-200 p-6">
                 <div className="flex items-start gap-3">
                   <svg className="w-6 h-6 text-yellow-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
