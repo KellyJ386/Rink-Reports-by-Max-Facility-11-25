@@ -26,6 +26,7 @@ export type ResourceType =
   | 'AUDIT_LOGS'
   | 'INTEGRATIONS'
   | 'BILLING'
+  | 'MAINTENANCE'
 
 // Actions that can be performed on resources
 export type ActionType =
@@ -45,6 +46,7 @@ export type ActionType =
 // Permission definition
 export interface Permission {
   id: string
+  name: string
   resource: ResourceType
   action: ActionType
   description: string
@@ -65,64 +67,64 @@ export type PermissionKey = `${ResourceType}:${ActionType}`
 // All available permissions grouped by category
 export const PERMISSIONS: Record<PermissionCategory, Permission[]> = {
   USER_MANAGEMENT: [
-    { id: 'perm-1', resource: 'USERS', action: 'VIEW', description: 'View user list and profiles', category: 'USER_MANAGEMENT', isSystem: true },
-    { id: 'perm-2', resource: 'USERS', action: 'CREATE', description: 'Create new users', category: 'USER_MANAGEMENT', isSystem: true },
-    { id: 'perm-3', resource: 'USERS', action: 'EDIT', description: 'Edit user details', category: 'USER_MANAGEMENT', isSystem: true },
-    { id: 'perm-4', resource: 'USERS', action: 'DELETE', description: 'Deactivate or delete users', category: 'USER_MANAGEMENT', isSystem: true },
-    { id: 'perm-5', resource: 'USERS', action: 'MANAGE', description: 'Full user management access', category: 'USER_MANAGEMENT', isSystem: true },
-    { id: 'perm-6', resource: 'ROLES', action: 'VIEW', description: 'View roles and permissions', category: 'USER_MANAGEMENT', isSystem: true },
-    { id: 'perm-7', resource: 'ROLES', action: 'CREATE', description: 'Create custom roles', category: 'USER_MANAGEMENT', isSystem: true },
-    { id: 'perm-8', resource: 'ROLES', action: 'EDIT', description: 'Modify role permissions', category: 'USER_MANAGEMENT', isSystem: true },
-    { id: 'perm-9', resource: 'ROLES', action: 'DELETE', description: 'Delete custom roles', category: 'USER_MANAGEMENT', isSystem: true },
+    { id: 'perm-1', name: 'View Users', resource: 'USERS', action: 'VIEW', description: 'View user list and profiles', category: 'USER_MANAGEMENT', isSystem: true },
+    { id: 'perm-2', name: 'Create Users', resource: 'USERS', action: 'CREATE', description: 'Create new users', category: 'USER_MANAGEMENT', isSystem: true },
+    { id: 'perm-3', name: 'Edit Users', resource: 'USERS', action: 'EDIT', description: 'Edit user details', category: 'USER_MANAGEMENT', isSystem: true },
+    { id: 'perm-4', name: 'Delete Users', resource: 'USERS', action: 'DELETE', description: 'Deactivate or delete users', category: 'USER_MANAGEMENT', isSystem: true },
+    { id: 'perm-5', name: 'Manage Users', resource: 'USERS', action: 'MANAGE', description: 'Full user management access', category: 'USER_MANAGEMENT', isSystem: true },
+    { id: 'perm-6', name: 'View Roles', resource: 'ROLES', action: 'VIEW', description: 'View roles and permissions', category: 'USER_MANAGEMENT', isSystem: true },
+    { id: 'perm-7', name: 'Create Roles', resource: 'ROLES', action: 'CREATE', description: 'Create custom roles', category: 'USER_MANAGEMENT', isSystem: true },
+    { id: 'perm-8', name: 'Edit Roles', resource: 'ROLES', action: 'EDIT', description: 'Modify role permissions', category: 'USER_MANAGEMENT', isSystem: true },
+    { id: 'perm-9', name: 'Delete Roles', resource: 'ROLES', action: 'DELETE', description: 'Delete custom roles', category: 'USER_MANAGEMENT', isSystem: true },
   ],
   FACILITY_MANAGEMENT: [
-    { id: 'perm-10', resource: 'FACILITIES', action: 'VIEW', description: 'View facility information', category: 'FACILITY_MANAGEMENT', isSystem: true },
-    { id: 'perm-11', resource: 'FACILITIES', action: 'EDIT', description: 'Edit facility settings', category: 'FACILITY_MANAGEMENT', isSystem: true },
-    { id: 'perm-12', resource: 'FACILITIES', action: 'MANAGE', description: 'Full facility management', category: 'FACILITY_MANAGEMENT', isSystem: true },
-    { id: 'perm-13', resource: 'RINKS', action: 'VIEW', description: 'View rink information', category: 'FACILITY_MANAGEMENT', isSystem: true },
-    { id: 'perm-14', resource: 'RINKS', action: 'CREATE', description: 'Add new rinks', category: 'FACILITY_MANAGEMENT', isSystem: true },
-    { id: 'perm-15', resource: 'RINKS', action: 'EDIT', description: 'Edit rink details', category: 'FACILITY_MANAGEMENT', isSystem: true },
-    { id: 'perm-16', resource: 'RINKS', action: 'DELETE', description: 'Remove rinks', category: 'FACILITY_MANAGEMENT', isSystem: true },
-    { id: 'perm-17', resource: 'SETTINGS', action: 'VIEW', description: 'View system settings', category: 'FACILITY_MANAGEMENT', isSystem: true },
-    { id: 'perm-18', resource: 'SETTINGS', action: 'EDIT', description: 'Modify system settings', category: 'FACILITY_MANAGEMENT', isSystem: true },
+    { id: 'perm-10', name: 'View Facilities', resource: 'FACILITIES', action: 'VIEW', description: 'View facility information', category: 'FACILITY_MANAGEMENT', isSystem: true },
+    { id: 'perm-11', name: 'Edit Facilities', resource: 'FACILITIES', action: 'EDIT', description: 'Edit facility settings', category: 'FACILITY_MANAGEMENT', isSystem: true },
+    { id: 'perm-12', name: 'Manage Facilities', resource: 'FACILITIES', action: 'MANAGE', description: 'Full facility management', category: 'FACILITY_MANAGEMENT', isSystem: true },
+    { id: 'perm-13', name: 'View Rinks', resource: 'RINKS', action: 'VIEW', description: 'View rink information', category: 'FACILITY_MANAGEMENT', isSystem: true },
+    { id: 'perm-14', name: 'Create Rinks', resource: 'RINKS', action: 'CREATE', description: 'Add new rinks', category: 'FACILITY_MANAGEMENT', isSystem: true },
+    { id: 'perm-15', name: 'Edit Rinks', resource: 'RINKS', action: 'EDIT', description: 'Edit rink details', category: 'FACILITY_MANAGEMENT', isSystem: true },
+    { id: 'perm-16', name: 'Delete Rinks', resource: 'RINKS', action: 'DELETE', description: 'Remove rinks', category: 'FACILITY_MANAGEMENT', isSystem: true },
+    { id: 'perm-17', name: 'View Settings', resource: 'SETTINGS', action: 'VIEW', description: 'View system settings', category: 'FACILITY_MANAGEMENT', isSystem: true },
+    { id: 'perm-18', name: 'Edit Settings', resource: 'SETTINGS', action: 'EDIT', description: 'Modify system settings', category: 'FACILITY_MANAGEMENT', isSystem: true },
   ],
   SCHEDULE_MANAGEMENT: [
-    { id: 'perm-19', resource: 'SCHEDULES', action: 'VIEW', description: 'View schedules', category: 'SCHEDULE_MANAGEMENT', isSystem: true },
-    { id: 'perm-20', resource: 'SCHEDULES', action: 'CREATE', description: 'Create schedules', category: 'SCHEDULE_MANAGEMENT', isSystem: true },
-    { id: 'perm-21', resource: 'SCHEDULES', action: 'EDIT', description: 'Edit schedules', category: 'SCHEDULE_MANAGEMENT', isSystem: true },
-    { id: 'perm-22', resource: 'SCHEDULES', action: 'DELETE', description: 'Delete schedules', category: 'SCHEDULE_MANAGEMENT', isSystem: true },
-    { id: 'perm-23', resource: 'SCHEDULES', action: 'PUBLISH', description: 'Publish schedules', category: 'SCHEDULE_MANAGEMENT', isSystem: true },
-    { id: 'perm-24', resource: 'SHIFTS', action: 'VIEW', description: 'View shifts', category: 'SCHEDULE_MANAGEMENT', isSystem: true },
-    { id: 'perm-25', resource: 'SHIFTS', action: 'CREATE', description: 'Create shifts', category: 'SCHEDULE_MANAGEMENT', isSystem: true },
-    { id: 'perm-26', resource: 'SHIFTS', action: 'EDIT', description: 'Edit shifts', category: 'SCHEDULE_MANAGEMENT', isSystem: true },
-    { id: 'perm-27', resource: 'SHIFTS', action: 'DELETE', description: 'Delete shifts', category: 'SCHEDULE_MANAGEMENT', isSystem: true },
-    { id: 'perm-28', resource: 'SHIFTS', action: 'ASSIGN', description: 'Assign employees to shifts', category: 'SCHEDULE_MANAGEMENT', isSystem: true },
-    { id: 'perm-29', resource: 'SHIFTS', action: 'APPROVE', description: 'Approve shift swaps', category: 'SCHEDULE_MANAGEMENT', isSystem: true },
+    { id: 'perm-19', name: 'View Schedules', resource: 'SCHEDULES', action: 'VIEW', description: 'View schedules', category: 'SCHEDULE_MANAGEMENT', isSystem: true },
+    { id: 'perm-20', name: 'Create Schedules', resource: 'SCHEDULES', action: 'CREATE', description: 'Create schedules', category: 'SCHEDULE_MANAGEMENT', isSystem: true },
+    { id: 'perm-21', name: 'Edit Schedules', resource: 'SCHEDULES', action: 'EDIT', description: 'Edit schedules', category: 'SCHEDULE_MANAGEMENT', isSystem: true },
+    { id: 'perm-22', name: 'Delete Schedules', resource: 'SCHEDULES', action: 'DELETE', description: 'Delete schedules', category: 'SCHEDULE_MANAGEMENT', isSystem: true },
+    { id: 'perm-23', name: 'Publish Schedules', resource: 'SCHEDULES', action: 'PUBLISH', description: 'Publish schedules', category: 'SCHEDULE_MANAGEMENT', isSystem: true },
+    { id: 'perm-24', name: 'View Shifts', resource: 'SHIFTS', action: 'VIEW', description: 'View shifts', category: 'SCHEDULE_MANAGEMENT', isSystem: true },
+    { id: 'perm-25', name: 'Create Shifts', resource: 'SHIFTS', action: 'CREATE', description: 'Create shifts', category: 'SCHEDULE_MANAGEMENT', isSystem: true },
+    { id: 'perm-26', name: 'Edit Shifts', resource: 'SHIFTS', action: 'EDIT', description: 'Edit shifts', category: 'SCHEDULE_MANAGEMENT', isSystem: true },
+    { id: 'perm-27', name: 'Delete Shifts', resource: 'SHIFTS', action: 'DELETE', description: 'Delete shifts', category: 'SCHEDULE_MANAGEMENT', isSystem: true },
+    { id: 'perm-28', name: 'Assign Shifts', resource: 'SHIFTS', action: 'ASSIGN', description: 'Assign employees to shifts', category: 'SCHEDULE_MANAGEMENT', isSystem: true },
+    { id: 'perm-29', name: 'Approve Shifts', resource: 'SHIFTS', action: 'APPROVE', description: 'Approve shift swaps', category: 'SCHEDULE_MANAGEMENT', isSystem: true },
   ],
   REPORT_MANAGEMENT: [
-    { id: 'perm-30', resource: 'INCIDENTS', action: 'VIEW', description: 'View incidents', category: 'REPORT_MANAGEMENT', isSystem: true },
-    { id: 'perm-31', resource: 'INCIDENTS', action: 'CREATE', description: 'Submit incidents', category: 'REPORT_MANAGEMENT', isSystem: true },
-    { id: 'perm-32', resource: 'INCIDENTS', action: 'EDIT', description: 'Edit incidents', category: 'REPORT_MANAGEMENT', isSystem: true },
-    { id: 'perm-33', resource: 'INCIDENTS', action: 'APPROVE', description: 'Approve incidents', category: 'REPORT_MANAGEMENT', isSystem: true },
-    { id: 'perm-34', resource: 'INCIDENTS', action: 'REJECT', description: 'Reject incidents', category: 'REPORT_MANAGEMENT', isSystem: true },
-    { id: 'perm-35', resource: 'ICE_DEPTH', action: 'VIEW', description: 'View ice depth readings', category: 'REPORT_MANAGEMENT', isSystem: true },
-    { id: 'perm-36', resource: 'ICE_DEPTH', action: 'CREATE', description: 'Submit ice depth readings', category: 'REPORT_MANAGEMENT', isSystem: true },
-    { id: 'perm-37', resource: 'AIR_QUALITY', action: 'VIEW', description: 'View air quality readings', category: 'REPORT_MANAGEMENT', isSystem: true },
-    { id: 'perm-38', resource: 'AIR_QUALITY', action: 'CREATE', description: 'Submit air quality readings', category: 'REPORT_MANAGEMENT', isSystem: true },
-    { id: 'perm-39', resource: 'REPORTS', action: 'VIEW', description: 'View all reports', category: 'REPORT_MANAGEMENT', isSystem: true },
-    { id: 'perm-40', resource: 'REPORTS', action: 'EXPORT', description: 'Export reports', category: 'REPORT_MANAGEMENT', isSystem: true },
-    { id: 'perm-41', resource: 'FORMS', action: 'VIEW', description: 'View form templates', category: 'REPORT_MANAGEMENT', isSystem: true },
-    { id: 'perm-42', resource: 'FORMS', action: 'CREATE', description: 'Create form templates', category: 'REPORT_MANAGEMENT', isSystem: true },
-    { id: 'perm-43', resource: 'FORMS', action: 'EDIT', description: 'Edit form templates', category: 'REPORT_MANAGEMENT', isSystem: true },
+    { id: 'perm-30', name: 'View Incidents', resource: 'INCIDENTS', action: 'VIEW', description: 'View incidents', category: 'REPORT_MANAGEMENT', isSystem: true },
+    { id: 'perm-31', name: 'Create Incidents', resource: 'INCIDENTS', action: 'CREATE', description: 'Submit incidents', category: 'REPORT_MANAGEMENT', isSystem: true },
+    { id: 'perm-32', name: 'Edit Incidents', resource: 'INCIDENTS', action: 'EDIT', description: 'Edit incidents', category: 'REPORT_MANAGEMENT', isSystem: true },
+    { id: 'perm-33', name: 'Approve Incidents', resource: 'INCIDENTS', action: 'APPROVE', description: 'Approve incidents', category: 'REPORT_MANAGEMENT', isSystem: true },
+    { id: 'perm-34', name: 'Reject Incidents', resource: 'INCIDENTS', action: 'REJECT', description: 'Reject incidents', category: 'REPORT_MANAGEMENT', isSystem: true },
+    { id: 'perm-35', name: 'View Ice Depth', resource: 'ICE_DEPTH', action: 'VIEW', description: 'View ice depth readings', category: 'REPORT_MANAGEMENT', isSystem: true },
+    { id: 'perm-36', name: 'Create Ice Depth', resource: 'ICE_DEPTH', action: 'CREATE', description: 'Submit ice depth readings', category: 'REPORT_MANAGEMENT', isSystem: true },
+    { id: 'perm-37', name: 'View Air Quality', resource: 'AIR_QUALITY', action: 'VIEW', description: 'View air quality readings', category: 'REPORT_MANAGEMENT', isSystem: true },
+    { id: 'perm-38', name: 'Create Air Quality', resource: 'AIR_QUALITY', action: 'CREATE', description: 'Submit air quality readings', category: 'REPORT_MANAGEMENT', isSystem: true },
+    { id: 'perm-39', name: 'View Reports', resource: 'REPORTS', action: 'VIEW', description: 'View all reports', category: 'REPORT_MANAGEMENT', isSystem: true },
+    { id: 'perm-40', name: 'Export Reports', resource: 'REPORTS', action: 'EXPORT', description: 'Export reports', category: 'REPORT_MANAGEMENT', isSystem: true },
+    { id: 'perm-41', name: 'View Forms', resource: 'FORMS', action: 'VIEW', description: 'View form templates', category: 'REPORT_MANAGEMENT', isSystem: true },
+    { id: 'perm-42', name: 'Create Forms', resource: 'FORMS', action: 'CREATE', description: 'Create form templates', category: 'REPORT_MANAGEMENT', isSystem: true },
+    { id: 'perm-43', name: 'Edit Forms', resource: 'FORMS', action: 'EDIT', description: 'Edit form templates', category: 'REPORT_MANAGEMENT', isSystem: true },
   ],
   SYSTEM_ADMINISTRATION: [
-    { id: 'perm-44', resource: 'AUDIT_LOGS', action: 'VIEW', description: 'View audit logs', category: 'SYSTEM_ADMINISTRATION', isSystem: true },
-    { id: 'perm-45', resource: 'AUDIT_LOGS', action: 'EXPORT', description: 'Export audit logs', category: 'SYSTEM_ADMINISTRATION', isSystem: true },
-    { id: 'perm-46', resource: 'INTEGRATIONS', action: 'VIEW', description: 'View integrations', category: 'SYSTEM_ADMINISTRATION', isSystem: true },
-    { id: 'perm-47', resource: 'INTEGRATIONS', action: 'MANAGE', description: 'Manage integrations', category: 'SYSTEM_ADMINISTRATION', isSystem: true },
-    { id: 'perm-48', resource: 'NOTIFICATIONS', action: 'MANAGE', description: 'Manage notification settings', category: 'SYSTEM_ADMINISTRATION', isSystem: true },
-    { id: 'perm-49', resource: 'BILLING', action: 'VIEW', description: 'View billing information', category: 'SYSTEM_ADMINISTRATION', isSystem: true },
-    { id: 'perm-50', resource: 'BILLING', action: 'MANAGE', description: 'Manage billing', category: 'SYSTEM_ADMINISTRATION', isSystem: true },
+    { id: 'perm-44', name: 'View Audit Logs', resource: 'AUDIT_LOGS', action: 'VIEW', description: 'View audit logs', category: 'SYSTEM_ADMINISTRATION', isSystem: true },
+    { id: 'perm-45', name: 'Export Audit Logs', resource: 'AUDIT_LOGS', action: 'EXPORT', description: 'Export audit logs', category: 'SYSTEM_ADMINISTRATION', isSystem: true },
+    { id: 'perm-46', name: 'View Integrations', resource: 'INTEGRATIONS', action: 'VIEW', description: 'View integrations', category: 'SYSTEM_ADMINISTRATION', isSystem: true },
+    { id: 'perm-47', name: 'Manage Integrations', resource: 'INTEGRATIONS', action: 'MANAGE', description: 'Manage integrations', category: 'SYSTEM_ADMINISTRATION', isSystem: true },
+    { id: 'perm-48', name: 'Manage Notifications', resource: 'NOTIFICATIONS', action: 'MANAGE', description: 'Manage notification settings', category: 'SYSTEM_ADMINISTRATION', isSystem: true },
+    { id: 'perm-49', name: 'View Billing', resource: 'BILLING', action: 'VIEW', description: 'View billing information', category: 'SYSTEM_ADMINISTRATION', isSystem: true },
+    { id: 'perm-50', name: 'Manage Billing', resource: 'BILLING', action: 'MANAGE', description: 'Manage billing', category: 'SYSTEM_ADMINISTRATION', isSystem: true },
   ],
 }
 
@@ -133,7 +135,7 @@ export const ALL_PERMISSIONS: Permission[] = Object.values(PERMISSIONS).flat()
 // ROLE SYSTEM
 // ============================================
 
-export type RoleType = 'SYSTEM' | 'CUSTOM'
+export type RoleType = 'SYSTEM' | 'CUSTOM' | 'TEMPORARY'
 
 export interface Role {
   id: string
@@ -277,9 +279,11 @@ export interface User {
   roleId: string
   role?: Role
   permissionOverrides?: PermissionOverride[] // User-specific permission changes
+  permissions?: PermissionKey[] // Direct permissions list
 
   // Facility assignment
   facilityIds: string[]
+  facilityId?: string // Primary facility (alias)
   primaryFacilityId?: string
 
   // Employment
@@ -300,6 +304,7 @@ export interface User {
   // Preferences
   timezone?: string
   locale?: string
+  preferences?: UserPreferences
 
   // Metadata
   invitedBy?: string
@@ -322,11 +327,31 @@ export interface PermissionOverride {
   expiresAt?: string
 }
 
+// User preferences
+export interface UserPreferences {
+  theme?: 'light' | 'dark' | 'system'
+  language?: string
+  timezone?: string
+  dashboardLayout?: 'compact' | 'expanded' | 'custom' | string
+  notifications?: {
+    email?: boolean
+    push?: boolean
+    sms?: boolean
+    scheduleChanges?: boolean
+    shiftReminders?: boolean
+    incidentAlerts?: boolean
+    systemUpdates?: boolean
+  }
+}
+
 // User with computed fields
 export interface UserWithDetails extends User {
   role: Role
   facilities: Facility[]
+  facility?: Facility // Primary facility
   effectivePermissions: PermissionKey[]
+  permissions?: PermissionKey[] // Alias for effectivePermissions
+  preferences?: UserPreferences
 }
 
 // ============================================
@@ -341,10 +366,12 @@ export interface UserInvitation {
   firstName?: string
   lastName?: string
   roleId: string
-  facilityIds: string[]
+  facilityId?: string // Single facility assignment
+  facilityIds?: string[] // Multiple facility assignment
   status: InvitationStatus
   token: string
   message?: string
+  personalMessage?: string // Alternative field name for message
   invitedBy: string
   invitedAt: string
   expiresAt: string
@@ -359,7 +386,7 @@ export interface UserInvitation {
 export interface Facility {
   id: string
   name: string
-  slug: string
+  slug?: string
   address: string
   city: string
   state: string
@@ -372,7 +399,8 @@ export interface Facility {
   logo?: string
 
   // Status
-  isActive: boolean
+  isActive?: boolean
+  status?: 'active' | 'inactive' | 'pending' | string
 
   // Counts
   userCount?: number
@@ -383,50 +411,85 @@ export interface Facility {
 }
 
 export interface FacilitySettings {
-  id: string
+  id?: string
   facilityId: string
 
   // General settings
-  operatingHours: {
-    [day: string]: { open: string; close: string; closed?: boolean }
+  general: {
+    name: string
+    address: string
+    city: string
+    state: string
+    zipCode: string
+    country: string
+    phone?: string
+    email?: string
+    website?: string
+    timezone: string
+    currency?: string
+    dateFormat?: string
+    timeFormat?: '12h' | '24h'
+  }
+
+  // Operations settings
+  operations: {
+    operatingHours: {
+      [day: string]: { open: string; close: string; closed?: boolean }
+    }
+    resurfacingInterval: number // minutes
+    maintenanceWindow: {
+      day: string
+      startTime: string
+      endTime: string
+    }
+    maxCapacity: number
+    emergencyContact: string
   }
 
   // Air quality thresholds
-  airQualityThresholds: {
-    co: { warning: number; critical: number; evacuation: number }
-    no2: { warning: number; critical: number; evacuation: number }
-  }
-
-  // Ice depth settings
-  iceDepthSettings: {
-    targetDepth: number // inches
-    minDepth: number
-    maxDepth: number
-    measurementFrequency: 'DAILY' | 'SHIFT' | 'CUSTOM'
-    defaultGridType: '25' | '35' | '47' | 'CUSTOM'
+  airQuality: {
+    co2ThresholdWarning: number
+    co2ThresholdCritical: number
+    coThresholdWarning: number
+    coThresholdCritical: number
+    no2ThresholdWarning: number
+    no2ThresholdCritical: number
+    monitoringInterval: number // minutes
+    alertRecipients: string[]
+    autoShutdownEnabled: boolean
   }
 
   // Scheduling settings
-  schedulingSettings: {
+  scheduling: {
     defaultShiftDuration: number // hours
-    minShiftDuration: number
-    maxShiftDuration: number
+    minShiftGap: number
+    maxWeeklyHours: number
     overtimeThreshold: number // hours per week
     advanceSchedulingDays: number
-    autoPublishEnabled: boolean
-    swapRequiresApproval: boolean
+    autoApproveSwaps: boolean
+    requireManagerApproval: boolean
   }
 
   // Notification settings
-  notificationSettings: {
-    airQualityAlertRecipients: string[] // user IDs
-    incidentAlertRecipients: string[]
-    schedulePublishRecipients: string[]
-    emergencyContactNumbers: string[]
+  notifications: {
+    emailEnabled: boolean
+    smsEnabled: boolean
+    pushEnabled: boolean
+    digestFrequency: 'realtime' | 'hourly' | 'daily' | 'weekly'
     quietHoursStart: string
     quietHoursEnd: string
-    smsEnabled: boolean
-    emailEnabled: boolean
+  }
+
+  // Security settings
+  security: {
+    sessionTimeout: number // minutes
+    maxLoginAttempts: number
+    passwordMinLength: number
+    passwordRequireSpecial: boolean
+    passwordRequireNumbers: boolean
+    passwordExpiryDays: number
+    twoFactorEnabled: boolean
+    ipWhitelist: string[]
   }
 
   // Data retention
@@ -434,24 +497,27 @@ export interface FacilitySettings {
     incidentRetentionDays: number
     reportRetentionDays: number
     auditLogRetentionDays: number
-    scheduleArchiveDays: number
+    scheduleRetentionDays: number
+    scheduleArchiveDays?: number
   }
 
   // Integrations
   integrations: {
-    weatherApiEnabled: boolean
+    googleCalendarEnabled: boolean
+    slackEnabled: boolean
+    weatherApiEnabled?: boolean
     weatherApiKey?: string
-    smsProvider?: 'twilio' | 'vonage'
+    smsProvider: 'twilio' | 'vonage' | string
     smsApiKey?: string
-    emailProvider?: 'resend' | 'sendgrid'
+    emailProvider: 'smtp' | 'resend' | 'sendgrid' | string
     emailApiKey?: string
   }
 
   // Custom fields
   customFields?: Record<string, unknown>
 
-  updatedAt: string
-  updatedBy: string
+  updatedAt?: string
+  updatedBy?: string
 }
 
 // ============================================
@@ -484,7 +550,7 @@ export type AuditAction =
   | 'UNLOCK'
   | 'SETTING_CHANGE'
 
-export type AuditSeverity = 'INFO' | 'WARNING' | 'CRITICAL'
+export type AuditSeverity = 'INFO' | 'WARNING' | 'ERROR' | 'CRITICAL'
 
 export interface AuditLog {
   id: string
@@ -493,15 +559,17 @@ export interface AuditLog {
   // Actor
   userId: string
   userName: string
-  userEmail: string
-  userRole: string
+  userEmail?: string
+  userRole?: string
 
   // Action
   action: AuditAction
   severity: AuditSeverity
+  status?: 'SUCCESS' | 'FAILURE'
 
-  // Target
-  resourceType: ResourceType | 'SESSION' | 'SYSTEM'
+  // Target - support both 'resource' and 'resourceType' for API compatibility
+  resource?: string
+  resourceType?: ResourceType | 'SESSION' | 'SYSTEM'
   resourceId?: string
   resourceName?: string
 
@@ -509,9 +577,17 @@ export interface AuditLog {
   facilityId?: string
   facilityName?: string
 
-  // Details
-  description: string
-  changes?: AuditChange[]
+  // Details - support both 'details' and 'description' for API compatibility
+  description?: string
+  details?: {
+    description?: string
+    [key: string]: unknown
+  }
+  changes?: {
+    before?: Record<string, unknown>
+    after?: Record<string, unknown>
+    fields?: AuditChange[]
+  }
   metadata?: Record<string, unknown>
 
   // Request info
