@@ -8,3 +8,6 @@ export { DateTimeField } from './DateTimeField'
 export { FileField } from './FileField'
 export { SignatureField } from './SignatureField'
 export { HeadingField, ParagraphField, DividerField } from './LayoutFields'
+// Specialized fields
+export { IceDepthGridField } from './IceDepthGridField'
+export { BodyDiagramField } from './BodyDiagramField'

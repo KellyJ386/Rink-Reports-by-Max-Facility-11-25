@@ -161,6 +161,22 @@ export const fieldPaletteItems: FieldPaletteItem[] = [
     category: 'layout',
     defaultConfig: { label: '' }
   },
+
+  // Specialized fields
+  {
+    type: 'iceDepthGrid',
+    label: 'Ice Depth Grid',
+    icon: '🧊',
+    category: 'specialized' as const,
+    defaultConfig: { label: 'Ice Depth Measurements', min: 0.75, max: 1.25 }
+  },
+  {
+    type: 'bodyDiagram',
+    label: 'Body Diagram',
+    icon: '🏥',
+    category: 'specialized' as const,
+    defaultConfig: { label: 'Injury Location' }
+  },
 ]
 
 interface DraggablePaletteItemProps {
@@ -202,10 +218,11 @@ const categoryLabels: Record<string, string> = {
   date: 'Date & Time',
   media: 'Media',
   layout: 'Layout',
+  specialized: 'Specialized',
 }
 
 export function FieldPalette() {
-  const categories = ['basic', 'choice', 'date', 'media', 'layout'] as const
+  const categories = ['basic', 'choice', 'date', 'media', 'layout', 'specialized'] as const
 
   return (
     <div className="w-64 bg-gray-50 border-r border-gray-200 p-4 overflow-y-auto">

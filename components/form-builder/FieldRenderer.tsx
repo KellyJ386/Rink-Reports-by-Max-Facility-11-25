@@ -14,7 +14,11 @@ import {
   HeadingField,
   ParagraphField,
   DividerField,
+  IceDepthGridField,
+  BodyDiagramField,
 } from './fields'
+import type { IceDepthGridValue } from './fields/IceDepthGridField'
+import type { BodyDiagramValue } from './fields/BodyDiagramField'
 
 interface FieldRendererProps {
   field: FormField
@@ -149,6 +153,30 @@ export function FieldRenderer({ field, value, onChange, error, disabled, preview
 
     case 'divider':
       return <DividerField field={field} />
+
+    case 'iceDepthGrid':
+      return (
+        <IceDepthGridField
+          field={field}
+          value={value as IceDepthGridValue}
+          onChange={onChange}
+          error={error}
+          disabled={disabled}
+          preview={preview}
+        />
+      )
+
+    case 'bodyDiagram':
+      return (
+        <BodyDiagramField
+          field={field}
+          value={value as BodyDiagramValue}
+          onChange={onChange}
+          error={error}
+          disabled={disabled}
+          preview={preview}
+        />
+      )
 
     default:
       return (

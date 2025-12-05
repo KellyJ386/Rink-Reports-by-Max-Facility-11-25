@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { FormVersionHistory } from '@/components/form-builder/FormVersionHistory'
 
 interface FormTemplate {
   id: string
@@ -45,6 +46,7 @@ export default function FormsListPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [filter, setFilter] = useState<string>('all')
+  const [versionHistoryFormId, setVersionHistoryFormId] = useState<string | null>(null)
 
   useEffect(() => {
     fetchForms()
@@ -222,9 +224,13 @@ export default function FormsListPage() {
                         {moduleLabels[form.moduleType]}
                       </span>
                       {form.version > 1 && (
-                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-                          v{form.version}
-                        </span>
+                        <button
+                          onClick={() => setVersionHistoryFormId(form.id)}
+                          className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+                          title="View version history"
+                        >
+                          v{form.version} ↗
+                        </button>
                       )}
                       {!form.isActive && (
                         <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-600">
@@ -277,6 +283,17 @@ export default function FormsListPage() {
             </div>
           ))}
         </div>
+      )}
+
+      {/* Version History Modal */}
+      {versionHistoryFormId && (
+        <FormVersionHistory
+          formId={versionHistoryFormId}
+          onClose={() => setVersionHistoryFormId(null)}
+          onSelectVersion={(versionId) => {
+            router.push(`/dashboard/admin/forms/${versionId}`)
+          }}
+        />
       )}
     </div>
   )

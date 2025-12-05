@@ -75,6 +75,9 @@ export type FieldType =
   | 'heading'
   | 'paragraph'
   | 'divider'
+  // Specialized fields
+  | 'iceDepthGrid'
+  | 'bodyDiagram'
 
 export interface SelectOption {
   label: string
@@ -196,6 +199,6 @@ export interface FieldPaletteItem {
   type: FieldType
   label: string
   icon: string
-  category: 'basic' | 'choice' | 'date' | 'media' | 'layout'
+  category: 'basic' | 'choice' | 'date' | 'media' | 'layout' | 'specialized'
   defaultConfig: Partial<FormField>
 }

@@ -12,11 +12,13 @@ import {
   useSensors,
 } from '@dnd-kit/core'
 import { arrayMove } from '@dnd-kit/sortable'
-import { FormField, FormSchema, FieldType } from '@/types'
+import { FormField, FormSchema, FieldType, ConditionalRule, CalculatedField } from '@/types'
 import { FieldPalette, fieldPaletteItems } from './FieldPalette'
 import { FormCanvas } from './FormCanvas'
 import { FieldConfigPanel } from './FieldConfigPanel'
 import { FormPreview } from './FormPreview'
+import { ConditionalLogicPanel } from './ConditionalLogicPanel'
+import { CalculatedFieldsPanel } from './CalculatedFieldsPanel'
 
 interface FormBuilderProps {
   initialSchema?: FormSchema
@@ -60,6 +62,10 @@ export function FormBuilder({
   const [selectedField, setSelectedField] = useState<FormField | null>(null)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [showPreview, setShowPreview] = useState(false)
+  const [showConditionalLogic, setShowConditionalLogic] = useState(false)
+  const [showCalculatedFields, setShowCalculatedFields] = useState(false)
+  const [conditionalRules, setConditionalRules] = useState<ConditionalRule[]>([])
+  const [calculatedFields, setCalculatedFields] = useState<CalculatedField[]>([])
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -133,6 +139,7 @@ export function FormBuilder({
         },
       ],
     }
+    // Note: conditionalRules and calculatedFields are saved separately via API
     onSave(schema)
   }
 
@@ -158,7 +165,22 @@ export function FormBuilder({
             />
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowConditionalLogic(true)}
+              className="btn btn-secondary text-sm"
+              title="Conditional Logic"
+            >
+              🔀 Logic {conditionalRules.length > 0 && `(${conditionalRules.length})`}
+            </button>
+            <button
+              onClick={() => setShowCalculatedFields(true)}
+              className="btn btn-secondary text-sm"
+              title="Calculated Fields"
+            >
+              🔢 Calc {calculatedFields.length > 0 && `(${calculatedFields.length})`}
+            </button>
+            <div className="border-l border-gray-300 h-6 mx-1" />
             <button
               onClick={() => setShowPreview(!showPreview)}
               className="btn btn-secondary"
@@ -229,6 +251,26 @@ export function FormBuilder({
           </DndContext>
         )}
       </div>
+
+      {/* Conditional Logic Panel */}
+      {showConditionalLogic && (
+        <ConditionalLogicPanel
+          fields={fields}
+          rules={conditionalRules}
+          onRulesChange={setConditionalRules}
+          onClose={() => setShowConditionalLogic(false)}
+        />
+      )}
+
+      {/* Calculated Fields Panel */}
+      {showCalculatedFields && (
+        <CalculatedFieldsPanel
+          fields={fields}
+          calculatedFields={calculatedFields}
+          onCalculatedFieldsChange={setCalculatedFields}
+          onClose={() => setShowCalculatedFields(false)}
+        />
+      )}
     </div>
   )
 }
