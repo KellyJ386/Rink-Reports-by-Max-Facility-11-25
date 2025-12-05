@@ -86,6 +86,7 @@ model Rink {
   // Relations
   submissions           Submission[]
   iceDepthConfiguration IceDepthConfiguration?
+  scheduleEntries       ScheduleEntry[]
 
   @@map("rinks")
 }
@@ -115,9 +116,11 @@ model User {
   permissionOverrides Json?
 
   // Relations
-  submissions     Submission[]
-  auditLogs       AuditLog[]
-  scheduleEntries ScheduleEntry[]
+  submissions          Submission[]
+  auditLogs            AuditLog[]
+  scheduleEntries      ScheduleEntry[]
+  availability         EmployeeAvailability[]
+  timeOffRequests      TimeOffRequest[]
 
   @@map("users")
 }
@@ -262,39 +265,110 @@ enum AttachmentType {
 // ==================== SCHEDULE ====================
 
 model ShiftDefinition {
-  id         String   @id @default(cuid())
-  facilityId String
-  facility   Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
-  rinkId     String? // null = facility-wide, or specific rink
-  name       String // "Morning", "Evening", "Overnight"
-  startTime  String // "06:00" (24hr format)
-  endTime    String // "14:00"
-  color      String? // For UI display
-  isActive   Boolean  @default(true)
+  id          String   @id @default(cuid())
+  facilityId  String
+  facility    Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  rinkId      String? // null = facility-wide, or specific rink
+  name        String // "Morning", "Evening", "Overnight"
+  description String? // Detailed shift description
+  startTime   String // "06:00" (24hr format)
+  endTime     String // "14:00"
+  color       String? // For UI display
+  isActive    Boolean  @default(true)
 
+  // Staffing requirements
+  minStaffRequired  Int @default(1)
+  maxStaffAllowed   Int @default(5)
+
+  // Relations
+  scheduleEntries ScheduleEntry[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([facilityId])
+  @@index([facilityId, isActive])
   @@map("shift_definitions")
 }
 
 model ScheduleEntry {
-  id            String         @id @default(cuid())
-  userId        String
-  user          User           @relation(fields: [userId], references: [id])
-  shiftId       String?
-  rinkId        String?
-  date          DateTime       @db.Date
-  startTime     String
-  endTime       String
-  isOpenShift   Boolean        @default(false)
-  isEmergency   Boolean        @default(false)
-  status        ScheduleStatus @default(DRAFT)
-  waitlistUsers Json? // Array of user IDs in order
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  id              String          @id @default(cuid())
+  facilityId      String
+  userId          String?         // null for open/unfilled shifts
+  user            User?           @relation(fields: [userId], references: [id])
+  shiftId         String?
+  shift           ShiftDefinition? @relation(fields: [shiftId], references: [id])
+  rinkId          String?
+  rink            Rink?           @relation(fields: [rinkId], references: [id])
+  date            DateTime        @db.Date
+  startTime       String          // "06:00" (24hr format)
+  endTime         String          // "14:00"
+  isOpenShift     Boolean         @default(false) // Available for claiming
+  isEmergency     Boolean         @default(false) // Urgent coverage needed
+  status          ScheduleStatus  @default(DRAFT)
+  notes           String?         // Special instructions
+  waitlistUsers   Json?           // Array of user IDs in order
+
+  // Tracking
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
   createdById   String
   publishedAt   DateTime?
   publishedById String?
+  claimedAt     DateTime? // When an open shift was claimed
+  claimedById   String?   // Who claimed the shift
 
+  // Indexes for common queries
+  @@index([facilityId, date])           // Get facility schedule for date
+  @@index([userId, date])               // Get employee schedule for date
+  @@index([rinkId, date])               // Get rink schedule for date
+  @@index([date, status])               // Get published schedules by date
+  @@index([isOpenShift, status])        // Find open shifts
+  @@index([facilityId, status])         // Facility schedules by status
   @@map("schedule_entries")
+}
+
+// Employee availability for scheduling
+model EmployeeAvailability {
+  id         String          @id @default(cuid())
+  userId     String
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dayOfWeek  Int             // 0=Sunday, 1=Monday, etc.
+  startTime  String?         // null means not available
+  endTime    String?
+  isAvailable Boolean        @default(true)
+  notes      String?
+
+  @@unique([userId, dayOfWeek])
+  @@index([userId])
+  @@map("employee_availability")
+}
+
+// Time-off requests
+model TimeOffRequest {
+  id          String            @id @default(cuid())
+  userId      String
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  startDate   DateTime          @db.Date
+  endDate     DateTime          @db.Date
+  reason      String?
+  status      TimeOffStatus     @default(PENDING)
+  reviewedById String?
+  reviewedAt  DateTime?
+  reviewNotes String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@index([userId, status])
+  @@index([startDate, endDate])
+  @@map("time_off_requests")
+}
+
+enum TimeOffStatus {
+  PENDING
+  APPROVED
+  DENIED
+  CANCELLED
 }
 
 enum ScheduleStatus {
