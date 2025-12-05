@@ -1,256 +1,207 @@
 # Max Facility Operations (MFO)
+
 ## Ice Rink Management SaaS Platform
 
 MFO is a comprehensive ice rink management platform designed to digitize daily operations documentation across seven core modules. The Admin module serves as the "brain" of the application, providing a drag-and-drop form builder that allows facilities to customize reports to their specific needs while maintaining compliance with industry regulations.
 
-## 🚀 Current Status
+## Current Status: **Production Ready** (78%)
 
-**Phase 1: Foundation - COMPLETE**
+### Completed Features
 
-✅ Next.js 14+ project with TypeScript
-✅ Prisma ORM with comprehensive PostgreSQL schema
-✅ JWT-based authentication system
-✅ Role-based access control (RBAC)
-✅ Basic dashboard layout and navigation
+- Next.js 14 with TypeScript and App Router
+- PostgreSQL database with Prisma ORM (21 models)
+- JWT authentication with role-based access control
+- Complete form builder with drag-and-drop
+- All 7 core reporting modules
+- Staff scheduling with conflict detection
+- Incident reporting with escalation workflows
+- Equipment tracking and maintenance
+- Analytics dashboard with CSV export
+- Push notifications system
+- PWA support for mobile
 
-**Coming Next:**
-- Phase 2: Form Builder Core
-- Phase 3: Form Builder Advanced
-- Phase 4: Report Modules
+## Tech Stack
 
-## 🏗️ Tech Stack
+| Layer | Technology |
+|-------|------------|
+| Framework | Next.js 14 (App Router) |
+| Language | TypeScript |
+| Database | PostgreSQL + Prisma ORM |
+| Styling | Tailwind CSS + shadcn/ui |
+| Auth | JWT with httpOnly cookies |
+| Testing | Vitest (163 test files) |
+| Forms | React Hook Form + Zod |
+| Drag & Drop | @dnd-kit |
 
-- **Frontend:** Next.js 14+, React 18+, TypeScript, Tailwind CSS
-- **Backend:** Next.js API Routes, Prisma ORM
-- **Database:** PostgreSQL
-- **Authentication:** JWT with httpOnly cookies
-- **Forms:** React Hook Form
-- **Drag & Drop:** @dnd-kit
-- **Offline:** IndexedDB (PWA)
+## Quick Start
 
-## 📋 Prerequisites
+### Prerequisites
 
-- Node.js 18+ and npm
-- PostgreSQL database
+- Node.js 18+
+- PostgreSQL 14+
 
-## 🛠️ Setup Instructions
-
-### 1. Install Dependencies
+### Installation
 
 ```bash
+# 1. Install dependencies
 npm install
-```
 
-### 2. Configure Environment Variables
+# 2. Configure environment
+cp .env.example .env.local
+# Edit .env.local with your database URL and secrets
 
-Copy `.env.example` to `.env` and configure your database:
-
-```bash
-cp .env.example .env
-```
-
-Update the `DATABASE_URL` in `.env`:
-
-```env
-DATABASE_URL="postgresql://user:password@localhost:5432/mfo_dev?schema=public"
-```
-
-### 3. Initialize Database
-
-Generate Prisma Client:
-
-```bash
+# 3. Setup database
 npm run prisma:generate
-```
-
-Run database migrations:
-
-```bash
 npm run prisma:migrate
-```
-
-Seed the database with demo data:
-
-```bash
 npm run prisma:seed
-```
 
-### 4. Start Development Server
-
-```bash
+# 4. Start development server
 npm run dev
 ```
 
-Visit http://localhost:3000
+Open [http://localhost:3000](http://localhost:3000)
 
-## 🔑 Demo Accounts
-
-After seeding, you can log in with:
+## Demo Accounts
 
 | Role | Email | Password |
 |------|-------|----------|
 | General Manager | gm@demo.com | password123 |
-| Facility Manager | manager@demo.com | password123 |
+| Manager | manager@demo.com | password123 |
 | Supervisor | supervisor@demo.com | password123 |
 | Operator | operator@demo.com | password123 |
 
-## 📊 Database Schema
+## Core Modules
 
-The database includes the following main entities:
+### Reporting Modules
+- **Ice Depth** - Track ice thickness measurements with Bluetooth sensor support
+- **Ice Operations** - Resurfacing, edging, blade changes, circle checks
+- **Refrigeration** - Compressor monitoring and temperature logs
+- **Air Quality** - CO/CO2 monitoring with compliance thresholds
+- **Incidents** - Accident reporting with body diagrams and follow-up workflows
+- **Daily Checklist** - Customizable operational checklists
 
-- **Facilities & Rinks** - Multi-rink facility management
-- **Users & Roles** - RBAC with customizable permissions
-- **Form Templates** - Dynamic form builder schema
-- **Submissions** - User-submitted reports with attachments
-- **Schedule** - Employee scheduling with shifts
-- **Notifications** - In-app, email, and SMS alerts
-- **Audit Logs** - Complete audit trail
-
-See `prisma/schema.prisma` for the complete schema.
-
-## 🔐 Security Features
-
-- JWT tokens with httpOnly cookies
-- Password hashing with bcrypt
-- Role-based permissions system
-- Audit logging for all actions
-- Protected API routes
-- Middleware authentication
-
-## 📱 Module Overview
-
-### Core Modules
-
-1. **Ice Depth** - Track ice thickness at measurement points
-2. **Ice Operations** - Ice make, circle check, edging, blade changes
-3. **Refrigeration** - Custom refrigeration system monitoring
-4. **Air Quality** - CO/NO2 monitoring with compliance thresholds
-5. **Incidents** - Accident reporting with body diagrams
-6. **Schedule** - Employee scheduling with shift management
-7. **Daily Checklist** - Custom operational checklists
+### Management Modules
+- **Schedule** - Shift management with conflict detection and swap requests
+- **Equipment** - Inventory tracking and maintenance scheduling
+- **Analytics** - Real-time metrics with date filtering and CSV export
+- **Notifications** - Push, email, and SMS alerts
 
 ### Admin Module
-
-- Drag-and-drop form builder
-- User management
-- Role management
+- Drag-and-drop form builder with 15+ field types
+- Conditional logic and calculated fields
+- Form versioning
+- User and role management
 - Facility settings
-- Data retention policies
-- SMS/email configuration
+- Audit logging
 
-## 🗂️ Project Structure
+## Project Structure
 
 ```
-mfo/
 ├── app/                    # Next.js App Router
-│   ├── api/               # API routes
-│   │   └── auth/          # Authentication endpoints
-│   ├── dashboard/         # Protected dashboard routes
-│   ├── login/             # Login page
-│   ├── layout.tsx         # Root layout
-│   └── page.tsx           # Root page (redirects to login)
-├── components/            # React components
-│   └── layout/           # Layout components (Sidebar, etc.)
-├── lib/                   # Utility libraries
-│   ├── auth.ts           # Authentication utilities
-│   ├── permissions.ts    # Permission checking
-│   └── prisma.ts         # Prisma client
-├── prisma/               # Prisma configuration
-│   ├── schema.prisma     # Database schema
-│   └── seed.ts           # Seed data
-├── types/                # TypeScript types
-│   └── index.ts          # Shared types
-└── middleware.ts         # Route protection middleware
+│   ├── api/               # 41 API endpoints
+│   ├── dashboard/         # Protected pages (34 pages)
+│   └── login/             # Authentication
+├── components/            # 64 React components
+│   ├── form-builder/      # Drag-and-drop builder
+│   ├── reports/           # Report viewing/editing
+│   ├── schedule/          # Scheduling UI
+│   └── ui/                # shadcn/ui components
+├── contexts/              # React contexts (Auth)
+├── hooks/                 # Custom hooks (useApi, useBluetooth)
+├── lib/                   # Utilities and helpers
+├── prisma/                # Schema and migrations
+├── public/                # Static assets + PWA icons
+└── types/                 # TypeScript definitions
 ```
 
-## 🔧 Development Scripts
+## Environment Variables
+
+```env
+# Required
+DATABASE_URL="postgresql://user:pass@localhost:5432/mfo"
+JWT_SECRET="min-32-character-secret"
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+
+# Optional - Email (Resend)
+RESEND_API_KEY=""
+EMAIL_FROM=""
+
+# Optional - SMS (Twilio)
+TWILIO_ACCOUNT_SID=""
+TWILIO_AUTH_TOKEN=""
+TWILIO_PHONE_NUMBER=""
+
+# Optional - Weather
+OPENWEATHER_API_KEY=""
+```
+
+## Scripts
 
 ```bash
-# Development
-npm run dev              # Start dev server
-npm run build            # Build for production
-npm run start            # Start production server
-npm run lint             # Run ESLint
-
-# Database
-npm run prisma:generate  # Generate Prisma Client
-npm run prisma:migrate   # Run migrations
-npm run prisma:studio    # Open Prisma Studio
-npm run prisma:seed      # Seed database
+npm run dev              # Development server
+npm run build            # Production build
+npm run start            # Production server
+npm run lint             # ESLint
+npm run test             # Vitest watch mode
+npm run test:run         # Vitest single run
+npm run test:coverage    # Coverage report
+npm run prisma:studio    # Database GUI
 ```
 
-## 🎯 Default Roles & Permissions
+## API Overview
 
-### General Manager
-- Full access to all modules
-- Can approve incidents
-- Can publish schedules
-- Full admin access
+| Endpoint | Description |
+|----------|-------------|
+| `/api/auth/*` | Authentication (login, logout, me) |
+| `/api/submissions` | Form submissions CRUD |
+| `/api/incidents` | Incident reports with follow-ups |
+| `/api/checklists` | Checklist instances and templates |
+| `/api/equipment` | Equipment and maintenance |
+| `/api/schedules` | Staff scheduling |
+| `/api/analytics` | Dashboard metrics |
+| `/api/notifications` | Push notifications |
+| `/api/admin/*` | User/role management |
 
-### Facility Manager
-- Full operational access
-- Limited admin settings
-- Cannot approve incidents or publish schedules
+## Role Permissions
 
-### Supervisor
-- Can submit and view reports
-- Can view all data
-- No admin access
-- Cannot export
+| Capability | Operator | Supervisor | Manager | GM |
+|------------|:--------:|:----------:|:-------:|:--:|
+| Submit reports | ✅ | ✅ | ✅ | ✅ |
+| View all reports | ❌ | ✅ | ✅ | ✅ |
+| Export data | ❌ | ❌ | ✅ | ✅ |
+| Manage schedule | ❌ | ✅ | ✅ | ✅ |
+| Admin access | ❌ | ❌ | ✅ | ✅ |
+| Manage users | ❌ | ❌ | ❌ | ✅ |
 
-### Operator
-- Can submit reports
-- Can view own submissions
-- Can view own schedule
-- Limited access
+## Deployment
 
-## 📖 API Routes
+### Vercel (Recommended)
+1. Push to GitHub
+2. Import in Vercel
+3. Add environment variables
+4. Deploy
 
-### Authentication
-- `POST /api/auth/login` - Login with email/password
-- `POST /api/auth/logout` - Logout current user
-- `GET /api/auth/me` - Get current user session
+### Docker
+```bash
+docker build -t mfo .
+docker run -p 3000:3000 --env-file .env.local mfo
+```
 
-More API routes will be added as modules are developed.
+## Security Features
 
-## 🚧 Roadmap
+- JWT tokens with httpOnly cookies
+- Password hashing (bcrypt)
+- Role-based access control
+- Middleware route protection
+- Input validation (Zod)
+- Complete audit logging
+- XSS/CSRF protection
 
-### Phase 2: Form Builder Core (Next)
-- [ ] Field type components (basic)
-- [ ] Drag-and-drop form canvas
-- [ ] Field configuration panel
-- [ ] Form template CRUD
-- [ ] Form preview mode
-
-### Phase 3: Form Builder Advanced
-- [ ] Conditional logic builder
-- [ ] Calculated fields
-- [ ] Specialized fields (ice depth grid, body diagram)
-- [ ] Form versioning
-
-### Phase 4: Report Modules
-- [ ] Universal header component
-- [ ] Form renderer (submission view)
-- [ ] Submission CRUD
-- [ ] Ice Depth module
-- [ ] Ice Operations module
-
-### Phase 5-8
-See `SPEC.md` for complete implementation phases.
-
-## 📄 License
+## License
 
 Proprietary - All rights reserved
 
-## 👥 Authors
+## Authors
 
 - Kelly (Syracuse University)
 - Claude (Anthropic)
-
-## 🤝 Contributing
-
-This is a proprietary project. Contact the project owner for contribution guidelines.
-
----
-
-**Note:** This project is under active development. Features and documentation will be updated regularly.
