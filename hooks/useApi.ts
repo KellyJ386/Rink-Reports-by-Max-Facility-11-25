@@ -680,3 +680,401 @@ export function useIncidents() {
     completeFollowUp,
   }
 }
+
+// ============================================================================
+// SCHEDULE HOOKS
+// ============================================================================
+
+export interface Schedule {
+  id: string
+  facilityId: string
+  rinkId: string
+  name: string
+  startDate: string
+  endDate: string
+  status: string
+  publishedAt?: string
+  publishedById?: string
+  createdAt: string
+  updatedAt: string
+  entries?: ScheduleEntry[]
+}
+
+export interface ScheduleEntry {
+  id: string
+  scheduleId: string
+  userId: string
+  shiftDefinitionId?: string
+  date: string
+  startTime: string
+  endTime: string
+  role: string
+  notes?: string
+  status: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Shift {
+  id: string
+  scheduleEntryId?: string
+  userId: string
+  date: string
+  startTime: string
+  endTime: string
+  role: string
+  status: string
+}
+
+export function useSchedule() {
+  const [data, setData] = useState<PaginatedResponse<Schedule> | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchSchedules = useCallback(
+    async (params?: {
+      page?: number
+      limit?: number
+      status?: string
+      rinkId?: string
+      from?: Date
+      to?: Date
+    }) => {
+      setLoading(true)
+      setError(null)
+
+      try {
+        const searchParams = new URLSearchParams()
+        if (params?.page) searchParams.set('page', String(params.page))
+        if (params?.limit) searchParams.set('limit', String(params.limit))
+        if (params?.status) searchParams.set('status', params.status)
+        if (params?.rinkId) searchParams.set('rinkId', params.rinkId)
+        if (params?.from) searchParams.set('from', params.from.toISOString())
+        if (params?.to) searchParams.set('to', params.to.toISOString())
+
+        const response = await apiRequest<PaginatedResponse<Schedule>>(
+          `/api/schedules?${searchParams.toString()}`
+        )
+
+        if (response.success) {
+          setData(response.data)
+          return response.data
+        } else {
+          setError(response.error.message)
+          return null
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch schedules')
+        return null
+      } finally {
+        setLoading(false)
+      }
+    },
+    []
+  )
+
+  const fetchShifts = useCallback(
+    async (params?: {
+      page?: number
+      limit?: number
+      userId?: string
+      date?: string
+      from?: Date
+      to?: Date
+    }) => {
+      try {
+        const searchParams = new URLSearchParams()
+        if (params?.page) searchParams.set('page', String(params.page))
+        if (params?.limit) searchParams.set('limit', String(params.limit))
+        if (params?.userId) searchParams.set('userId', params.userId)
+        if (params?.date) searchParams.set('date', params.date)
+        if (params?.from) searchParams.set('from', params.from.toISOString())
+        if (params?.to) searchParams.set('to', params.to.toISOString())
+
+        const response = await apiRequest<PaginatedResponse<Shift>>(
+          `/api/shifts?${searchParams.toString()}`
+        )
+
+        return response.success ? response.data : null
+      } catch (err) {
+        console.error('Failed to fetch shifts:', err)
+        return null
+      }
+    },
+    []
+  )
+
+  const createShift = useCallback(async (shiftData: Partial<Shift>) => {
+    const response = await apiRequest<Shift>('/api/shifts', {
+      method: 'POST',
+      body: JSON.stringify(shiftData),
+    })
+    return response.success ? response.data : null
+  }, [])
+
+  const updateShift = useCallback(async (id: string, shiftData: Partial<Shift>) => {
+    const response = await apiRequest<Shift>(`/api/shifts/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(shiftData),
+    })
+    return response.success ? response.data : null
+  }, [])
+
+  const deleteShift = useCallback(async (id: string) => {
+    const response = await apiRequest<{ deleted: boolean }>(`/api/shifts/${id}`, {
+      method: 'DELETE',
+    })
+    return response.success
+  }, [])
+
+  return {
+    data,
+    loading,
+    error,
+    fetchSchedules,
+    fetchShifts,
+    createShift,
+    updateShift,
+    deleteShift,
+  }
+}
+
+// ============================================================================
+// NOTIFICATIONS HOOKS
+// ============================================================================
+
+export interface Notification {
+  id: string
+  userId: string
+  type: string
+  title: string
+  message: string
+  data?: Record<string, unknown>
+  isRead: boolean
+  readAt?: string
+  isArchived: boolean
+  archivedAt?: string
+  createdAt: string
+}
+
+export interface NotificationPreferences {
+  email: boolean
+  push: boolean
+  sms: boolean
+  types: Record<string, boolean>
+}
+
+export function useNotifications() {
+  const [data, setData] = useState<PaginatedResponse<Notification> | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  const fetchNotifications = useCallback(
+    async (params?: {
+      page?: number
+      limit?: number
+      isRead?: boolean
+      isArchived?: boolean
+      type?: string
+    }) => {
+      setLoading(true)
+      setError(null)
+
+      try {
+        const searchParams = new URLSearchParams()
+        if (params?.page) searchParams.set('page', String(params.page))
+        if (params?.limit) searchParams.set('limit', String(params.limit))
+        if (params?.isRead !== undefined) searchParams.set('isRead', String(params.isRead))
+        if (params?.isArchived !== undefined) searchParams.set('isArchived', String(params.isArchived))
+        if (params?.type) searchParams.set('type', params.type)
+
+        const response = await apiRequest<PaginatedResponse<Notification>>(
+          `/api/notifications?${searchParams.toString()}`
+        )
+
+        if (response.success) {
+          setData(response.data)
+          return response.data
+        } else {
+          setError(response.error.message)
+          return null
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch notifications')
+        return null
+      } finally {
+        setLoading(false)
+      }
+    },
+    []
+  )
+
+  const fetchStats = useCallback(async () => {
+    try {
+      const response = await apiRequest<{ unread: number; total: number }>(
+        '/api/notifications/stats'
+      )
+      if (response.success) {
+        setUnreadCount(response.data.unread)
+        return response.data
+      }
+      return null
+    } catch (err) {
+      console.error('Failed to fetch notification stats:', err)
+      return null
+    }
+  }, [])
+
+  const markAsRead = useCallback(async (id: string) => {
+    const response = await apiRequest<Notification>(`/api/notifications/${id}/read`, {
+      method: 'POST',
+    })
+    if (response.success) {
+      setUnreadCount((prev) => Math.max(0, prev - 1))
+    }
+    return response.success ? response.data : null
+  }, [])
+
+  const markAllAsRead = useCallback(async () => {
+    const response = await apiRequest<{ count: number }>('/api/notifications/mark-all-read', {
+      method: 'POST',
+    })
+    if (response.success) {
+      setUnreadCount(0)
+    }
+    return response.success
+  }, [])
+
+  const archiveNotification = useCallback(async (id: string) => {
+    const response = await apiRequest<Notification>(`/api/notifications/${id}/archive`, {
+      method: 'POST',
+    })
+    return response.success ? response.data : null
+  }, [])
+
+  const getPreferences = useCallback(async () => {
+    const response = await apiRequest<NotificationPreferences>('/api/notifications/preferences')
+    return response.success ? response.data : null
+  }, [])
+
+  const updatePreferences = useCallback(async (preferences: Partial<NotificationPreferences>) => {
+    const response = await apiRequest<NotificationPreferences>('/api/notifications/preferences', {
+      method: 'PATCH',
+      body: JSON.stringify(preferences),
+    })
+    return response.success ? response.data : null
+  }, [])
+
+  return {
+    data,
+    loading,
+    error,
+    unreadCount,
+    fetchNotifications,
+    fetchStats,
+    markAsRead,
+    markAllAsRead,
+    archiveNotification,
+    getPreferences,
+    updatePreferences,
+  }
+}
+
+// ============================================================================
+// SUBMISSIONS HOOKS (Generic for Module pages)
+// ============================================================================
+
+export interface Submission {
+  id: string
+  formTemplateId: string
+  rinkId: string
+  submittedById: string
+  data: Record<string, unknown>
+  status: string
+  reviewedById?: string
+  reviewedAt?: string
+  reviewNotes?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export function useSubmissions() {
+  const [data, setData] = useState<PaginatedResponse<Submission> | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchSubmissions = useCallback(
+    async (params?: {
+      page?: number
+      limit?: number
+      moduleType?: string
+      status?: string
+      rinkId?: string
+      submittedById?: string
+      from?: Date
+      to?: Date
+    }) => {
+      setLoading(true)
+      setError(null)
+
+      try {
+        const searchParams = new URLSearchParams()
+        if (params?.page) searchParams.set('page', String(params.page))
+        if (params?.limit) searchParams.set('limit', String(params.limit))
+        if (params?.moduleType) searchParams.set('moduleType', params.moduleType)
+        if (params?.status) searchParams.set('status', params.status)
+        if (params?.rinkId) searchParams.set('rinkId', params.rinkId)
+        if (params?.submittedById) searchParams.set('submittedById', params.submittedById)
+        if (params?.from) searchParams.set('from', params.from.toISOString())
+        if (params?.to) searchParams.set('to', params.to.toISOString())
+
+        const response = await apiRequest<PaginatedResponse<Submission>>(
+          `/api/submissions?${searchParams.toString()}`
+        )
+
+        if (response.success) {
+          setData(response.data)
+          return response.data
+        } else {
+          setError(response.error.message)
+          return null
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch submissions')
+        return null
+      } finally {
+        setLoading(false)
+      }
+    },
+    []
+  )
+
+  const createSubmission = useCallback(
+    async (submissionData: { formTemplateId: string; rinkId: string; data: Record<string, unknown> }) => {
+      const response = await apiRequest<Submission>('/api/submissions', {
+        method: 'POST',
+        body: JSON.stringify(submissionData),
+      })
+      return response.success ? response.data : null
+    },
+    []
+  )
+
+  const updateSubmission = useCallback(async (id: string, submissionData: Partial<Submission>) => {
+    const response = await apiRequest<Submission>(`/api/submissions/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(submissionData),
+    })
+    return response.success ? response.data : null
+  }, [])
+
+  return {
+    data,
+    loading,
+    error,
+    fetchSubmissions,
+    createSubmission,
+    updateSubmission,
+  }
+}

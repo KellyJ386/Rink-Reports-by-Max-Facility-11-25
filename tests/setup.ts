@@ -4,8 +4,7 @@ import { vi } from 'vitest'
 // Mock environment variables
 process.env.JWT_SECRET = 'test-jwt-secret-key-for-testing'
 process.env.JWT_EXPIRES_IN = '1h'
-// Use Object.defineProperty to set NODE_ENV since it's read-only
-Object.defineProperty(process.env, 'NODE_ENV', { value: 'test', writable: true })
+process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test'
 
 // Mock next/headers
 vi.mock('next/headers', () => ({
