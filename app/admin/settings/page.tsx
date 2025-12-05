@@ -178,7 +178,7 @@ export default function FacilitySettingsPage() {
   ) => {
     setSettings((prev) => ({
       ...prev,
-      [section]: { ...prev[section], ...updates },
+      [section]: { ...(prev[section] as object), ...updates },
     }))
     setHasChanges(true)
   }

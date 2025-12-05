@@ -208,7 +208,7 @@ export default function AuditLogsPage() {
         (log) =>
           log.userName.toLowerCase().includes(query) ||
           log.action.toLowerCase().includes(query) ||
-          log.resource.toLowerCase().includes(query) ||
+          log.resource?.toLowerCase().includes(query) ||
           log.resourceId?.toLowerCase().includes(query) ||
           log.ipAddress?.toLowerCase().includes(query)
       )
@@ -221,7 +221,7 @@ export default function AuditLogsPage() {
 
     // Resource filter
     if (selectedResources.length > 0) {
-      result = result.filter((log) => selectedResources.includes(log.resource))
+      result = result.filter((log) => log.resource && selectedResources.includes(log.resource))
     }
 
     // Severity filter
@@ -644,7 +644,7 @@ export default function AuditLogsPage() {
           <div className="space-y-2">
             {paginatedLogs.map((log) => {
               const ActionIcon = ACTION_ICONS[log.action] || Activity
-              const ResourceIcon = RESOURCE_ICONS[log.resource] || Database
+              const ResourceIcon = log.resource ? RESOURCE_ICONS[log.resource] || Database : Database
               const SeverityIcon = SEVERITY_CONFIG[log.severity].icon
               const isExpanded = expandedLogs.has(log.id)
               const { date, time } = formatTimestamp(log.timestamp)

@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
         (l) =>
           l.userName.toLowerCase().includes(search) ||
           l.action.toLowerCase().includes(search) ||
-          l.resource.toLowerCase().includes(search) ||
+          l.resource?.toLowerCase().includes(search) ||
           l.resourceId?.toLowerCase().includes(search) ||
           l.ipAddress?.toLowerCase().includes(search)
       )

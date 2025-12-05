@@ -90,6 +90,25 @@ const STATUS_CONFIG: Record<UserStatus, { label: string; color: string; icon: Re
   LOCKED: { label: 'Locked', color: 'bg-orange-100 text-orange-800', icon: Lock },
 }
 
+// Mock facility data
+const mockFacility = {
+  id: 'facility-1',
+  name: 'Main Arena',
+  slug: 'main-arena',
+  address: '123 Ice Way',
+  city: 'Frostburg',
+  state: 'MN',
+  zipCode: '55001',
+  country: 'USA',
+  phone: '+1 (555) 000-0000',
+  email: 'info@mainarena.com',
+  timezone: 'America/Chicago',
+  isActive: true,
+  status: 'active',
+  createdAt: '2020-01-01T00:00:00Z',
+  updatedAt: '2024-01-01T00:00:00Z',
+}
+
 // Mock data for demo
 const getMockUser = (id: string): UserWithDetails => ({
   id,
@@ -97,14 +116,20 @@ const getMockUser = (id: string): UserWithDetails => ({
   firstName: 'John',
   lastName: 'Smith',
   phone: '+1 (555) 123-4567',
-  avatar: null,
+  avatar: undefined,
+  status: 'ACTIVE',
+  emailVerified: true,
+  phoneVerified: true,
+  roleId: 'role-3',
+  facilityIds: ['facility-1'],
+  facilityId: 'facility-1',
   jobTitle: 'Senior Ice Technician',
   department: 'Maintenance',
   employeeId: 'EMP-2024-001',
-  status: 'ACTIVE',
-  roleId: 'role-3',
-  facilityId: 'facility-1',
   hireDate: '2022-03-15',
+  failedLoginAttempts: 0,
+  requirePasswordChange: false,
+  twoFactorEnabled: false,
   permissions: ['USERS:VIEW', 'SCHEDULES:VIEW', 'SCHEDULES:EDIT', 'INCIDENTS:VIEW', 'INCIDENTS:CREATE'],
   preferences: {
     theme: 'system',
@@ -136,21 +161,9 @@ const getMockUser = (id: string): UserWithDetails => ({
     createdAt: '2022-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
   },
-  facility: {
-    id: 'facility-1',
-    name: 'Main Arena',
-    address: '123 Ice Way',
-    city: 'Frostburg',
-    state: 'MN',
-    zipCode: '55001',
-    country: 'USA',
-    phone: '+1 (555) 000-0000',
-    email: 'info@mainarena.com',
-    timezone: 'America/Chicago',
-    status: 'ACTIVE',
-    createdAt: '2020-01-01T00:00:00Z',
-    updatedAt: '2024-01-01T00:00:00Z',
-  },
+  facilities: [mockFacility],
+  facility: mockFacility,
+  effectivePermissions: ['USERS:VIEW', 'SCHEDULES:VIEW', 'SCHEDULES:EDIT', 'INCIDENTS:VIEW', 'INCIDENTS:CREATE'],
 })
 
 // Mock roles
