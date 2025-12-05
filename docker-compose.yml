@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://mfo:${DB_PASSWORD}@db:5432/mfo_production
+      - JWT_SECRET=${JWT_SECRET}
+      - NODE_ENV=production
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - mfo-network
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=mfo
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=mfo_production
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mfo -d mfo_production"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - mfo-network
+
+  # Redis for session caching (optional)
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - mfo-network
+
+  # Database migrations runner
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: npx prisma migrate deploy
+    environment:
+      - DATABASE_URL=postgresql://mfo:${DB_PASSWORD}@db:5432/mfo_production
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - mfo-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  mfo-network:
+    driver: bridge
