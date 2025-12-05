@@ -7,6 +7,8 @@ import {
   generateToken,
   verifyToken,
   getSession,
+  setAuthCookie,
+  clearAuthCookie,
   authenticate,
   requireAuth,
 } from '@/lib/auth'
@@ -347,6 +349,68 @@ describe('Auth Module', () => {
 
       expect(result).not.toBeNull()
       expect(result.id).toBe(mockUser.id)
+    })
+  })
+
+  describe('setAuthCookie', () => {
+    it('should set auth cookie with correct options', async () => {
+      const mockCookieStore = {
+        get: vi.fn(),
+        set: vi.fn(),
+        delete: vi.fn(),
+      }
+      vi.mocked(cookies).mockResolvedValue(mockCookieStore as any)
+
+      await setAuthCookie('test-token')
+
+      expect(mockCookieStore.set).toHaveBeenCalledWith('auth_token', 'test-token', {
+        httpOnly: true,
+        secure: false, // NODE_ENV is 'test'
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+        path: '/',
+      })
+    })
+
+    it('should call cookies() to get cookie store', async () => {
+      const mockCookieStore = {
+        get: vi.fn(),
+        set: vi.fn(),
+        delete: vi.fn(),
+      }
+      vi.mocked(cookies).mockResolvedValue(mockCookieStore as any)
+
+      await setAuthCookie('any-token')
+
+      expect(cookies).toHaveBeenCalled()
+    })
+  })
+
+  describe('clearAuthCookie', () => {
+    it('should delete auth_token cookie', async () => {
+      const mockCookieStore = {
+        get: vi.fn(),
+        set: vi.fn(),
+        delete: vi.fn(),
+      }
+      vi.mocked(cookies).mockResolvedValue(mockCookieStore as any)
+
+      await clearAuthCookie()
+
+      expect(mockCookieStore.delete).toHaveBeenCalledWith('auth_token')
+    })
+
+    it('should call cookies() to get cookie store', async () => {
+      const mockCookieStore = {
+        get: vi.fn(),
+        set: vi.fn(),
+        delete: vi.fn(),
+      }
+      vi.mocked(cookies).mockResolvedValue(mockCookieStore as any)
+
+      await clearAuthCookie()
+
+      expect(cookies).toHaveBeenCalled()
     })
   })
 })
