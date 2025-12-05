@@ -399,12 +399,82 @@ async function main() {
     },
   })
 
+  // Create sample ice operations data
+  console.log('Creating sample report data...')
+
+  const operator = await prisma.user.findUnique({ where: { email: 'operator@demo.com' } })
+
+  if (operator) {
+    // Sample ice resurfacing logs
+    const now = new Date()
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(now)
+      date.setDate(date.getDate() - i)
+
+      await prisma.iceResurfacing.create({
+        data: {
+          facilityId: facility.id,
+          rinkId: rinkA.id,
+          userId: operator.id,
+          timestamp: date,
+          machineId: 'Zamboni-1',
+          waterTemp: 140 + Math.floor(Math.random() * 20),
+          bladeCondition: ['good', 'fair', 'needs_sharpening'][Math.floor(Math.random() * 3)],
+          iceThickness: 1.0 + Math.random() * 0.5,
+          notes: i === 0 ? 'Regular maintenance' : null,
+        },
+      })
+    }
+
+    // Sample air quality readings
+    for (let i = 0; i < 24; i++) {
+      const date = new Date(now)
+      date.setHours(date.getHours() - i)
+
+      await prisma.airQualityReading.create({
+        data: {
+          facilityId: facility.id,
+          rinkId: rinkA.id,
+          userId: operator.id,
+          timestamp: date,
+          coLevel: 5 + Math.random() * 15,
+          no2Level: 0.1 + Math.random() * 0.2,
+          temperature: 48 + Math.random() * 8,
+          humidity: 45 + Math.random() * 15,
+          location: 'center-ice',
+        },
+      })
+    }
+
+    // Sample refrigeration logs
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(now)
+      date.setDate(date.getDate() - i)
+
+      await prisma.refrigerationLog.create({
+        data: {
+          facilityId: facility.id,
+          rinkId: rinkA.id,
+          userId: operator.id,
+          timestamp: date,
+          compressorStatus: 'running',
+          suctionPressure: 28 + Math.random() * 4,
+          dischargePressure: 165 + Math.random() * 10,
+          brineTemp: 18 + Math.random() * 4,
+          iceTemp: 22 + Math.random() * 2,
+          oilLevel: 'normal',
+        },
+      })
+    }
+  }
+
   console.log('✅ Database seeded successfully!')
   console.log('\n🔑 Demo accounts created:')
   console.log('  General Manager: gm@demo.com / password123')
   console.log('  Facility Manager: manager@demo.com / password123')
   console.log('  Supervisor: supervisor@demo.com / password123')
   console.log('  Operator: operator@demo.com / password123')
+  console.log('\n📊 Sample data created for last 7 days')
 }
 
 main()
