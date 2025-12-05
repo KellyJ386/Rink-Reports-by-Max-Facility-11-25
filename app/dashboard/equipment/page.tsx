@@ -69,6 +69,7 @@ import {
   maintenanceStatusColors,
   EquipmentStats,
 } from '@/types/equipment'
+import { useEquipment } from '@/hooks/useApi'
 
 // Mock data generators
 const generateMockEquipment = (): Equipment[] => [
@@ -262,14 +263,53 @@ export default function EquipmentDashboard() {
   const [isAddMaintenanceOpen, setIsAddMaintenanceOpen] = useState(false)
   const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(null)
 
+  // API hooks
+  const { fetchEquipment, createEquipment, addMaintenance: addMaintenanceApi } = useEquipment()
+
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setEquipment(generateMockEquipment())
-      setMaintenance(generateMockMaintenance())
-      setIsLoading(false)
-    }, 500)
-  }, [])
+    const loadData = async () => {
+      try {
+        // Try to fetch from API
+        const result = await fetchEquipment({ limit: 100 })
+        if (result && result.items.length > 0) {
+          // Map API response to local Equipment type
+          const mappedEquipment: Equipment[] = result.items.map((item) => ({
+            id: item.id,
+            facilityId: item.facilityId,
+            name: item.name,
+            category: item.category as EquipmentCategory,
+            manufacturer: item.manufacturer || '',
+            model: item.model || '',
+            serialNumber: item.serialNumber || '',
+            location: item.location || '',
+            status: item.status as EquipmentStatus,
+            purchaseDate: item.purchaseDate || '',
+            warrantyExpiration: item.warrantyExpiry || '',
+            lastMaintenanceDate: item.maintenanceRecords?.[0]?.completedDate || '',
+            nextMaintenanceDate: item.maintenanceRecords?.[0]?.scheduledDate || '',
+            notes: item.notes || '',
+            createdAt: item.createdAt,
+            updatedAt: item.updatedAt,
+          }))
+          setEquipment(mappedEquipment)
+          setMaintenance(generateMockMaintenance()) // Keep mock maintenance for now
+        } else {
+          // Fall back to mock data
+          setEquipment(generateMockEquipment())
+          setMaintenance(generateMockMaintenance())
+        }
+      } catch (error) {
+        console.error('Failed to fetch equipment:', error)
+        // Fall back to mock data
+        setEquipment(generateMockEquipment())
+        setMaintenance(generateMockMaintenance())
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadData()
+  }, [fetchEquipment])
 
   // Calculate stats
   const stats: EquipmentStats = useMemo(() => {
