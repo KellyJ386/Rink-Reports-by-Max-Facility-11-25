@@ -22,7 +22,10 @@ const OPERATION_TYPES = [
   { id: 'Resurfacing', label: 'Ice Resurfacing', icon: '🧊' },
   { id: 'Ice Cut', label: 'Ice Cut', icon: '🔪' },
   { id: 'Flood', label: 'Flood Only', icon: '💧' },
+  { id: 'Ice Make', label: 'Ice Make', icon: '❄️' },
+  { id: 'Circle Check', label: 'Circle Check', icon: '⭕' },
   { id: 'Edge Work', label: 'Edge Work', icon: '🔧' },
+  { id: 'Blade Change', label: 'Blade Change', icon: '🔩' },
   { id: 'Paint/Lines', label: 'Paint/Lines', icon: '🎨' },
   { id: 'Maintenance', label: 'Machine Maintenance', icon: '⚙️' }
 ]

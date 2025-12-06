@@ -35,6 +35,107 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   SUBMITTED: { label: 'Submitted', color: 'bg-blue-100 text-blue-800' }
 }
 
+const BODY_PARTS = [
+  { id: 'head', label: 'Head', x: 100, y: 20, width: 40, height: 35 },
+  { id: 'neck', label: 'Neck', x: 105, y: 55, width: 30, height: 15 },
+  { id: 'left-shoulder', label: 'Left Shoulder', x: 60, y: 70, width: 35, height: 25 },
+  { id: 'right-shoulder', label: 'Right Shoulder', x: 145, y: 70, width: 35, height: 25 },
+  { id: 'chest', label: 'Chest', x: 85, y: 70, width: 70, height: 40 },
+  { id: 'left-arm', label: 'Left Arm', x: 40, y: 95, width: 25, height: 60 },
+  { id: 'right-arm', label: 'Right Arm', x: 175, y: 95, width: 25, height: 60 },
+  { id: 'left-hand', label: 'Left Hand', x: 25, y: 155, width: 25, height: 30 },
+  { id: 'right-hand', label: 'Right Hand', x: 190, y: 155, width: 25, height: 30 },
+  { id: 'abdomen', label: 'Abdomen', x: 85, y: 110, width: 70, height: 35 },
+  { id: 'lower-back', label: 'Lower Back', x: 95, y: 145, width: 50, height: 25 },
+  { id: 'left-hip', label: 'Left Hip', x: 70, y: 145, width: 30, height: 30 },
+  { id: 'right-hip', label: 'Right Hip', x: 140, y: 145, width: 30, height: 30 },
+  { id: 'left-thigh', label: 'Left Thigh', x: 75, y: 175, width: 35, height: 55 },
+  { id: 'right-thigh', label: 'Right Thigh', x: 130, y: 175, width: 35, height: 55 },
+  { id: 'left-knee', label: 'Left Knee', x: 75, y: 230, width: 35, height: 25 },
+  { id: 'right-knee', label: 'Right Knee', x: 130, y: 230, width: 35, height: 25 },
+  { id: 'left-shin', label: 'Left Shin/Calf', x: 75, y: 255, width: 35, height: 50 },
+  { id: 'right-shin', label: 'Right Shin/Calf', x: 130, y: 255, width: 35, height: 50 },
+  { id: 'left-ankle', label: 'Left Ankle', x: 70, y: 305, width: 30, height: 20 },
+  { id: 'right-ankle', label: 'Right Ankle', x: 140, y: 305, width: 30, height: 20 },
+  { id: 'left-foot', label: 'Left Foot', x: 60, y: 325, width: 40, height: 20 },
+  { id: 'right-foot', label: 'Right Foot', x: 140, y: 325, width: 40, height: 20 }
+]
+
+interface BodyDiagramProps {
+  selected: string[]
+  onChange: (selected: string[]) => void
+  readOnly?: boolean
+}
+
+function BodyDiagram({ selected, onChange, readOnly = false }: BodyDiagramProps) {
+  const togglePart = (partId: string) => {
+    if (readOnly) return
+    if (selected.includes(partId)) {
+      onChange(selected.filter(id => id !== partId))
+    } else {
+      onChange([...selected, partId])
+    }
+  }
+
+  return (
+    <div className="flex flex-col items-center">
+      <svg viewBox="0 0 240 360" className="w-48 h-72">
+        {/* Body outline */}
+        <ellipse cx="120" cy="37" rx="25" ry="30" fill="#f3f4f6" stroke="#d1d5db" strokeWidth="2" />
+        <rect x="95" y="60" width="50" height="90" rx="5" fill="#f3f4f6" stroke="#d1d5db" strokeWidth="2" />
+        <rect x="45" y="70" width="50" height="20" rx="10" fill="#f3f4f6" stroke="#d1d5db" strokeWidth="2" />
+        <rect x="145" y="70" width="50" height="20" rx="10" fill="#f3f4f6" stroke="#d1d5db" strokeWidth="2" />
+        <rect x="35" y="85" width="25" height="80" rx="8" fill="#f3f4f6" stroke="#d1d5db" strokeWidth="2" />
+        <rect x="180" y="85" width="25" height="80" rx="8" fill="#f3f4f6" stroke="#d1d5db" strokeWidth="2" />
+        <ellipse cx="35" cy="175" rx="15" ry="20" fill="#f3f4f6" stroke="#d1d5db" strokeWidth="2" />
+        <ellipse cx="205" cy="175" rx="15" ry="20" fill="#f3f4f6" stroke="#d1d5db" strokeWidth="2" />
+        <rect x="85" y="145" width="70" height="35" rx="5" fill="#f3f4f6" stroke="#d1d5db" strokeWidth="2" />
+        <rect x="80" y="175" width="35" height="90" rx="8" fill="#f3f4f6" stroke="#d1d5db" strokeWidth="2" />
+        <rect x="125" y="175" width="35" height="90" rx="8" fill="#f3f4f6" stroke="#d1d5db" strokeWidth="2" />
+        <rect x="78" y="260" width="30" height="55" rx="8" fill="#f3f4f6" stroke="#d1d5db" strokeWidth="2" />
+        <rect x="132" y="260" width="30" height="55" rx="8" fill="#f3f4f6" stroke="#d1d5db" strokeWidth="2" />
+        <ellipse cx="85" cy="330" rx="20" ry="12" fill="#f3f4f6" stroke="#d1d5db" strokeWidth="2" />
+        <ellipse cx="155" cy="330" rx="20" ry="12" fill="#f3f4f6" stroke="#d1d5db" strokeWidth="2" />
+
+        {/* Clickable regions */}
+        {BODY_PARTS.map(part => (
+          <rect
+            key={part.id}
+            x={part.x}
+            y={part.y}
+            width={part.width}
+            height={part.height}
+            rx="3"
+            fill={selected.includes(part.id) ? '#ef4444' : 'transparent'}
+            fillOpacity={selected.includes(part.id) ? 0.5 : 0}
+            stroke={selected.includes(part.id) ? '#dc2626' : 'transparent'}
+            strokeWidth="2"
+            className={readOnly ? '' : 'cursor-pointer hover:fill-red-200 hover:fill-opacity-50'}
+            onClick={() => togglePart(part.id)}
+          />
+        ))}
+      </svg>
+      {selected.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1 justify-center max-w-[200px]">
+          {selected.map(id => {
+            const part = BODY_PARTS.find(p => p.id === id)
+            return (
+              <span
+                key={id}
+                className={`text-xs px-2 py-0.5 bg-red-100 text-red-700 rounded-full ${readOnly ? '' : 'cursor-pointer hover:bg-red-200'}`}
+                onClick={() => !readOnly && togglePart(id)}
+              >
+                {part?.label}
+                {!readOnly && ' ×'}
+              </span>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function IncidentsPage() {
   const [rinks, setRinks] = useState<Rink[]>([])
   const [submissions, setSubmissions] = useState<Submission[]>([])
@@ -55,6 +156,7 @@ export default function IncidentsPage() {
   const [ambulanceCalled, setAmbulanceCalled] = useState(false)
   const [witnesses, setWitnesses] = useState('')
   const [actionTaken, setActionTaken] = useState('')
+  const [injuryLocations, setInjuryLocations] = useState<string[]>([])
 
   // Review state
   const [reviewNotes, setReviewNotes] = useState('')
@@ -105,6 +207,7 @@ export default function IncidentsPage() {
             description,
             injuredPerson: injuredPerson || null,
             injuryType: injuryType || null,
+            injuryLocations: injuryLocations.length > 0 ? injuryLocations : null,
             ambulanceCalled,
             witnesses: witnesses || null,
             actionTaken: actionTaken || null
@@ -166,6 +269,7 @@ export default function IncidentsPage() {
     setAmbulanceCalled(false)
     setWitnesses('')
     setActionTaken('')
+    setInjuryLocations([])
   }
 
   const formatDateTime = (dateStr: string) => {
@@ -415,6 +519,19 @@ export default function IncidentsPage() {
                   </div>
                 </div>
 
+                {/* Body Diagram */}
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Injury Location (click to mark areas)
+                  </label>
+                  <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    <BodyDiagram
+                      selected={injuryLocations}
+                      onChange={setInjuryLocations}
+                    />
+                  </div>
+                </div>
+
                 <div className="mt-3">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -519,6 +636,18 @@ export default function IncidentsPage() {
                       <div className="font-bold">⚠️ Ambulance was called</div>
                     )}
                   </div>
+                  {/* Body Diagram - Display injury locations */}
+                  {Array.isArray((showReview.data as Record<string, unknown>).injuryLocations) &&
+                    ((showReview.data as Record<string, unknown>).injuryLocations as string[]).length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-red-200">
+                      <div className="text-sm font-medium text-red-800 mb-2">Injury Location</div>
+                      <BodyDiagram
+                        selected={(showReview.data as Record<string, unknown>).injuryLocations as string[]}
+                        onChange={() => {}}
+                        readOnly={true}
+                      />
+                    </div>
+                  )}
                 </div>
               )}
 
