@@ -1,4 +1,46 @@
-import { User, Role, Facility, Rink } from '@prisma/client'
+// Local type definitions to avoid dependency on generated Prisma client
+// These will be replaced by Prisma types when prisma generate is run
+
+interface User {
+  id: string
+  email: string
+  passwordHash: string
+  firstName: string
+  lastName: string
+  phone?: string | null
+  phoneVerified: boolean
+  smsOptIn: boolean
+  smsPreference: string
+  facilityId: string
+  roleId: string
+  isActive: boolean
+  createdAt: Date
+  updatedAt: Date
+  lastLoginAt?: Date | null
+  permissionOverrides?: unknown
+}
+
+interface Role {
+  id: string
+  facilityId?: string | null
+  name: string
+  description?: string | null
+  isSystemDefault: boolean
+  permissions: unknown
+}
+
+interface Facility {
+  id: string
+  name: string
+  address: string
+  city: string
+  state: string
+  zipCode: string
+  country: string
+  timezone: string
+  createdAt: Date
+  updatedAt: Date
+}
 
 export type UserWithRole = User & {
   role: Role

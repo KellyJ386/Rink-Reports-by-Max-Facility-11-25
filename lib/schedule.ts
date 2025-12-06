@@ -353,7 +353,7 @@ export async function checkWeeklyHoursLimit(
     }
   })
 
-  const currentHours = entries.reduce((total, entry) => {
+  const currentHours = entries.reduce((total: number, entry: typeof entries[number]) => {
     return total + calculateDuration(entry.startTime, entry.endTime)
   }, 0)
 
@@ -472,16 +472,17 @@ export async function getScheduleStats(
     }
   })
 
-  const uniqueEmployees = new Set(entries.filter(e => e.userId).map(e => e.userId))
+  const uniqueEmployees = new Set(entries.filter((e: typeof entries[number]) => e.userId).map((e: typeof entries[number]) => e.userId))
 
+  type Entry = typeof entries[number]
   return {
     totalEntries: entries.length,
-    publishedEntries: entries.filter(e => e.status === 'PUBLISHED').length,
-    draftEntries: entries.filter(e => e.status === 'DRAFT').length,
-    openShifts: entries.filter(e => e.isOpenShift && e.status !== 'FILLED').length,
-    emergencyShifts: entries.filter(e => e.isEmergency).length,
-    filledShifts: entries.filter(e => e.status === 'FILLED').length,
-    cancelledShifts: entries.filter(e => e.status === 'CANCELLED').length,
+    publishedEntries: entries.filter((e: Entry) => e.status === 'PUBLISHED').length,
+    draftEntries: entries.filter((e: Entry) => e.status === 'DRAFT').length,
+    openShifts: entries.filter((e: Entry) => e.isOpenShift && e.status !== 'FILLED').length,
+    emergencyShifts: entries.filter((e: Entry) => e.isEmergency).length,
+    filledShifts: entries.filter((e: Entry) => e.status === 'FILLED').length,
+    cancelledShifts: entries.filter((e: Entry) => e.status === 'CANCELLED').length,
     uniqueEmployees: uniqueEmployees.size
   }
 }
@@ -517,7 +518,7 @@ export async function findScheduleGaps(
 
   // Check each shift for adequate coverage
   for (const shift of shifts) {
-    const shiftEntries = entries.filter(e => e.shiftId === shift.id)
+    const shiftEntries = entries.filter((e: typeof entries[number]) => e.shiftId === shift.id)
     const staffCount = shiftEntries.length
 
     if (staffCount < shift.minStaffRequired) {

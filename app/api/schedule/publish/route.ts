@@ -141,12 +141,12 @@ export async function GET(request: NextRequest) {
       _count: true
     })
 
-    const statusCounts = entries.reduce((acc, entry) => {
+    const statusCounts = entries.reduce((acc: Record<string, number>, entry: typeof entries[number]) => {
       acc[entry.status] = entry._count
       return acc
     }, {} as Record<string, number>)
 
-    const totalEntries = entries.reduce((sum, entry) => sum + entry._count, 0)
+    const totalEntries = entries.reduce((sum: number, entry: typeof entries[number]) => sum + entry._count, 0)
     const draftCount = statusCounts['DRAFT'] || 0
     const publishedCount = statusCounts['PUBLISHED'] || 0
     const filledCount = statusCounts['FILLED'] || 0

@@ -87,6 +87,7 @@ model Rink {
   submissions           Submission[]
   iceDepthConfiguration IceDepthConfiguration?
   scheduleEntries       ScheduleEntry[]
+  iceDepthReadings      IceDepthReading[]
 
   @@map("rinks")
 }
@@ -121,6 +122,7 @@ model User {
   scheduleEntries      ScheduleEntry[]
   availability         EmployeeAvailability[]
   timeOffRequests      TimeOffRequest[]
+  iceDepthReadings     IceDepthReading[]
 
   @@map("users")
 }
@@ -498,4 +500,45 @@ enum IceDepthPreset {
   RINK_35 // 35 measurement points
   RINK_47 // 47 measurement points
   CUSTOM // Fully custom (up to 5 additional points)
+}
+
+// Ice depth measurement readings
+model IceDepthReading {
+  id          String   @id @default(cuid())
+  rinkId      String
+  rink        Rink     @relation(fields: [rinkId], references: [id], onDelete: Cascade)
+  recordedById String
+  recordedBy  User     @relation(fields: [recordedById], references: [id])
+  recordedAt  DateTime @default(now())
+
+  // Target depth for this reading session
+  targetDepth   Float // Target depth in inches (e.g., 1.25)
+
+  // Measurement data - JSON array of {pointId, depth, notes?}
+  measurements  Json
+
+  // Environmental conditions at time of reading
+  outsideTemp       Float?
+  outsideTempUnit   String @default("F")
+  iceTemp           Float?
+  iceTempUnit       String @default("F")
+
+  // Summary stats (calculated on save)
+  averageDepth      Float
+  minDepth          Float
+  maxDepth          Float
+  pointsBelowTarget Int @default(0)
+  pointsAboveTarget Int @default(0)
+
+  // Notes and flags
+  notes           String?
+  hasIssues       Boolean @default(false) // Flag if readings indicate problems
+
+  // Soft delete for archival
+  archivedAt DateTime?
+
+  @@index([rinkId, recordedAt])
+  @@index([recordedById])
+  @@index([recordedAt])
+  @@map("ice_depth_readings")
 }

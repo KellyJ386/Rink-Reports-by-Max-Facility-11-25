@@ -248,7 +248,7 @@ export default function EditShiftPage() {
           </div>
 
           {/* Schedule Count Info */}
-          {shift._count && (
+          {(shift as any)?._count && (
             <div className="mt-6 pt-4 border-t text-sm text-gray-500">
               This shift is used in {(shift as any)._count.scheduleEntries} schedule entries.
             </div>

@@ -57,8 +57,8 @@ export async function GET(request: NextRequest, context: RouteContext) {
     })
 
     // Maintain order
-    const orderedWaitlist = waitlistUserIds.map(userId =>
-      waitlistUsers.find(u => u.id === userId)
+    const orderedWaitlist = waitlistUserIds.map((userId: string) =>
+      waitlistUsers.find((u: typeof waitlistUsers[number]) => u.id === userId)
     ).filter(Boolean)
 
     return NextResponse.json({
