@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
+import NotificationBell from '@/components/notifications/NotificationBell'
 
 interface SidebarProps {
   user: {
@@ -95,8 +96,15 @@ export default function Sidebar({ user }: SidebarProps) {
     <div className="w-64 bg-gray-900 text-white flex flex-col h-screen">
       {/* Header */}
       <div className="p-6 border-b border-gray-800">
-        <h1 className="text-2xl font-bold">MFO</h1>
-        <p className="text-xs text-gray-400 mt-1">{user.facility.name}</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">MFO</h1>
+            <p className="text-xs text-gray-400 mt-1">{user.facility.name}</p>
+          </div>
+          <div className="text-white">
+            <NotificationBell />
+          </div>
+        </div>
       </div>
 
       {/* Navigation */}
