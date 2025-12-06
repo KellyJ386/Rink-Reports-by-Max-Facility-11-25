@@ -16,7 +16,9 @@ interface Submission {
   rink: { id: string; name: string }
   submittedBy: { id: string; firstName: string; lastName: string }
   formTemplate: { id: string; name: string }
-  data: Record<string, unknown>
+  data: Record<string, unknown> & {
+    photos?: string[]
+  }
 }
 
 const INCIDENT_TYPES = [
@@ -157,6 +159,8 @@ export default function IncidentsPage() {
   const [witnesses, setWitnesses] = useState('')
   const [actionTaken, setActionTaken] = useState('')
   const [injuryLocations, setInjuryLocations] = useState<string[]>([])
+  const [photos, setPhotos] = useState<string[]>([])
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
 
   // Review state
   const [reviewNotes, setReviewNotes] = useState('')
@@ -189,6 +193,59 @@ export default function IncidentsPage() {
     fetchData()
   }, [filterRink, filterStatus])
 
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    setUploadingPhoto(true)
+    const newPhotos: string[] = []
+
+    for (let i = 0; i < Math.min(files.length, 5 - photos.length); i++) {
+      const file = files[i]
+      if (!file.type.startsWith('image/')) continue
+
+      // Compress and convert to base64
+      const base64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader()
+        reader.onload = () => {
+          const img = new Image()
+          img.onload = () => {
+            const canvas = document.createElement('canvas')
+            const maxSize = 800
+            let width = img.width
+            let height = img.height
+
+            if (width > height && width > maxSize) {
+              height = (height * maxSize) / width
+              width = maxSize
+            } else if (height > maxSize) {
+              width = (width * maxSize) / height
+              height = maxSize
+            }
+
+            canvas.width = width
+            canvas.height = height
+            const ctx = canvas.getContext('2d')
+            ctx?.drawImage(img, 0, 0, width, height)
+            resolve(canvas.toDataURL('image/jpeg', 0.7))
+          }
+          img.src = reader.result as string
+        }
+        reader.readAsDataURL(file)
+      })
+
+      newPhotos.push(base64)
+    }
+
+    setPhotos(prev => [...prev, ...newPhotos])
+    setUploadingPhoto(false)
+    e.target.value = '' // Reset input
+  }
+
+  const removePhoto = (index: number) => {
+    setPhotos(prev => prev.filter((_, i) => i !== index))
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedRink || !incidentType || !description) return
@@ -210,7 +267,8 @@ export default function IncidentsPage() {
             injuryLocations: injuryLocations.length > 0 ? injuryLocations : null,
             ambulanceCalled,
             witnesses: witnesses || null,
-            actionTaken: actionTaken || null
+            actionTaken: actionTaken || null,
+            photos: photos.length > 0 ? photos : null
           }
         })
       })
@@ -270,6 +328,7 @@ export default function IncidentsPage() {
     setWitnesses('')
     setActionTaken('')
     setInjuryLocations([])
+    setPhotos([])
   }
 
   const formatDateTime = (dateStr: string) => {
@@ -391,6 +450,11 @@ export default function IncidentsPage() {
                           {data.ambulanceCalled === true && (
                             <span className="text-xs px-2 py-0.5 bg-red-600 text-white rounded-full">
                               AMBULANCE
+                            </span>
+                          )}
+                          {Array.isArray(data.photos) && data.photos.length > 0 && (
+                            <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">
+                              {data.photos.length} photo{data.photos.length > 1 ? 's' : ''}
                             </span>
                           )}
                         </div>
@@ -567,6 +631,54 @@ export default function IncidentsPage() {
                 />
               </div>
 
+              {/* Photo Upload Section */}
+              <div className="border-t pt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Photos (up to 5)
+                </label>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {photos.map((photo, index) => (
+                    <div key={index} className="relative">
+                      <img
+                        src={photo}
+                        alt={`Photo ${index + 1}`}
+                        className="w-20 h-20 object-cover rounded-lg border border-gray-300"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removePhoto(index)}
+                        className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-600"
+                      >
+                        x
+                      </button>
+                    </div>
+                  ))}
+                  {photos.length < 5 && (
+                    <label className="w-20 h-20 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-gray-400 hover:bg-gray-50">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handlePhotoUpload}
+                        className="hidden"
+                        disabled={uploadingPhoto}
+                      />
+                      {uploadingPhoto ? (
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-400"></div>
+                      ) : (
+                        <>
+                          <span className="text-2xl text-gray-400">+</span>
+                          <span className="text-xs text-gray-400">Add</span>
+                        </>
+                      )}
+                    </label>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500">
+                  Add photos of the incident, injuries, or damage. Images will be compressed.
+                </p>
+              </div>
+
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
@@ -648,6 +760,32 @@ export default function IncidentsPage() {
                       />
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Photos Section */}
+              {Array.isArray(showReview.data.photos) && showReview.data.photos.length > 0 && (
+                <div className="border-t pt-4">
+                  <div className="text-sm font-medium text-gray-700 mb-2">
+                    Photos ({showReview.data.photos.length})
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {showReview.data.photos.map((photo, index) => (
+                      <a
+                        key={index}
+                        href={photo}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block"
+                      >
+                        <img
+                          src={photo}
+                          alt={`Incident photo ${index + 1}`}
+                          className="w-full h-24 object-cover rounded-lg border border-gray-200 hover:border-blue-400 cursor-pointer transition-colors"
+                        />
+                      </a>
+                    ))}
+                  </div>
                 </div>
               )}
 
