@@ -20,6 +20,7 @@ interface RinkDiagramProps {
   showLabels?: boolean
   showValues?: boolean
   size?: 'sm' | 'md' | 'lg'
+  backgroundImage?: string | null
 }
 
 export default function RinkDiagram({
@@ -31,7 +32,8 @@ export default function RinkDiagram({
   readOnly = false,
   showLabels = true,
   showValues = false,
-  size = 'md'
+  size = 'md',
+  backgroundImage
 }: RinkDiagramProps) {
   const [hoveredPoint, setHoveredPoint] = useState<string | null>(null)
 
@@ -70,94 +72,108 @@ export default function RinkDiagram({
         height={config.height}
         className="mx-auto"
       >
-        {/* Rink outline with rounded corners */}
-        <rect
-          x="2"
-          y="2"
-          width={viewBoxWidth - 4}
-          height={viewBoxHeight - 4}
-          rx="15"
-          ry="15"
-          fill="#e0f2fe"
-          stroke="#0ea5e9"
-          strokeWidth="1"
-        />
-
-        {/* Center line */}
-        <line
-          x1={viewBoxWidth / 2}
-          y1="2"
-          x2={viewBoxWidth / 2}
-          y2={viewBoxHeight - 2}
-          stroke="#0ea5e9"
-          strokeWidth="0.5"
-          strokeDasharray="2,2"
-        />
-
-        {/* Blue lines (approximately at 1/3 and 2/3) */}
-        <line
-          x1={viewBoxWidth * 0.3}
-          y1="2"
-          x2={viewBoxWidth * 0.3}
-          y2={viewBoxHeight - 2}
-          stroke="#3b82f6"
-          strokeWidth="1"
-        />
-        <line
-          x1={viewBoxWidth * 0.7}
-          y1="2"
-          x2={viewBoxWidth * 0.7}
-          y2={viewBoxHeight - 2}
-          stroke="#3b82f6"
-          strokeWidth="1"
-        />
-
-        {/* Goal creases */}
-        <ellipse
-          cx="12"
-          cy={viewBoxHeight / 2}
-          rx="6"
-          ry="10"
-          fill="none"
-          stroke="#ef4444"
-          strokeWidth="0.5"
-        />
-        <ellipse
-          cx={viewBoxWidth - 12}
-          cy={viewBoxHeight / 2}
-          rx="6"
-          ry="10"
-          fill="none"
-          stroke="#ef4444"
-          strokeWidth="0.5"
-        />
-
-        {/* Center circle */}
-        <circle
-          cx={viewBoxWidth / 2}
-          cy={viewBoxHeight / 2}
-          r="10"
-          fill="none"
-          stroke="#0ea5e9"
-          strokeWidth="0.5"
-        />
-
-        {/* Face-off circles */}
-        {[[viewBoxWidth * 0.2, viewBoxHeight * 0.3],
-          [viewBoxWidth * 0.2, viewBoxHeight * 0.7],
-          [viewBoxWidth * 0.8, viewBoxHeight * 0.3],
-          [viewBoxWidth * 0.8, viewBoxHeight * 0.7]
-        ].map(([cx, cy], i) => (
-          <circle
-            key={i}
-            cx={cx}
-            cy={cy}
-            r="8"
-            fill="none"
-            stroke="#ef4444"
-            strokeWidth="0.3"
+        {/* Background image or default rink */}
+        {backgroundImage ? (
+          <image
+            href={backgroundImage}
+            x="0"
+            y="0"
+            width={viewBoxWidth}
+            height={viewBoxHeight}
+            preserveAspectRatio="xMidYMid slice"
           />
-        ))}
+        ) : (
+          <>
+            {/* Rink outline with rounded corners */}
+            <rect
+              x="2"
+              y="2"
+              width={viewBoxWidth - 4}
+              height={viewBoxHeight - 4}
+              rx="15"
+              ry="15"
+              fill="#e0f2fe"
+              stroke="#0ea5e9"
+              strokeWidth="1"
+            />
+
+            {/* Center line */}
+            <line
+              x1={viewBoxWidth / 2}
+              y1="2"
+              x2={viewBoxWidth / 2}
+              y2={viewBoxHeight - 2}
+              stroke="#0ea5e9"
+              strokeWidth="0.5"
+              strokeDasharray="2,2"
+            />
+
+            {/* Blue lines (approximately at 1/3 and 2/3) */}
+            <line
+              x1={viewBoxWidth * 0.3}
+              y1="2"
+              x2={viewBoxWidth * 0.3}
+              y2={viewBoxHeight - 2}
+              stroke="#3b82f6"
+              strokeWidth="1"
+            />
+            <line
+              x1={viewBoxWidth * 0.7}
+              y1="2"
+              x2={viewBoxWidth * 0.7}
+              y2={viewBoxHeight - 2}
+              stroke="#3b82f6"
+              strokeWidth="1"
+            />
+
+            {/* Goal creases */}
+            <ellipse
+              cx="12"
+              cy={viewBoxHeight / 2}
+              rx="6"
+              ry="10"
+              fill="none"
+              stroke="#ef4444"
+              strokeWidth="0.5"
+            />
+            <ellipse
+              cx={viewBoxWidth - 12}
+              cy={viewBoxHeight / 2}
+              rx="6"
+              ry="10"
+              fill="none"
+              stroke="#ef4444"
+              strokeWidth="0.5"
+            />
+
+            {/* Center circle */}
+            <circle
+              cx={viewBoxWidth / 2}
+              cy={viewBoxHeight / 2}
+              r="10"
+              fill="none"
+              stroke="#0ea5e9"
+              strokeWidth="0.5"
+            />
+
+            {/* Face-off circles */}
+            {[[viewBoxWidth * 0.2, viewBoxHeight * 0.3],
+              [viewBoxWidth * 0.2, viewBoxHeight * 0.7],
+              [viewBoxWidth * 0.8, viewBoxHeight * 0.3],
+              [viewBoxWidth * 0.8, viewBoxHeight * 0.7]
+            ].map(([cx, cy], i) => (
+              <circle
+                key={i}
+                cx={cx}
+                cy={cy}
+                r="8"
+                fill="none"
+                stroke="#ef4444"
+                strokeWidth="0.3"
+              />
+            ))}
+          </>
+        )}
 
         {/* Measurement Points */}
         {measurementPoints.map((point) => {

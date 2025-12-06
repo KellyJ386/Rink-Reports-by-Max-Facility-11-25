@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import RinkDiagram from '@/components/ice-depth/RinkDiagram'
+import EditableRinkDiagram from '@/components/ice-depth/EditableRinkDiagram'
 import {
   MeasurementPoint,
   IceDepthPreset,
@@ -22,6 +23,7 @@ interface RinkConfig {
     presetType: IceDepthPreset | null
     measurementPoints: MeasurementPoint[]
     pointCount: number
+    backgroundImage?: string | null
   }
 }
 
@@ -38,6 +40,8 @@ export default function ConfigurePage() {
   const [selectedRinkId, setSelectedRinkId] = useState<string>('')
   const [selectedPreset, setSelectedPreset] = useState<IceDepthPreset>('RINK_25')
   const [customPoints, setCustomPoints] = useState<MeasurementPoint[]>([])
+  const [backgroundImage, setBackgroundImage] = useState<string | null>(null)
+  const [selectedPointId, setSelectedPointId] = useState<string | undefined>(undefined)
   const [showAdvanced, setShowAdvanced] = useState(false)
 
   useEffect(() => {
@@ -52,10 +56,13 @@ export default function ConfigurePage() {
         if (rink.configuration.presetType === 'CUSTOM') {
           setCustomPoints(rink.configuration.measurementPoints)
         }
+        setBackgroundImage(rink.configuration.backgroundImage || null)
       } else {
         setSelectedPreset('RINK_25')
         setCustomPoints([])
+        setBackgroundImage(null)
       }
+      setSelectedPointId(undefined)
     }
   }, [selectedRinkId, rinks])
 
@@ -106,7 +113,8 @@ export default function ConfigurePage() {
         body: JSON.stringify({
           rinkId: selectedRinkId,
           presetType: selectedPreset,
-          measurementPoints: currentPoints
+          measurementPoints: currentPoints,
+          backgroundImage: backgroundImage
         })
       })
 
@@ -255,16 +263,29 @@ export default function ConfigurePage() {
               </div>
             </div>
 
-            {/* Preview Diagram */}
+            {/* Preview/Edit Diagram */}
             <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
               <h3 className="font-medium text-gray-900 mb-3">
-                Preview - {currentPoints.length} Measurement Points
+                {selectedPreset === 'CUSTOM' ? 'Edit Measurement Points' : 'Preview'} - {currentPoints.length} Points
               </h3>
-              <RinkDiagram
-                measurementPoints={currentPoints}
-                readOnly
-                size="lg"
-              />
+              {selectedPreset === 'CUSTOM' ? (
+                <EditableRinkDiagram
+                  measurementPoints={customPoints}
+                  backgroundImage={backgroundImage}
+                  onPointsChange={setCustomPoints}
+                  onBackgroundChange={setBackgroundImage}
+                  selectedPointId={selectedPointId}
+                  onPointSelect={(point) => setSelectedPointId(point?.id)}
+                  size="lg"
+                />
+              ) : (
+                <RinkDiagram
+                  measurementPoints={currentPoints}
+                  backgroundImage={backgroundImage}
+                  readOnly
+                  size="lg"
+                />
+              )}
             </div>
 
             {/* Custom Points Editor */}
