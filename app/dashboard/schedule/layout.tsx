@@ -25,6 +25,11 @@ export default function ScheduleLayout({ children }: ScheduleLayoutProps) {
       label: 'Open Shifts',
       href: '/dashboard/schedule/open-shifts',
       icon: '🔔'
+    },
+    {
+      label: 'Time Off',
+      href: '/dashboard/schedule/time-off',
+      icon: '🏖️'
     }
   ]
 
