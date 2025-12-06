@@ -14,7 +14,27 @@ interface Submission {
   rink: { id: string; name: string }
   submittedBy: { id: string; firstName: string; lastName: string }
   formTemplate: { id: string; name: string }
-  data: Record<string, unknown>
+  data: Record<string, unknown> & {
+    alertLevel?: 'normal' | 'warning' | 'critical'
+    alerts?: string[]
+  }
+}
+
+interface Thresholds {
+  suctionPressureMinWarning: number
+  suctionPressureMaxWarning: number
+  suctionPressureMinCritical: number
+  suctionPressureMaxCritical: number
+  dischargePressureMinWarning: number
+  dischargePressureMaxWarning: number
+  dischargePressureMinCritical: number
+  dischargePressureMaxCritical: number
+  compressorTempWarning: number
+  compressorTempCritical: number
+  brineTempMinWarning: number
+  brineTempMaxWarning: number
+  brineTempMinCritical: number
+  brineTempMaxCritical: number
 }
 
 const READING_TYPES = [
@@ -26,9 +46,27 @@ const READING_TYPES = [
   { id: 'Maintenance', label: 'Maintenance', icon: '⚙️' }
 ]
 
+const DEFAULT_THRESHOLDS: Thresholds = {
+  suctionPressureMinWarning: 20,
+  suctionPressureMaxWarning: 45,
+  suctionPressureMinCritical: 15,
+  suctionPressureMaxCritical: 50,
+  dischargePressureMinWarning: 150,
+  dischargePressureMaxWarning: 250,
+  dischargePressureMinCritical: 120,
+  dischargePressureMaxCritical: 300,
+  compressorTempWarning: 200,
+  compressorTempCritical: 250,
+  brineTempMinWarning: 14,
+  brineTempMaxWarning: 28,
+  brineTempMinCritical: 10,
+  brineTempMaxCritical: 32
+}
+
 export default function RefrigerationPage() {
   const [rinks, setRinks] = useState<Rink[]>([])
   const [submissions, setSubmissions] = useState<Submission[]>([])
+  const [thresholds, setThresholds] = useState<Thresholds>(DEFAULT_THRESHOLDS)
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -59,12 +97,51 @@ export default function RefrigerationPage() {
         const data = await res.json()
         setRinks(data.rinks || [])
         setSubmissions(data.submissions || [])
+        if (data.thresholds) {
+          setThresholds(data.thresholds)
+        }
       }
     } catch (error) {
       console.error('Failed to fetch data:', error)
     } finally {
       setLoading(false)
     }
+  }
+
+  // Helper to check if a value is in warning/critical range
+  const getValueStatus = (
+    value: number | null | undefined,
+    minWarning: number,
+    maxWarning: number,
+    minCritical: number,
+    maxCritical: number
+  ): 'normal' | 'warning' | 'critical' => {
+    if (value === null || value === undefined) return 'normal'
+    if (value <= minCritical || value >= maxCritical) return 'critical'
+    if (value <= minWarning || value >= maxWarning) return 'warning'
+    return 'normal'
+  }
+
+  const getCompressorTempStatus = (value: number | null | undefined): 'normal' | 'warning' | 'critical' => {
+    if (value === null || value === undefined) return 'normal'
+    if (value >= thresholds.compressorTempCritical) return 'critical'
+    if (value >= thresholds.compressorTempWarning) return 'warning'
+    return 'normal'
+  }
+
+  const getStatusColor = (status: 'normal' | 'warning' | 'critical') => {
+    switch (status) {
+      case 'critical': return 'text-red-600 font-semibold'
+      case 'warning': return 'text-yellow-600 font-semibold'
+      default: return 'text-gray-600'
+    }
+  }
+
+  const getAlertBadge = (alertLevel?: 'normal' | 'warning' | 'critical') => {
+    if (!alertLevel || alertLevel === 'normal') return null
+    return alertLevel === 'critical'
+      ? <span className="px-2 py-0.5 text-xs font-semibold bg-red-100 text-red-700 rounded-full ml-2">CRITICAL</span>
+      : <span className="px-2 py-0.5 text-xs font-semibold bg-yellow-100 text-yellow-700 rounded-full ml-2">WARNING</span>
   }
 
   useEffect(() => {
@@ -214,16 +291,43 @@ export default function RefrigerationPage() {
         ) : (
           <div className="divide-y divide-gray-100">
             {submissions.map((sub) => {
-              const data = sub.data as Record<string, unknown>
+              const data = sub.data
+              const alertLevel = data.alertLevel
+              const compTempStatus = getCompressorTempStatus(data.compressorTemp as number | null)
+              const suctionStatus = getValueStatus(
+                data.suctionPressure as number | null,
+                thresholds.suctionPressureMinWarning,
+                thresholds.suctionPressureMaxWarning,
+                thresholds.suctionPressureMinCritical,
+                thresholds.suctionPressureMaxCritical
+              )
+              const dischargeStatus = getValueStatus(
+                data.dischargePressure as number | null,
+                thresholds.dischargePressureMinWarning,
+                thresholds.dischargePressureMaxWarning,
+                thresholds.dischargePressureMinCritical,
+                thresholds.dischargePressureMaxCritical
+              )
+              const brineStatus = getValueStatus(
+                data.brineTemp as number | null,
+                thresholds.brineTempMinWarning,
+                thresholds.brineTempMaxWarning,
+                thresholds.brineTempMinCritical,
+                thresholds.brineTempMaxCritical
+              )
+
               return (
-                <div key={sub.id} className="px-4 py-3 hover:bg-gray-50">
+                <div key={sub.id} className={`px-4 py-3 hover:bg-gray-50 ${alertLevel === 'critical' ? 'bg-red-50' : alertLevel === 'warning' ? 'bg-yellow-50' : ''}`}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <span className="text-2xl">
                         {READING_TYPES.find(t => t.id === sub.formTemplate.name)?.icon || '❄️'}
                       </span>
                       <div>
-                        <div className="font-medium text-gray-900">{sub.formTemplate.name}</div>
+                        <div className="font-medium text-gray-900">
+                          {sub.formTemplate.name}
+                          {getAlertBadge(alertLevel)}
+                        </div>
                         <div className="text-sm text-gray-500">
                           {sub.rink.name} • {sub.submittedBy.firstName} {sub.submittedBy.lastName}
                         </div>
@@ -236,18 +340,35 @@ export default function RefrigerationPage() {
                   </div>
                   <div className="mt-2 ml-11 flex flex-wrap gap-4 text-sm">
                     {data.compressorTemp != null && (
-                      <span className="text-gray-600">Comp: {String(data.compressorTemp)}°F</span>
+                      <span className={getStatusColor(compTempStatus)}>
+                        Comp: {String(data.compressorTemp)}°F
+                        {compTempStatus !== 'normal' && ' ⚠'}
+                      </span>
                     )}
                     {data.suctionPressure != null && (
-                      <span className="text-gray-600">Suction: {String(data.suctionPressure)} PSI</span>
+                      <span className={getStatusColor(suctionStatus)}>
+                        Suction: {String(data.suctionPressure)} PSI
+                        {suctionStatus !== 'normal' && ' ⚠'}
+                      </span>
                     )}
                     {data.dischargePressure != null && (
-                      <span className="text-gray-600">Discharge: {String(data.dischargePressure)} PSI</span>
+                      <span className={getStatusColor(dischargeStatus)}>
+                        Discharge: {String(data.dischargePressure)} PSI
+                        {dischargeStatus !== 'normal' && ' ⚠'}
+                      </span>
                     )}
                     {data.brineTemp != null && (
-                      <span className="text-gray-600">Brine: {String(data.brineTemp)}°F</span>
+                      <span className={getStatusColor(brineStatus)}>
+                        Brine: {String(data.brineTemp)}°F
+                        {brineStatus !== 'normal' && ' ⚠'}
+                      </span>
                     )}
                   </div>
+                  {data.alerts && data.alerts.length > 0 && (
+                    <div className="mt-2 ml-11 text-sm text-red-600">
+                      {data.alerts.join(' | ')}
+                    </div>
+                  )}
                   {data.notes != null && (
                     <div className="mt-1 text-sm text-gray-500 ml-11 italic">
                       {String(data.notes)}
@@ -308,8 +429,20 @@ export default function RefrigerationPage() {
                     type="number"
                     value={compressorTemp}
                     onChange={(e) => setCompressorTemp(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                    className={`w-full border rounded-lg px-3 py-2 ${
+                      compressorTemp && parseFloat(compressorTemp) >= thresholds.compressorTempCritical
+                        ? 'border-red-500 bg-red-50'
+                        : compressorTemp && parseFloat(compressorTemp) >= thresholds.compressorTempWarning
+                        ? 'border-yellow-500 bg-yellow-50'
+                        : 'border-gray-300'
+                    }`}
                   />
+                  <p className="text-xs text-gray-500 mt-1">Normal: &lt;{thresholds.compressorTempWarning}°F</p>
+                  {compressorTemp && parseFloat(compressorTemp) >= thresholds.compressorTempWarning && (
+                    <p className={`text-xs mt-1 ${parseFloat(compressorTemp) >= thresholds.compressorTempCritical ? 'text-red-600' : 'text-yellow-600'}`}>
+                      {parseFloat(compressorTemp) >= thresholds.compressorTempCritical ? 'CRITICAL: Temperature too high!' : 'Warning: Temperature elevated'}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Brine Temp (°F)</label>
@@ -317,8 +450,20 @@ export default function RefrigerationPage() {
                     type="number"
                     value={brineTemp}
                     onChange={(e) => setBrineTemp(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                    className={`w-full border rounded-lg px-3 py-2 ${
+                      brineTemp && (parseFloat(brineTemp) <= thresholds.brineTempMinCritical || parseFloat(brineTemp) >= thresholds.brineTempMaxCritical)
+                        ? 'border-red-500 bg-red-50'
+                        : brineTemp && (parseFloat(brineTemp) <= thresholds.brineTempMinWarning || parseFloat(brineTemp) >= thresholds.brineTempMaxWarning)
+                        ? 'border-yellow-500 bg-yellow-50'
+                        : 'border-gray-300'
+                    }`}
                   />
+                  <p className="text-xs text-gray-500 mt-1">Normal: {thresholds.brineTempMinWarning}-{thresholds.brineTempMaxWarning}°F</p>
+                  {brineTemp && (parseFloat(brineTemp) <= thresholds.brineTempMinWarning || parseFloat(brineTemp) >= thresholds.brineTempMaxWarning) && (
+                    <p className={`text-xs mt-1 ${(parseFloat(brineTemp) <= thresholds.brineTempMinCritical || parseFloat(brineTemp) >= thresholds.brineTempMaxCritical) ? 'text-red-600' : 'text-yellow-600'}`}>
+                      {(parseFloat(brineTemp) <= thresholds.brineTempMinCritical || parseFloat(brineTemp) >= thresholds.brineTempMaxCritical) ? 'CRITICAL: Temperature out of range!' : 'Warning: Temperature outside normal'}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -329,8 +474,20 @@ export default function RefrigerationPage() {
                     type="number"
                     value={suctionPressure}
                     onChange={(e) => setSuctionPressure(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                    className={`w-full border rounded-lg px-3 py-2 ${
+                      suctionPressure && (parseFloat(suctionPressure) <= thresholds.suctionPressureMinCritical || parseFloat(suctionPressure) >= thresholds.suctionPressureMaxCritical)
+                        ? 'border-red-500 bg-red-50'
+                        : suctionPressure && (parseFloat(suctionPressure) <= thresholds.suctionPressureMinWarning || parseFloat(suctionPressure) >= thresholds.suctionPressureMaxWarning)
+                        ? 'border-yellow-500 bg-yellow-50'
+                        : 'border-gray-300'
+                    }`}
                   />
+                  <p className="text-xs text-gray-500 mt-1">Normal: {thresholds.suctionPressureMinWarning}-{thresholds.suctionPressureMaxWarning} PSI</p>
+                  {suctionPressure && (parseFloat(suctionPressure) <= thresholds.suctionPressureMinWarning || parseFloat(suctionPressure) >= thresholds.suctionPressureMaxWarning) && (
+                    <p className={`text-xs mt-1 ${(parseFloat(suctionPressure) <= thresholds.suctionPressureMinCritical || parseFloat(suctionPressure) >= thresholds.suctionPressureMaxCritical) ? 'text-red-600' : 'text-yellow-600'}`}>
+                      {(parseFloat(suctionPressure) <= thresholds.suctionPressureMinCritical || parseFloat(suctionPressure) >= thresholds.suctionPressureMaxCritical) ? 'CRITICAL: Pressure out of range!' : 'Warning: Pressure outside normal'}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Discharge Pressure (PSI)</label>
@@ -338,8 +495,20 @@ export default function RefrigerationPage() {
                     type="number"
                     value={dischargePressure}
                     onChange={(e) => setDischargePressure(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                    className={`w-full border rounded-lg px-3 py-2 ${
+                      dischargePressure && (parseFloat(dischargePressure) <= thresholds.dischargePressureMinCritical || parseFloat(dischargePressure) >= thresholds.dischargePressureMaxCritical)
+                        ? 'border-red-500 bg-red-50'
+                        : dischargePressure && (parseFloat(dischargePressure) <= thresholds.dischargePressureMinWarning || parseFloat(dischargePressure) >= thresholds.dischargePressureMaxWarning)
+                        ? 'border-yellow-500 bg-yellow-50'
+                        : 'border-gray-300'
+                    }`}
                   />
+                  <p className="text-xs text-gray-500 mt-1">Normal: {thresholds.dischargePressureMinWarning}-{thresholds.dischargePressureMaxWarning} PSI</p>
+                  {dischargePressure && (parseFloat(dischargePressure) <= thresholds.dischargePressureMinWarning || parseFloat(dischargePressure) >= thresholds.dischargePressureMaxWarning) && (
+                    <p className={`text-xs mt-1 ${(parseFloat(dischargePressure) <= thresholds.dischargePressureMinCritical || parseFloat(dischargePressure) >= thresholds.dischargePressureMaxCritical) ? 'text-red-600' : 'text-yellow-600'}`}>
+                      {(parseFloat(dischargePressure) <= thresholds.dischargePressureMinCritical || parseFloat(dischargePressure) >= thresholds.dischargePressureMaxCritical) ? 'CRITICAL: Pressure out of range!' : 'Warning: Pressure outside normal'}
+                    </p>
+                  )}
                 </div>
               </div>
 

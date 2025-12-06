@@ -56,7 +56,47 @@ export async function GET(request: NextRequest) {
       select: { id: true, name: true }
     })
 
-    return NextResponse.json({ submissions, rinks })
+    // Get facility settings for thresholds
+    const settings = await prisma.facilitySettings.findUnique({
+      where: { facilityId },
+      select: {
+        suctionPressureMinWarning: true,
+        suctionPressureMaxWarning: true,
+        suctionPressureMinCritical: true,
+        suctionPressureMaxCritical: true,
+        dischargePressureMinWarning: true,
+        dischargePressureMaxWarning: true,
+        dischargePressureMinCritical: true,
+        dischargePressureMaxCritical: true,
+        compressorTempWarning: true,
+        compressorTempCritical: true,
+        brineTempMinWarning: true,
+        brineTempMaxWarning: true,
+        brineTempMinCritical: true,
+        brineTempMaxCritical: true,
+        enableRefrigerationAlerts: true
+      }
+    })
+
+    const thresholds = settings || {
+      suctionPressureMinWarning: 20,
+      suctionPressureMaxWarning: 45,
+      suctionPressureMinCritical: 15,
+      suctionPressureMaxCritical: 50,
+      dischargePressureMinWarning: 150,
+      dischargePressureMaxWarning: 250,
+      dischargePressureMinCritical: 120,
+      dischargePressureMaxCritical: 300,
+      compressorTempWarning: 200,
+      compressorTempCritical: 250,
+      brineTempMinWarning: 14,
+      brineTempMaxWarning: 28,
+      brineTempMinCritical: 10,
+      brineTempMaxCritical: 32,
+      enableRefrigerationAlerts: true
+    }
+
+    return NextResponse.json({ submissions, rinks, thresholds })
   } catch (error) {
     console.error('Refrigeration error:', error)
     return NextResponse.json({ error: 'Failed to fetch refrigeration data' }, { status: 500 })
@@ -108,6 +148,85 @@ export async function POST(request: NextRequest) {
       })
     }
 
+    // Check for threshold violations
+    const settings = await prisma.facilitySettings.findUnique({
+      where: { facilityId }
+    })
+
+    const thresholds = {
+      suctionPressureMinWarning: settings?.suctionPressureMinWarning || 20,
+      suctionPressureMaxWarning: settings?.suctionPressureMaxWarning || 45,
+      suctionPressureMinCritical: settings?.suctionPressureMinCritical || 15,
+      suctionPressureMaxCritical: settings?.suctionPressureMaxCritical || 50,
+      dischargePressureMinWarning: settings?.dischargePressureMinWarning || 150,
+      dischargePressureMaxWarning: settings?.dischargePressureMaxWarning || 250,
+      dischargePressureMinCritical: settings?.dischargePressureMinCritical || 120,
+      dischargePressureMaxCritical: settings?.dischargePressureMaxCritical || 300,
+      compressorTempWarning: settings?.compressorTempWarning || 200,
+      compressorTempCritical: settings?.compressorTempCritical || 250,
+      brineTempMinWarning: settings?.brineTempMinWarning || 14,
+      brineTempMaxWarning: settings?.brineTempMaxWarning || 28,
+      brineTempMinCritical: settings?.brineTempMinCritical || 10,
+      brineTempMaxCritical: settings?.brineTempMaxCritical || 32,
+      enableRefrigerationAlerts: settings?.enableRefrigerationAlerts ?? true
+    }
+
+    const suctionPressure = data.suctionPressure ? parseFloat(String(data.suctionPressure)) : null
+    const dischargePressure = data.dischargePressure ? parseFloat(String(data.dischargePressure)) : null
+    const compressorTemp = data.compressorTemp ? parseFloat(String(data.compressorTemp)) : null
+    const brineTemp = data.brineTemp ? parseFloat(String(data.brineTemp)) : null
+
+    // Check for critical/warning conditions
+    const alerts: string[] = []
+    let hasCritical = false
+    let hasWarning = false
+
+    // Suction pressure checks
+    if (suctionPressure !== null) {
+      if (suctionPressure <= thresholds.suctionPressureMinCritical || suctionPressure >= thresholds.suctionPressureMaxCritical) {
+        hasCritical = true
+        alerts.push(`Suction pressure ${suctionPressure} PSI is CRITICAL`)
+      } else if (suctionPressure <= thresholds.suctionPressureMinWarning || suctionPressure >= thresholds.suctionPressureMaxWarning) {
+        hasWarning = true
+        alerts.push(`Suction pressure ${suctionPressure} PSI is outside normal range`)
+      }
+    }
+
+    // Discharge pressure checks
+    if (dischargePressure !== null) {
+      if (dischargePressure <= thresholds.dischargePressureMinCritical || dischargePressure >= thresholds.dischargePressureMaxCritical) {
+        hasCritical = true
+        alerts.push(`Discharge pressure ${dischargePressure} PSI is CRITICAL`)
+      } else if (dischargePressure <= thresholds.dischargePressureMinWarning || dischargePressure >= thresholds.dischargePressureMaxWarning) {
+        hasWarning = true
+        alerts.push(`Discharge pressure ${dischargePressure} PSI is outside normal range`)
+      }
+    }
+
+    // Compressor temperature checks
+    if (compressorTemp !== null) {
+      if (compressorTemp >= thresholds.compressorTempCritical) {
+        hasCritical = true
+        alerts.push(`Compressor temp ${compressorTemp}°F is CRITICAL`)
+      } else if (compressorTemp >= thresholds.compressorTempWarning) {
+        hasWarning = true
+        alerts.push(`Compressor temp ${compressorTemp}°F is elevated`)
+      }
+    }
+
+    // Brine temperature checks
+    if (brineTemp !== null) {
+      if (brineTemp <= thresholds.brineTempMinCritical || brineTemp >= thresholds.brineTempMaxCritical) {
+        hasCritical = true
+        alerts.push(`Brine temp ${brineTemp}°F is CRITICAL`)
+      } else if (brineTemp <= thresholds.brineTempMinWarning || brineTemp >= thresholds.brineTempMaxWarning) {
+        hasWarning = true
+        alerts.push(`Brine temp ${brineTemp}°F is outside normal range`)
+      }
+    }
+
+    const alertLevel = hasCritical ? 'critical' : hasWarning ? 'warning' : 'normal'
+
     const submission = await prisma.submission.create({
       data: {
         formTemplateId: template.id,
@@ -117,6 +236,8 @@ export async function POST(request: NextRequest) {
         data: {
           readingType,
           ...data,
+          alertLevel,
+          alerts,
           notes
         },
         status: 'SUBMITTED'
@@ -127,7 +248,21 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    return NextResponse.json(submission, { status: 201 })
+    // Create notification if alert level is elevated and alerts are enabled
+    if (alertLevel !== 'normal' && thresholds.enableRefrigerationAlerts) {
+      await prisma.notification.create({
+        data: {
+          facilityId,
+          type: 'SYSTEM',
+          title: alertLevel === 'critical' ? 'REFRIGERATION CRITICAL ALERT' : 'Refrigeration Warning',
+          message: `${submission.rink.name}: ${alerts.join(', ')}`,
+          relatedEntityType: 'Submission',
+          relatedEntityId: submission.id
+        }
+      })
+    }
+
+    return NextResponse.json({ ...submission, alertLevel, alerts }, { status: 201 })
   } catch (error) {
     console.error('Refrigeration create error:', error)
     return NextResponse.json({ error: 'Failed to create refrigeration reading' }, { status: 500 })

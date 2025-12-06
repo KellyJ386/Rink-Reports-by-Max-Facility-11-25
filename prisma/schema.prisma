@@ -57,6 +57,23 @@ model FacilitySettings {
   no2EvacuationPpm       Float   @default(2.0)
   enableAirQualityAlerts Boolean @default(true)
 
+  // Refrigeration thresholds (customizable per facility)
+  suctionPressureMinWarning  Float   @default(20)
+  suctionPressureMaxWarning  Float   @default(45)
+  suctionPressureMinCritical Float   @default(15)
+  suctionPressureMaxCritical Float   @default(50)
+  dischargePressureMinWarning Float  @default(150)
+  dischargePressureMaxWarning Float  @default(250)
+  dischargePressureMinCritical Float @default(120)
+  dischargePressureMaxCritical Float @default(300)
+  compressorTempWarning      Float   @default(200)
+  compressorTempCritical     Float   @default(250)
+  brineTempMinWarning        Float   @default(14)
+  brineTempMaxWarning        Float   @default(28)
+  brineTempMinCritical       Float   @default(10)
+  brineTempMaxCritical       Float   @default(32)
+  enableRefrigerationAlerts  Boolean @default(true)
+
   // SMS Settings
   smsEnabled         Boolean @default(false)
   smsProvider        String? // 'twilio', 'messagebird', 'vonage'
