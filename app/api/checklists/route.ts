@@ -2,39 +2,49 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
 
-const DEFAULT_CHECKLISTS = {
-  'Opening Checklist': [
-    { id: 'lights', label: 'Turn on all lights', required: true },
-    { id: 'hvac', label: 'Check HVAC system', required: true },
-    { id: 'ice_inspect', label: 'Inspect ice surface', required: true },
-    { id: 'boards', label: 'Check boards and glass', required: true },
-    { id: 'goals', label: 'Set up goals', required: false },
-    { id: 'benches', label: 'Clean benches', required: false },
-    { id: 'zamboni', label: 'Check Zamboni fuel/water', required: true },
-    { id: 'first_aid', label: 'Verify first aid kit', required: true },
-    { id: 'exits', label: 'Check emergency exits', required: true },
-    { id: 'temp', label: 'Record building temperature', required: false }
-  ],
-  'Closing Checklist': [
-    { id: 'resurface', label: 'Final ice resurface', required: true },
-    { id: 'lights_off', label: 'Turn off rink lights', required: true },
-    { id: 'hvac_adjust', label: 'Adjust HVAC for overnight', required: true },
-    { id: 'locker_check', label: 'Check locker rooms empty', required: true },
-    { id: 'trash', label: 'Empty trash bins', required: false },
-    { id: 'doors_locked', label: 'Lock all doors', required: true },
-    { id: 'alarm', label: 'Set alarm system', required: true },
-    { id: 'equipment', label: 'Secure equipment room', required: true }
-  ],
-  'Maintenance Checklist': [
-    { id: 'compressor', label: 'Check compressor readings', required: true },
-    { id: 'brine', label: 'Check brine levels', required: true },
-    { id: 'filters', label: 'Inspect air filters', required: false },
-    { id: 'dehumidifier', label: 'Check dehumidifier', required: false },
-    { id: 'edger', label: 'Sharpen edger blades', required: false },
-    { id: 'zamboni_maint', label: 'Zamboni maintenance check', required: false },
-    { id: 'boards_repair', label: 'Inspect boards for damage', required: false },
-    { id: 'lighting', label: 'Check all lighting', required: false }
-  ]
+// Default templates that are always available (will be created if not exist)
+const DEFAULT_CHECKLISTS: Record<string, { description: string; items: { id: string; label: string; required: boolean }[] }> = {
+  'Opening Checklist': {
+    description: 'Daily opening procedures',
+    items: [
+      { id: 'lights', label: 'Turn on all lights', required: true },
+      { id: 'hvac', label: 'Check HVAC system', required: true },
+      { id: 'ice_inspect', label: 'Inspect ice surface', required: true },
+      { id: 'boards', label: 'Check boards and glass', required: true },
+      { id: 'goals', label: 'Set up goals', required: false },
+      { id: 'benches', label: 'Clean benches', required: false },
+      { id: 'zamboni', label: 'Check Zamboni fuel/water', required: true },
+      { id: 'first_aid', label: 'Verify first aid kit', required: true },
+      { id: 'exits', label: 'Check emergency exits', required: true },
+      { id: 'temp', label: 'Record building temperature', required: false }
+    ]
+  },
+  'Closing Checklist': {
+    description: 'Daily closing procedures',
+    items: [
+      { id: 'resurface', label: 'Final ice resurface', required: true },
+      { id: 'lights_off', label: 'Turn off rink lights', required: true },
+      { id: 'hvac_adjust', label: 'Adjust HVAC for overnight', required: true },
+      { id: 'locker_check', label: 'Check locker rooms empty', required: true },
+      { id: 'trash', label: 'Empty trash bins', required: false },
+      { id: 'doors_locked', label: 'Lock all doors', required: true },
+      { id: 'alarm', label: 'Set alarm system', required: true },
+      { id: 'equipment', label: 'Secure equipment room', required: true }
+    ]
+  },
+  'Maintenance Checklist': {
+    description: 'Equipment maintenance checks',
+    items: [
+      { id: 'compressor', label: 'Check compressor readings', required: true },
+      { id: 'brine', label: 'Check brine levels', required: true },
+      { id: 'filters', label: 'Inspect air filters', required: false },
+      { id: 'dehumidifier', label: 'Check dehumidifier', required: false },
+      { id: 'edger', label: 'Sharpen edger blades', required: false },
+      { id: 'zamboni_maint', label: 'Zamboni maintenance check', required: false },
+      { id: 'boards_repair', label: 'Inspect boards for damage', required: false },
+      { id: 'lighting', label: 'Check all lighting', required: false }
+    ]
+  }
 }
 
 export async function GET(request: NextRequest) {
@@ -99,10 +109,44 @@ export async function GET(request: NextRequest) {
       select: { id: true, name: true }
     })
 
+    // Get all active checklist templates for this facility
+    const templates = await prisma.formTemplate.findMany({
+      where: {
+        facilityId,
+        moduleType: 'DAILY_CHECKLIST',
+        isActive: true
+      },
+      orderBy: { name: 'asc' }
+    })
+
+    // Build template data with items from schema
+    const templateData: Record<string, { label: string; icon: string; items: { id: string; label: string; required: boolean }[] }> = {}
+
+    for (const template of templates) {
+      const schema = template.schema as { fields?: { id: string; label: string; required: boolean }[] } | null
+      templateData[template.name] = {
+        label: template.name.replace(' Checklist', ''),
+        icon: template.name.includes('Opening') ? '🌅' : template.name.includes('Closing') ? '🌙' : template.name.includes('Maintenance') ? '🔧' : '✓',
+        items: schema?.fields || []
+      }
+    }
+
+    // Add defaults if they don't exist in database
+    for (const [name, data] of Object.entries(DEFAULT_CHECKLISTS)) {
+      if (!templateData[name]) {
+        templateData[name] = {
+          label: name.replace(' Checklist', ''),
+          icon: name.includes('Opening') ? '🌅' : name.includes('Closing') ? '🌙' : '🔧',
+          items: data.items
+        }
+      }
+    }
+
     return NextResponse.json({
       submissions,
       rinks,
-      checklistTypes: Object.keys(DEFAULT_CHECKLISTS)
+      checklistTypes: Object.keys(templateData),
+      templates: templateData
     })
   } catch (error) {
     console.error('Checklists error:', error)
@@ -134,7 +178,8 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    const defaultItems = DEFAULT_CHECKLISTS[checklistType as keyof typeof DEFAULT_CHECKLISTS] || []
+    const defaultData = DEFAULT_CHECKLISTS[checklistType as keyof typeof DEFAULT_CHECKLISTS]
+    const defaultItems = defaultData?.items || []
 
     if (!template) {
       template = await prisma.formTemplate.create({

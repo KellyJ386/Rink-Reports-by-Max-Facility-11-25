@@ -23,56 +23,16 @@ interface ChecklistItem {
   required: boolean
 }
 
-const CHECKLIST_TYPES: Record<string, { label: string; icon: string; items: ChecklistItem[] }> = {
-  'Opening Checklist': {
-    label: 'Opening',
-    icon: '🌅',
-    items: [
-      { id: 'lights', label: 'Turn on all lights', required: true },
-      { id: 'hvac', label: 'Check HVAC system', required: true },
-      { id: 'ice_inspect', label: 'Inspect ice surface', required: true },
-      { id: 'boards', label: 'Check boards and glass', required: true },
-      { id: 'goals', label: 'Set up goals', required: false },
-      { id: 'benches', label: 'Clean benches', required: false },
-      { id: 'zamboni', label: 'Check Zamboni fuel/water', required: true },
-      { id: 'first_aid', label: 'Verify first aid kit', required: true },
-      { id: 'exits', label: 'Check emergency exits', required: true },
-      { id: 'temp', label: 'Record building temperature', required: false }
-    ]
-  },
-  'Closing Checklist': {
-    label: 'Closing',
-    icon: '🌙',
-    items: [
-      { id: 'resurface', label: 'Final ice resurface', required: true },
-      { id: 'lights_off', label: 'Turn off rink lights', required: true },
-      { id: 'hvac_adjust', label: 'Adjust HVAC for overnight', required: true },
-      { id: 'locker_check', label: 'Check locker rooms empty', required: true },
-      { id: 'trash', label: 'Empty trash bins', required: false },
-      { id: 'doors_locked', label: 'Lock all doors', required: true },
-      { id: 'alarm', label: 'Set alarm system', required: true },
-      { id: 'equipment', label: 'Secure equipment room', required: true }
-    ]
-  },
-  'Maintenance Checklist': {
-    label: 'Maintenance',
-    icon: '🔧',
-    items: [
-      { id: 'compressor', label: 'Check compressor readings', required: true },
-      { id: 'brine', label: 'Check brine levels', required: true },
-      { id: 'filters', label: 'Inspect air filters', required: false },
-      { id: 'dehumidifier', label: 'Check dehumidifier', required: false },
-      { id: 'edger', label: 'Sharpen edger blades', required: false },
-      { id: 'zamboni_maint', label: 'Zamboni maintenance check', required: false },
-      { id: 'boards_repair', label: 'Inspect boards for damage', required: false },
-      { id: 'lighting', label: 'Check all lighting', required: false }
-    ]
-  }
+interface TemplateData {
+  label: string
+  icon: string
+  items: ChecklistItem[]
 }
 
 export default function ChecklistsPage() {
   const [rinks, setRinks] = useState<Rink[]>([])
   const [submissions, setSubmissions] = useState<Submission[]>([])
+  const [templates, setTemplates] = useState<Record<string, TemplateData>>({})
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -100,6 +60,9 @@ export default function ChecklistsPage() {
         const data = await res.json()
         setRinks(data.rinks || [])
         setSubmissions(data.submissions || [])
+        if (data.templates) {
+          setTemplates(data.templates)
+        }
       }
     } catch (error) {
       console.error('Failed to fetch data:', error)
@@ -113,22 +76,22 @@ export default function ChecklistsPage() {
   }, [filterRink, filterType, filterDate])
 
   useEffect(() => {
-    if (checklistType && CHECKLIST_TYPES[checklistType]) {
+    if (checklistType && templates[checklistType]) {
       const initial: Record<string, boolean> = {}
-      for (const item of CHECKLIST_TYPES[checklistType].items) {
+      for (const item of templates[checklistType].items) {
         initial[item.id] = false
       }
       setCheckedItems(initial)
     }
-  }, [checklistType])
+  }, [checklistType, templates])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedRink || !checklistType) return
 
     // Check required items
-    const items = CHECKLIST_TYPES[checklistType].items
-    const missingRequired = items.filter(item => item.required && !checkedItems[item.id])
+    const templateItems = templates[checklistType]?.items || []
+    const missingRequired = templateItems.filter(item => item.required && !checkedItems[item.id])
     if (missingRequired.length > 0) {
       alert(`Please complete all required items:\n${missingRequired.map(i => `• ${i.label}`).join('\n')}`)
       return
@@ -212,7 +175,7 @@ export default function ChecklistsPage() {
 
       {/* Quick Action Buttons */}
       <div className="grid grid-cols-3 gap-4">
-        {Object.entries(CHECKLIST_TYPES).map(([key, type]) => (
+        {Object.entries(templates).map(([key, type]) => (
           <button
             key={key}
             onClick={() => {
@@ -226,6 +189,16 @@ export default function ChecklistsPage() {
             <span className="text-sm text-gray-500">{type.items.length} items</span>
           </button>
         ))}
+      </div>
+
+      {/* Manage Templates Link */}
+      <div className="text-right">
+        <Link
+          href="/dashboard/checklists/templates"
+          className="text-sm text-blue-600 hover:text-blue-800"
+        >
+          Manage Templates &rarr;
+        </Link>
       </div>
 
       {/* Filters */}
@@ -252,7 +225,7 @@ export default function ChecklistsPage() {
               className="border border-gray-300 rounded-lg px-3 py-2 text-sm min-w-[150px]"
             >
               <option value="">All Types</option>
-              {Object.keys(CHECKLIST_TYPES).map((key) => (
+              {Object.keys(templates).map((key) => (
                 <option key={key} value={key}>{key}</option>
               ))}
             </select>
@@ -287,7 +260,7 @@ export default function ChecklistsPage() {
             {submissions.map((sub) => {
               const data = sub.data as Record<string, unknown>
               const percent = (data.completionPercent as number) || 0
-              const typeInfo = CHECKLIST_TYPES[sub.formTemplate.name]
+              const typeInfo = templates[sub.formTemplate.name]
 
               return (
                 <div key={sub.id} className="px-4 py-3 hover:bg-gray-50">
@@ -329,7 +302,7 @@ export default function ChecklistsPage() {
           <div className="bg-white rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto">
             <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white">
               <h2 className="font-semibold text-gray-900">
-                {checklistType ? CHECKLIST_TYPES[checklistType]?.label + ' Checklist' : 'Start Checklist'}
+                {checklistType ? templates[checklistType]?.label + ' Checklist' : 'Start Checklist'}
               </h2>
               <button onClick={() => { setShowForm(false); resetForm() }} className="text-gray-400 hover:text-gray-600">
                 ✕
@@ -360,16 +333,16 @@ export default function ChecklistsPage() {
                     className="w-full border border-gray-300 rounded-lg px-3 py-2"
                   >
                     <option value="">Select type...</option>
-                    {Object.entries(CHECKLIST_TYPES).map(([key, type]) => (
+                    {Object.entries(templates).map(([key, type]) => (
                       <option key={key} value={key}>{type.label}</option>
                     ))}
                   </select>
                 </div>
               </div>
 
-              {checklistType && CHECKLIST_TYPES[checklistType] && (
+              {checklistType && templates[checklistType] && (
                 <div className="border rounded-lg divide-y">
-                  {CHECKLIST_TYPES[checklistType].items.map((item) => (
+                  {templates[checklistType].items.map((item) => (
                     <label
                       key={item.id}
                       className={`flex items-center gap-3 p-3 cursor-pointer hover:bg-gray-50 ${
