@@ -1,8 +1,10 @@
 // Notification Service
 // Infrastructure for sending notifications (SMS, Email, In-App)
-// Note: Actual SMS/Email sending requires integration with Twilio/SendGrid
+// Note: Actual SMS sending requires integration with Twilio
+// Email sending is integrated with sendEmail from ./email.ts
 
 import { prisma } from './prisma'
+import { sendEmail, getEmailTemplate } from './email'
 
 export type NotificationType =
   | 'INCIDENT_SUBMITTED'
@@ -133,16 +135,47 @@ async function queueSMSNotification(payload: NotificationPayload) {
 async function queueEmailNotification(payload: NotificationPayload) {
   if (!payload.recipientUserId) return
 
-  // Get user's email
+  // Get user's email and facility info
   const user = await prisma.user.findUnique({
     where: { id: payload.recipientUserId },
-    select: { email: true }
+    select: {
+      email: true,
+      firstName: true,
+      lastName: true
+    }
   })
 
   if (!user?.email) return
 
-  // TODO: Integrate with email service (SendGrid, SES, etc.)
-  console.log(`Email queued for ${user.email}: ${payload.title}`)
+  // Get facility info for email template
+  const facility = await prisma.facility.findUnique({
+    where: { id: payload.facilityId },
+    select: { name: true }
+  })
+
+  // Build template data
+  const templateData: Record<string, string> = {
+    facilityName: facility?.name || 'Your Facility',
+    title: payload.title,
+    message: payload.message,
+    recipientName: `${user.firstName} ${user.lastName}`,
+    link: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard`
+  }
+
+  // Get email template based on notification type
+  const emailContent = getEmailTemplate(payload.type, templateData)
+
+  // Send the email
+  const result = await sendEmail({
+    to: user.email,
+    subject: emailContent.subject,
+    html: emailContent.html,
+    text: emailContent.text
+  })
+
+  if (!result.success) {
+    console.error(`Failed to send email to ${user.email}:`, result.error)
+  }
 }
 
 /**
