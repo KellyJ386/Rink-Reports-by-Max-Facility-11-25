@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { getSession } from '@/lib/auth'
 import { getUserPermissions } from '@/lib/permissions'
 import DashboardHeader from '@/components/layout/DashboardHeader'
+import OfflineIndicator from '@/components/layout/OfflineIndicator'
 
 export default async function DashboardLayout({
   children,
@@ -34,6 +35,7 @@ export default async function DashboardLayout({
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {children}
       </main>
+      <OfflineIndicator />
     </div>
   )
 }

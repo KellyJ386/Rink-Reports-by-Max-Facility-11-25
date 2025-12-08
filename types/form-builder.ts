@@ -12,7 +12,6 @@ export type FieldType =
   | 'time'
   | 'datetime'
   | 'signature'
-  | 'photo'
   | 'calculated'
   | 'section'
   | 'divider'
@@ -112,7 +111,6 @@ export interface FormSchema {
 
 export interface FormSettings {
   requireSignature: boolean
-  requirePhoto: boolean
   allowDraft: boolean
   allowOfflineSubmission: boolean
   notifyOnSubmission: boolean
@@ -195,7 +193,7 @@ export interface FormSubmission {
 export interface FormAttachment {
   id: string
   fieldId: string
-  type: 'PHOTO' | 'SIGNATURE' | 'DOCUMENT'
+  type: 'SIGNATURE' | 'DOCUMENT'
   fileName: string
   fileSize: number
   mimeType: string
@@ -287,13 +285,6 @@ export const FIELD_PALETTE_ITEMS: FieldPaletteItem[] = [
     defaultConfig: { required: false, width: 'full' }
   },
   {
-    type: 'photo',
-    label: 'Photo',
-    icon: '📷',
-    description: 'Photo capture or upload',
-    defaultConfig: { required: false, width: 'full' }
-  },
-  {
     type: 'calculated',
     label: 'Calculated',
     icon: 'fx',
@@ -354,7 +345,6 @@ export function createEmptyFormSchema(): FormSchema {
     ],
     settings: {
       requireSignature: false,
-      requirePhoto: false,
       allowDraft: true,
       allowOfflineSubmission: true,
       notifyOnSubmission: false,

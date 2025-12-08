@@ -277,7 +277,6 @@ model Attachment {
 }
 
 enum AttachmentType {
-  PHOTO
   SIGNATURE
   DOCUMENT
 }

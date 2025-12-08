@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 
 export const metadata: Metadata = {
-  title: "MFO - Max Facility Operations",
-  description: "Ice Rink Management SaaS Platform",
+  title: "Rink Reports by Max Facility",
+  description: "Ice Rink Management Platform",
   manifest: "/manifest.json",
 };
 
@@ -14,7 +15,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="font-sans">{children}</body>
+      <body className="font-sans">
+        {children}
+        <ServiceWorkerRegistration />
+      </body>
     </html>
   );
 }
