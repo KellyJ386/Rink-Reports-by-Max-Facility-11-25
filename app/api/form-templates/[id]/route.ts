@@ -258,6 +258,27 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       return NextResponse.json(newTemplate)
     }
 
+    if (action === 'duplicate') {
+      // Create a copy of the template
+      const duplicatedTemplate = await prisma.formTemplate.create({
+        data: {
+          facilityId: existing.facilityId,
+          moduleType: existing.moduleType,
+          name: `${existing.name} (Copy)`,
+          description: existing.description,
+          version: 1,
+          isActive: false, // Start as inactive so admin can review
+          isLocked: false,
+          schema: existing.schema,
+          conditionalRules: existing.conditionalRules,
+          calculatedFields: existing.calculatedFields,
+          createdBy: user.id
+        }
+      })
+
+      return NextResponse.json(duplicatedTemplate)
+    }
+
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
   } catch (error) {
     console.error('Error publishing form template:', error)
