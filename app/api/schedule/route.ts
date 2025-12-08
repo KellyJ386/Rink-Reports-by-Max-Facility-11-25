@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { canUserAccess } from '@/lib/permissions'
 import { prisma } from '@/lib/prisma'
+import { ScheduleBroadcast } from '@/lib/realtime'
 
 // GET /api/schedule - List schedule entries
 export async function GET(request: NextRequest) {
@@ -234,6 +235,9 @@ export async function POST(request: NextRequest) {
         },
       },
     })
+
+    // Broadcast real-time update
+    await ScheduleBroadcast.created(user.facilityId, scheduleEntry)
 
     return NextResponse.json({ scheduleEntry }, { status: 201 })
   } catch (error) {

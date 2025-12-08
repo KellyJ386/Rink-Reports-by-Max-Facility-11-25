@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { canUserAccess } from '@/lib/permissions'
 import { prisma } from '@/lib/prisma'
+import { ScheduleBroadcast } from '@/lib/realtime'
 
 // POST /api/schedule/[id]/publish - Publish a schedule entry
 export async function POST(
@@ -104,7 +105,17 @@ export async function POST(
           relatedEntityId: publishedEntry.id,
         },
       })
+
+      // Broadcast real-time update for open/emergency shifts
+      if (publishedEntry.isEmergency) {
+        await ScheduleBroadcast.emergencyShift(user.facilityId, publishedEntry)
+      } else {
+        await ScheduleBroadcast.openShift(user.facilityId, publishedEntry)
+      }
     }
+
+    // Broadcast schedule update
+    await ScheduleBroadcast.updated(user.facilityId, publishedEntry)
 
     return NextResponse.json({ scheduleEntry: publishedEntry })
   } catch (error) {

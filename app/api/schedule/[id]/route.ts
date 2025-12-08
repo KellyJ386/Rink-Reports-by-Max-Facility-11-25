@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { canUserAccess } from '@/lib/permissions'
 import { prisma } from '@/lib/prisma'
+import { ScheduleBroadcast } from '@/lib/realtime'
 
 // GET /api/schedule/[id] - Get a specific schedule entry
 export async function GET(
@@ -224,6 +225,9 @@ export async function PUT(
       },
     })
 
+    // Broadcast real-time update
+    await ScheduleBroadcast.updated(user.facilityId, updatedEntry)
+
     return NextResponse.json({ scheduleEntry: updatedEntry })
   } catch (error) {
     console.error('Update schedule entry error:', error)
@@ -286,6 +290,9 @@ export async function DELETE(
       where: { id },
       data: { status: 'CANCELLED' },
     })
+
+    // Broadcast real-time update
+    await ScheduleBroadcast.deleted(user.facilityId, id)
 
     return NextResponse.json({ message: 'Schedule entry deleted successfully' })
   } catch (error) {

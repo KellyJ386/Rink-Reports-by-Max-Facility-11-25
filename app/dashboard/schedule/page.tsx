@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import ScheduleCalendar from '@/components/schedule/ScheduleCalendar'
 import ScheduleEntryModal from '@/components/schedule/ScheduleEntryModal'
 import OpenShiftsList from '@/components/schedule/OpenShiftsList'
 import EmergencyCoverageModal from '@/components/schedule/EmergencyCoverageModal'
 import CopyWeekModal from '@/components/schedule/CopyWeekModal'
+import { useScheduleRealtime, showRealtimeToast } from '@/hooks/useRealtime'
 
 interface ScheduleEntry {
   id: string
@@ -52,6 +53,81 @@ export default function SchedulePage() {
     fetchScheduleEntries()
     fetchOpenShifts()
   }, [currentDate])
+
+  // Real-time schedule updates
+  const handleRealtimeCreated = useCallback((entry: ScheduleEntry) => {
+    setScheduleEntries(prev => {
+      // Check if entry already exists
+      if (prev.find(e => e.id === entry.id)) return prev
+      return [...prev, entry]
+    })
+    if (entry.isOpenShift) {
+      setOpenShifts(prev => {
+        if (prev.find(e => e.id === entry.id)) return prev
+        return [...prev, entry]
+      })
+    }
+    showRealtimeToast('New schedule entry added', 'info')
+  }, [])
+
+  const handleRealtimeUpdated = useCallback((entry: ScheduleEntry) => {
+    setScheduleEntries(prev =>
+      prev.map(e => e.id === entry.id ? entry : e)
+    )
+    // Update open shifts list
+    if (entry.isOpenShift) {
+      setOpenShifts(prev => {
+        const exists = prev.find(e => e.id === entry.id)
+        if (exists) {
+          return prev.map(e => e.id === entry.id ? entry : e)
+        }
+        return [...prev, entry]
+      })
+    } else {
+      setOpenShifts(prev => prev.filter(e => e.id !== entry.id))
+    }
+  }, [])
+
+  const handleRealtimeDeleted = useCallback((entryId: string) => {
+    setScheduleEntries(prev => prev.filter(e => e.id !== entryId))
+    setOpenShifts(prev => prev.filter(e => e.id !== entryId))
+    showRealtimeToast('Schedule entry removed', 'info')
+  }, [])
+
+  const handleShiftClaimed = useCallback((data: { entry: ScheduleEntry; claimedBy: string }) => {
+    const { entry } = data
+    setScheduleEntries(prev =>
+      prev.map(e => e.id === entry.id ? entry : e)
+    )
+    setOpenShifts(prev => prev.filter(e => e.id !== entry.id))
+    showRealtimeToast('A shift has been claimed', 'success')
+  }, [])
+
+  const handleOpenShift = useCallback((entry: ScheduleEntry) => {
+    setOpenShifts(prev => {
+      if (prev.find(e => e.id === entry.id)) return prev
+      return [...prev, entry]
+    })
+    showRealtimeToast('New open shift available', 'info')
+  }, [])
+
+  const handleEmergencyShift = useCallback((entry: ScheduleEntry) => {
+    setOpenShifts(prev => {
+      if (prev.find(e => e.id === entry.id)) return prev
+      return [...prev, entry]
+    })
+    showRealtimeToast('URGENT: Emergency coverage needed!', 'warning')
+  }, [])
+
+  // Subscribe to real-time updates
+  useScheduleRealtime(currentUser?.facilityId || null, {
+    onCreated: handleRealtimeCreated,
+    onUpdated: handleRealtimeUpdated,
+    onDeleted: handleRealtimeDeleted,
+    onShiftClaimed: handleShiftClaimed,
+    onOpenShift: handleOpenShift,
+    onEmergencyShift: handleEmergencyShift,
+  })
 
   const fetchUserData = async () => {
     try {
@@ -254,6 +330,12 @@ export default function SchedulePage() {
                 </Link>
                 <Link href="/dashboard/schedule/templates" className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-sm">
                   Templates
+                </Link>
+                <Link href="/dashboard/schedule/time-off" className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-sm">
+                  Time Off
+                </Link>
+                <Link href="/dashboard/schedule/analytics" className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-sm">
+                  Analytics
                 </Link>
               </div>
               {viewMode === 'week' && (

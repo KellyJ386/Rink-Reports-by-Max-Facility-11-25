@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { canUserAccess } from '@/lib/permissions'
 import { prisma } from '@/lib/prisma'
+import { ScheduleBroadcast } from '@/lib/realtime'
 
 // POST /api/schedule/[id]/claim - Claim an open shift
 export async function POST(
@@ -141,6 +142,9 @@ export async function POST(
         },
       })
 
+      // Broadcast real-time update for claimed shift
+      await ScheduleBroadcast.shiftClaimed(user.facilityId, claimedEntry, user.id)
+
       return NextResponse.json({
         scheduleEntry: claimedEntry,
         message: 'Shift claimed successfully',
@@ -166,6 +170,9 @@ export async function POST(
         },
       },
     })
+
+    // Broadcast waitlist update
+    await ScheduleBroadcast.updated(user.facilityId, updatedEntry)
 
     return NextResponse.json({
       scheduleEntry: updatedEntry,

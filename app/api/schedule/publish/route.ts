@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { canUserAccess } from '@/lib/permissions'
 import { prisma } from '@/lib/prisma'
+import { ScheduleBroadcast } from '@/lib/realtime'
 
 // POST /api/schedule/publish - Bulk publish schedule entries
 export async function POST(request: NextRequest) {
@@ -129,6 +130,20 @@ export async function POST(request: NextRequest) {
       await prisma.notification.createMany({
         data: notifications,
       })
+    }
+
+    // Broadcast real-time update for all published entries
+    await ScheduleBroadcast.bulkPublished(user.facilityId, publishedEntries)
+
+    // Also broadcast individual updates for any open/emergency shifts
+    for (const entry of publishedEntries) {
+      if (entry.isOpenShift) {
+        if (entry.isEmergency) {
+          await ScheduleBroadcast.emergencyShift(user.facilityId, entry)
+        } else {
+          await ScheduleBroadcast.openShift(user.facilityId, entry)
+        }
+      }
     }
 
     return NextResponse.json({
