@@ -22,7 +22,6 @@ interface Submission {
 const INCIDENT_TYPES = [
   { id: 'Injury - Minor', label: 'Minor Injury', icon: '🩹' },
   { id: 'Injury - Major', label: 'Major Injury', icon: '🚑' },
-  { id: 'Equipment Failure', label: 'Equipment Failure', icon: '⚙️' },
   { id: 'Property Damage', label: 'Property Damage', icon: '🔨' },
   { id: 'Safety Hazard', label: 'Safety Hazard', icon: '⚠️' },
   { id: 'Other', label: 'Other Incident', icon: '📋' }
