@@ -265,6 +265,70 @@ async function main() {
     },
   })
 
+  const workerRole = await prisma.role.upsert({
+    where: { id: 'role-worker' },
+    update: {},
+    create: {
+      id: 'role-worker',
+      name: 'Worker',
+      description: 'Basic access - submit reports only, view own schedule',
+      isSystemDefault: true,
+      permissions: {
+        admin: {
+          access: false,
+          editForms: false,
+          editUsers: false,
+          editSettings: false,
+        },
+        iceDepth: {
+          access: true,
+          submit: true,
+          viewAll: false,
+          export: false,
+        },
+        iceOperations: {
+          access: true,
+          submit: true,
+          viewAll: false,
+          export: false,
+        },
+        refrigeration: {
+          access: false,
+          submit: false,
+          viewAll: false,
+          export: false,
+        },
+        airQuality: {
+          access: false,
+          submit: false,
+          viewAll: false,
+          export: false,
+        },
+        incidents: {
+          access: true,
+          submit: true,
+          viewAll: false,
+          export: false,
+          approve: false,
+        },
+        schedule: {
+          access: true,
+          viewOwn: true,
+          viewAll: false,
+          create: false,
+          publish: false,
+        },
+        dailyChecklist: {
+          access: true,
+          submit: true,
+          viewAll: false,
+          export: false,
+          createTemplates: false,
+        },
+      },
+    },
+  })
+
   // Create a demo facility
   console.log('Creating demo facility...')
 
@@ -399,12 +463,28 @@ async function main() {
     },
   })
 
+  await prisma.user.upsert({
+    where: { email: 'worker@demo.com' },
+    update: {},
+    create: {
+      email: 'worker@demo.com',
+      passwordHash,
+      firstName: 'Tom',
+      lastName: 'Davis',
+      phone: '+15555551004',
+      facilityId: facility.id,
+      roleId: workerRole.id,
+      isActive: true,
+    },
+  })
+
   console.log('✅ Database seeded successfully!')
   console.log('\n🔑 Demo accounts created:')
   console.log('  General Manager: gm@demo.com / password123')
   console.log('  Facility Manager: manager@demo.com / password123')
   console.log('  Supervisor: supervisor@demo.com / password123')
   console.log('  Operator: operator@demo.com / password123')
+  console.log('  Worker: worker@demo.com / password123')
 }
 
 main()

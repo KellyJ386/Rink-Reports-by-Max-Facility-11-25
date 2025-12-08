@@ -1,7 +1,7 @@
 {
-  "name": "Max Facility Operations",
-  "short_name": "MFO",
-  "description": "Ice Rink Management SaaS Platform",
+  "name": "Rink Reports by Max Facility",
+  "short_name": "Rink Reports",
+  "description": "Ice Rink Management Platform",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
