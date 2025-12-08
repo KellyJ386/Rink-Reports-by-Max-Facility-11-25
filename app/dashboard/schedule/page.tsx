@@ -450,6 +450,7 @@ export default function SchedulePage() {
         onEntryClick={permissions?.create ? handleEditEntry : undefined}
         canViewAll={permissions?.viewAll || false}
         currentUserId={currentUser?.id}
+        loading={loading}
       />
 
       {/* Entry Modal */}
