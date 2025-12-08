@@ -17,6 +17,20 @@ export default function AdminPage() {
       color: 'bg-green-500'
     },
     {
+      title: 'Manage Programs',
+      description: 'Set up skating programs and activities',
+      href: '/dashboard/admin/programs',
+      icon: '⛸️',
+      color: 'bg-cyan-500'
+    },
+    {
+      title: 'Manage Shifts',
+      description: 'Configure shift definitions and schedules',
+      href: '/dashboard/admin/shifts',
+      icon: '⏰',
+      color: 'bg-orange-500'
+    },
+    {
       title: 'Facility Settings',
       description: 'Configure facility-wide settings',
       href: '/dashboard/admin/settings',
@@ -47,7 +61,7 @@ export default function AdminPage() {
 
       {/* Quick Actions */}
       <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         {quickActions.map((action) => (
           <Link
             key={action.href}

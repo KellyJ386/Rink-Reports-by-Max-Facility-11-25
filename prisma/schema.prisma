@@ -29,6 +29,7 @@ model Facility {
   users          User[]
   formTemplates  FormTemplate[]
   shifts         ShiftDefinition[]
+  programs       Program[]
   settings       FacilitySettings?
   notifications  Notification[]
   smsLogs        SMSLog[]
@@ -279,6 +280,24 @@ enum AttachmentType {
   PHOTO
   SIGNATURE
   DOCUMENT
+}
+
+// ==================== PROGRAMS ====================
+
+model Program {
+  id          String   @id @default(cuid())
+  facilityId  String
+  facility    Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  name        String   // "Learn to Skate", "Public Skate", "Open Figure", etc.
+  description String?
+  color       String?  // For calendar/UI display
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([facilityId])
+  @@index([facilityId, isActive])
+  @@map("programs")
 }
 
 // ==================== SCHEDULE ====================
