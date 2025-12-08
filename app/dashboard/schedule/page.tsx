@@ -6,6 +6,7 @@ import ScheduleCalendar from '@/components/schedule/ScheduleCalendar'
 import ScheduleEntryModal from '@/components/schedule/ScheduleEntryModal'
 import OpenShiftsList from '@/components/schedule/OpenShiftsList'
 import EmergencyCoverageModal from '@/components/schedule/EmergencyCoverageModal'
+import CopyWeekModal from '@/components/schedule/CopyWeekModal'
 
 interface ScheduleEntry {
   id: string
@@ -39,6 +40,7 @@ export default function SchedulePage() {
   const [error, setError] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [showEmergencyModal, setShowEmergencyModal] = useState(false)
+  const [showCopyWeekModal, setShowCopyWeekModal] = useState(false)
   const [editingEntry, setEditingEntry] = useState<ScheduleEntry | null>(null)
   const [permissions, setPermissions] = useState<UserPermissions | null>(null)
   const [currentUser, setCurrentUser] = useState<any>(null)
@@ -141,6 +143,17 @@ export default function SchedulePage() {
     await fetchOpenShifts()
   }
 
+  const handleCopyWeekSuccess = async () => {
+    setShowCopyWeekModal(false)
+    await fetchScheduleEntries()
+  }
+
+  const getWeekStartDate = () => {
+    const date = new Date(currentDate)
+    date.setDate(date.getDate() - date.getDay())
+    return date
+  }
+
   const handlePublishAll = async () => {
     if (!confirm('Publish all draft schedule entries for this period?')) return
 
@@ -229,15 +242,28 @@ export default function SchedulePage() {
           <h1 className="text-3xl font-bold text-gray-900">Schedule</h1>
           <p className="text-gray-600">Manage employee schedules and shifts</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {permissions?.create && (
             <>
-              <Link
-                href="/dashboard/schedule/shifts"
-                className="btn-secondary"
-              >
-                Manage Shifts
-              </Link>
+              <div className="flex gap-1 border rounded-md overflow-hidden">
+                <Link href="/dashboard/schedule/shifts" className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-sm">
+                  Shifts
+                </Link>
+                <Link href="/dashboard/schedule/recurring" className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-sm">
+                  Recurring
+                </Link>
+                <Link href="/dashboard/schedule/templates" className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-sm">
+                  Templates
+                </Link>
+              </div>
+              {viewMode === 'week' && (
+                <button
+                  onClick={() => setShowCopyWeekModal(true)}
+                  className="btn-secondary text-sm"
+                >
+                  Copy Week
+                </button>
+              )}
               <button onClick={handleCreateEntry} className="btn-primary">
                 + Add Entry
               </button>
@@ -249,7 +275,7 @@ export default function SchedulePage() {
                 onClick={() => setShowEmergencyModal(true)}
                 className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 font-medium"
               >
-                Emergency Coverage
+                Emergency
               </button>
               <button onClick={handlePublishAll} className="btn-success">
                 Publish All
@@ -356,6 +382,15 @@ export default function SchedulePage() {
         <EmergencyCoverageModal
           onClose={() => setShowEmergencyModal(false)}
           onSave={handleEmergencyModalSave}
+        />
+      )}
+
+      {/* Copy Week Modal */}
+      {showCopyWeekModal && (
+        <CopyWeekModal
+          currentWeekStart={getWeekStartDate()}
+          onClose={() => setShowCopyWeekModal(false)}
+          onSuccess={handleCopyWeekSuccess}
         />
       )}
     </div>

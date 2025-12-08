@@ -304,6 +304,109 @@ enum ScheduleStatus {
   CANCELLED
 }
 
+model RecurringShiftPattern {
+  id          String              @id @default(cuid())
+  facilityId  String
+  name        String // "Week 1 Template", "Holiday Schedule"
+  description String?
+  patternType RecurringPatternType
+  daysOfWeek  Json // Array of day numbers [0,1,2,3,4,5,6] (Sun=0)
+  shiftId     String? // Optional link to shift definition
+  startTime   String // "06:00"
+  endTime     String // "14:00"
+  rinkId      String?
+  startDate   DateTime? // When pattern becomes active
+  endDate     DateTime? // When pattern ends (null = indefinite)
+  isActive    Boolean             @default(true)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  createdById String
+
+  assignments RecurringShiftAssignment[]
+
+  @@map("recurring_shift_patterns")
+}
+
+enum RecurringPatternType {
+  WEEKLY
+  BI_WEEKLY
+  MONTHLY
+}
+
+model RecurringShiftAssignment {
+  id        String                @id @default(cuid())
+  patternId String
+  pattern   RecurringShiftPattern @relation(fields: [patternId], references: [id], onDelete: Cascade)
+  userId    String
+  dayOfWeek Int // 0-6 (Sun-Sat)
+  createdAt DateTime              @default(now())
+
+  @@unique([patternId, userId, dayOfWeek])
+  @@map("recurring_shift_assignments")
+}
+
+model ScheduleTemplate {
+  id          String   @id @default(cuid())
+  facilityId  String
+  name        String // "Standard Week", "Tournament Week"
+  description String?
+  weekData    Json // Full week of schedule entries as JSON
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String
+
+  @@map("schedule_templates")
+}
+
+model TimeOffRequest {
+  id            String            @id @default(cuid())
+  userId        String
+  requestType   TimeOffType
+  startDate     DateTime          @db.Date
+  endDate       DateTime          @db.Date
+  reason        String?
+  status        TimeOffStatus     @default(PENDING)
+  reviewedById  String?
+  reviewedAt    DateTime?
+  reviewNotes   String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@map("time_off_requests")
+}
+
+enum TimeOffType {
+  VACATION
+  SICK
+  PERSONAL
+  BEREAVEMENT
+  JURY_DUTY
+  OTHER
+}
+
+enum TimeOffStatus {
+  PENDING
+  APPROVED
+  DENIED
+  CANCELLED
+}
+
+model EmployeeAvailability {
+  id          String   @id @default(cuid())
+  userId      String
+  dayOfWeek   Int // 0-6 (Sun-Sat)
+  startTime   String? // null = not available
+  endTime     String?
+  isAvailable Boolean  @default(true)
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, dayOfWeek])
+  @@map("employee_availability")
+}
+
 // ==================== AUDIT & NOTIFICATIONS ====================
 
 model AuditLog {
