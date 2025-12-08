@@ -322,6 +322,9 @@ export default function SchedulePage() {
           {permissions?.create && (
             <>
               <div className="flex gap-1 border rounded-md overflow-hidden">
+                <Link href="/dashboard/schedule/builder" className="px-3 py-2 bg-blue-100 hover:bg-blue-200 text-blue-800 text-sm font-medium">
+                  Builder
+                </Link>
                 <Link href="/dashboard/schedule/shifts" className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-sm">
                   Shifts
                 </Link>

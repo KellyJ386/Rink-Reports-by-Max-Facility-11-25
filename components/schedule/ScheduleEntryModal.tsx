@@ -45,6 +45,9 @@ interface ScheduleEntryModalProps {
   onClose: () => void
   onSave: () => void
   canPublish: boolean
+  defaultDate?: string
+  defaultUserId?: string
+  defaultIsOpenShift?: boolean
 }
 
 export default function ScheduleEntryModal({
@@ -52,18 +55,23 @@ export default function ScheduleEntryModal({
   onClose,
   onSave,
   canPublish,
+  defaultDate,
+  defaultUserId,
+  defaultIsOpenShift,
 }: ScheduleEntryModalProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [employees, setEmployees] = useState<Employee[]>([])
   const [shifts, setShifts] = useState<ShiftDefinition[]>([])
   const [formData, setFormData] = useState({
-    userId: entry?.userId || '',
+    userId: entry?.userId || defaultUserId || '',
     shiftId: entry?.shiftId || '',
-    date: entry ? new Date(entry.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+    date: entry
+      ? new Date(entry.date).toISOString().split('T')[0]
+      : defaultDate || new Date().toISOString().split('T')[0],
     startTime: entry?.startTime || '',
     endTime: entry?.endTime || '',
-    isOpenShift: entry?.isOpenShift || false,
+    isOpenShift: entry?.isOpenShift ?? defaultIsOpenShift ?? false,
     isEmergency: entry?.isEmergency || false,
   })
 
