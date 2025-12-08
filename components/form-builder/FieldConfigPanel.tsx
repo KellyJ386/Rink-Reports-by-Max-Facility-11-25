@@ -448,16 +448,6 @@ export default function FieldConfigPanel({
               <label className="flex items-center gap-3 cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={schema.settings.requirePhoto}
-                  onChange={(e) => onUpdateSettings({ requirePhoto: e.target.checked })}
-                  className="rounded text-blue-600"
-                />
-                <span className="text-sm text-gray-700">Require Photo</span>
-              </label>
-
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
                   checked={schema.settings.allowDraft}
                   onChange={(e) => onUpdateSettings({ allowDraft: e.target.checked })}
                   className="rounded text-blue-600"

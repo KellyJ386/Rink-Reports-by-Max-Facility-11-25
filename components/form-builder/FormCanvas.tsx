@@ -210,11 +210,6 @@ function SortableField({ field, sectionId, isSelected, onSelect, onDelete }: Sor
                 Signature Area
               </div>
             )}
-            {field.type === 'photo' && (
-              <div className="h-16 border border-dashed border-gray-300 rounded flex items-center justify-center text-xs text-gray-400">
-                📷 Photo Upload
-              </div>
-            )}
             {field.type === 'calculated' && (
               <div className="px-2 py-1 text-sm border border-gray-200 rounded bg-yellow-50 text-gray-400 flex items-center gap-2">
                 <span className="text-xs bg-yellow-200 px-1 rounded">fx</span>

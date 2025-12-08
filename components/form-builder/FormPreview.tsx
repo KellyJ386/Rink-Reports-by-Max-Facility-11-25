@@ -189,31 +189,6 @@ function FieldPreview({ field, value, onChange, error }: FieldPreviewProps) {
           </div>
         )}
 
-        {field.type === 'photo' && (
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-            <div className="text-gray-400 text-sm">
-              {value ? (
-                <div>
-                  <span className="text-green-600">Photo added</span>
-                  <button
-                    onClick={() => onChange(null)}
-                    className="ml-2 text-red-500 hover:text-red-700"
-                  >
-                    Remove
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => onChange('photo_placeholder')}
-                  className="text-blue-600 hover:text-blue-800"
-                >
-                  Add photo
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-
         {field.type === 'calculated' && (
           <div className="px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-gray-600">
             <span className="text-xs bg-yellow-200 px-1 rounded mr-2">fx</span>
