@@ -27,7 +27,17 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       icon: '👥'
     },
     {
-      label: 'Facility Settings',
+      label: 'Programs',
+      href: '/dashboard/admin/programs',
+      icon: '⛸️'
+    },
+    {
+      label: 'Shifts',
+      href: '/dashboard/admin/shifts',
+      icon: '⏰'
+    },
+    {
+      label: 'Settings',
       href: '/dashboard/admin/settings',
       icon: '⚙️'
     }
