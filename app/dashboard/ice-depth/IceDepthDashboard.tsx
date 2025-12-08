@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import Link from 'next/link'
 import RinkDiagram from '@/components/ice-depth/RinkDiagram'
+import CustomDiagramEditor from '@/components/ice-depth/CustomDiagramEditor'
 import {
   PRESET_RINK_25,
   PRESET_RINK_35,
@@ -25,10 +26,17 @@ interface IceDepthDashboardProps {
   }
 }
 
+interface RinkConfig {
+  id: string
+  name: string
+  preset: PresetType | 'CUSTOM'
+  customPoints?: MeasurementPoint[]
+}
+
 // Demo rinks for the facility
-const DEMO_RINKS = [
-  { id: 'rink-1', name: 'Main Rink', preset: 'RINK_35' as PresetType },
-  { id: 'rink-2', name: 'Studio Rink', preset: 'RINK_25' as PresetType },
+const DEMO_RINKS: RinkConfig[] = [
+  { id: 'rink-1', name: 'Main Rink', preset: 'RINK_35' },
+  { id: 'rink-2', name: 'Studio Rink', preset: 'RINK_25' },
 ]
 
 // Demo readings for visualization
@@ -62,12 +70,38 @@ const PRESETS: Record<PresetType, MeasurementPoint[]> = {
 }
 
 export default function IceDepthDashboard({ user }: IceDepthDashboardProps) {
+  const [rinks, setRinks] = useState<RinkConfig[]>(DEMO_RINKS)
   const [selectedRink, setSelectedRink] = useState(DEMO_RINKS[0])
   const [selectedPoint, setSelectedPoint] = useState<MeasurementPoint | null>(null)
   const [showNewSubmissionModal, setShowNewSubmissionModal] = useState(false)
+  const [showCustomEditor, setShowCustomEditor] = useState(false)
 
-  // Get preset points for selected rink
-  const presetPoints = PRESETS[selectedRink.preset]
+  // Get points for selected rink (custom or preset)
+  const currentRinkConfig = rinks.find((r) => r.id === selectedRink.id) || selectedRink
+  const presetPoints =
+    currentRinkConfig.preset === 'CUSTOM' && currentRinkConfig.customPoints
+      ? currentRinkConfig.customPoints
+      : PRESETS[currentRinkConfig.preset as PresetType] || PRESET_RINK_35
+
+  // Handle saving custom diagram configuration
+  const handleSaveCustomDiagram = useCallback(
+    (points: MeasurementPoint[]) => {
+      setRinks((prev) =>
+        prev.map((r) =>
+          r.id === selectedRink.id
+            ? { ...r, preset: 'CUSTOM' as const, customPoints: points }
+            : r
+        )
+      )
+      setShowCustomEditor(false)
+      // In production, this would call the API to save the configuration
+      console.log('Saved custom configuration for', selectedRink.name, points)
+    },
+    [selectedRink]
+  )
+
+  // Check if user has admin access to edit configuration
+  const canEditConfig = user.permissions.admin?.access
   const demoReadings = generateDemoReadings(presetPoints)
   const stats = calculateDepthStats(Array.from(demoReadings.values()))
 
@@ -119,7 +153,7 @@ export default function IceDepthDashboard({ user }: IceDepthDashboardProps) {
         <div className="flex items-center gap-4">
           <label className="text-sm font-medium text-gray-700">Select Rink:</label>
           <div className="flex gap-2">
-            {DEMO_RINKS.map((rink) => (
+            {rinks.map((rink) => (
               <button
                 key={rink.id}
                 onClick={() => setSelectedRink(rink)}
@@ -130,12 +164,27 @@ export default function IceDepthDashboard({ user }: IceDepthDashboardProps) {
                 }`}
               >
                 {rink.name}
+                {rink.preset === 'CUSTOM' && (
+                  <span className="ml-1 text-xs opacity-75">(Custom)</span>
+                )}
               </button>
             ))}
           </div>
-          <span className="text-sm text-gray-500 ml-auto">
-            Preset: {selectedRink.preset.replace('RINK_', '')} points
-          </span>
+          <div className="flex items-center gap-3 ml-auto">
+            <span className="text-sm text-gray-500">
+              {currentRinkConfig.preset === 'CUSTOM'
+                ? `Custom: ${presetPoints.length} points`
+                : `Preset: ${currentRinkConfig.preset.replace('RINK_', '')} points`}
+            </span>
+            {canEditConfig && (
+              <button
+                onClick={() => setShowCustomEditor(true)}
+                className="px-3 py-1 text-sm bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors font-medium"
+              >
+                Customize Diagram
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -317,6 +366,29 @@ export default function IceDepthDashboard({ user }: IceDepthDashboardProps) {
                 Continue
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Diagram Editor Modal */}
+      {showCustomEditor && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+            <CustomDiagramEditor
+              initialPoints={
+                currentRinkConfig.preset === 'CUSTOM' && currentRinkConfig.customPoints
+                  ? currentRinkConfig.customPoints
+                  : undefined
+              }
+              initialPreset={
+                currentRinkConfig.preset === 'CUSTOM'
+                  ? 'CUSTOM'
+                  : (currentRinkConfig.preset as PresetType)
+              }
+              onSave={handleSaveCustomDiagram}
+              onCancel={() => setShowCustomEditor(false)}
+              maxCustomPoints={60}
+            />
           </div>
         </div>
       )}
