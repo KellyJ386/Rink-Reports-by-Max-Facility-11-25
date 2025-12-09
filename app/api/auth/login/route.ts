@@ -3,6 +3,8 @@ import { authenticate, generateTokens, setAuthCookies } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { checkRateLimit, RATE_LIMITS, getRateLimitKey } from '@/lib/rateLimit'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: NextRequest) {
   try {
     // Get client IP for rate limiting
