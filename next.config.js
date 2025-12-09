@@ -1,10 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Enable standalone output for Docker deployment
+  output: 'standalone',
+
   experimental: {
     serverActions: {
       bodySizeLimit: '10mb',
     },
   },
+
   images: {
     remotePatterns: [
       {
@@ -13,6 +17,12 @@ const nextConfig = {
       },
     ],
   },
+
+  // Disable x-powered-by header for security
+  poweredByHeader: false,
+
+  // Enable compression
+  compress: true,
 }
 
 module.exports = nextConfig
