@@ -123,7 +123,7 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000)
 
-## 🔑 Demo Accounts
+## Demo Accounts
 
 After seeding, log in with:
 
@@ -286,8 +286,8 @@ OPENWEATHER_API_KEY=""
 
 ```bash
 npm run dev              # Start dev server
-npm run build            # Build for production
-npm run start            # Start production server
+npm run build            # Production build
+npm run start            # Start production
 npm run lint             # Run ESLint
 
 # Database
@@ -375,7 +375,13 @@ Monitor your deployment:
 - `GET /api/health` - Quick health check (returns 200 if healthy, 503 if unhealthy)
 - `GET /api/status` - Detailed system statistics
 
-## 📄 License
+### Phase 6: Reporting
+- [ ] PDF export
+- [ ] Analytics dashboard
+- [ ] Trend charts
+- [ ] Compliance reports
+
+## License
 
 Proprietary - All rights reserved
 

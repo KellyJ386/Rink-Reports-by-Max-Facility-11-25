@@ -791,7 +791,7 @@ enum IceDepthPreset {
   RINK_25 // 25 measurement points
   RINK_35 // 35 measurement points
   RINK_47 // 47 measurement points
-  CUSTOM // Fully custom (up to 5 additional points)
+  CUSTOM // Fully custom (60 points on custom diagram)
 }
 
 // ==================== EQUIPMENT MANAGEMENT ====================
