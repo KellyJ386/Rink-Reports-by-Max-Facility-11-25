@@ -1,325 +1,164 @@
-'use client'
-
-import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { getSession } from '@/lib/auth'
+import { getUserPermissions } from '@/lib/permissions'
 
-interface Analytics {
-  overview: {
-    totalSubmissions: number
-    draftSubmissions: number
-    submittedCount: number
-    totalIncidents: number
-    recentIncidents: number
-    activeUsers: number
-    totalUsers: number
-  }
-  submissions: {
-    byModule: {
-      [key: string]: number
-    }
-    airQuality: number
-    refrigeration: number
-    iceDepth: number
-    dailyChecklist: number
-    incidents: number
-  }
-  schedule: {
-    totalEntries: number
-    openShifts: number
-    filledShifts: number
-    emergencyShifts: number
-    coverageRate: string
-  }
-  trends: {
-    submissions: Array<{ date: string; count: number }>
-  }
-}
+const modules = [
+  {
+    id: 'iceDepth',
+    name: 'Ice Depth',
+    description: 'Track and monitor ice thickness measurements',
+    href: '/dashboard/ice-depth',
+    icon: (
+      <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+      </svg>
+    ),
+    color: 'bg-blue-500',
+  },
+  {
+    id: 'iceOperations',
+    name: 'Ice Operations',
+    description: 'Manage resurfacing and ice maintenance',
+    href: '/dashboard/ice-operations',
+    icon: (
+      <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+      </svg>
+    ),
+    color: 'bg-cyan-500',
+  },
+  {
+    id: 'refrigeration',
+    name: 'Refrigeration',
+    description: 'Monitor cooling system performance',
+    href: '/dashboard/refrigeration',
+    icon: (
+      <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+      </svg>
+    ),
+    color: 'bg-indigo-500',
+  },
+  {
+    id: 'airQuality',
+    name: 'Air Quality',
+    description: 'Track CO, NO2, and air quality metrics',
+    href: '/dashboard/air-quality',
+    icon: (
+      <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+      </svg>
+    ),
+    color: 'bg-green-500',
+  },
+  {
+    id: 'incidents',
+    name: 'Incidents',
+    description: 'Report and track facility incidents',
+    href: '/dashboard/incidents',
+    icon: (
+      <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+      </svg>
+    ),
+    color: 'bg-amber-500',
+  },
+  {
+    id: 'schedule',
+    name: 'Schedule',
+    description: 'View and manage rink schedules',
+    href: '/dashboard/schedule',
+    icon: (
+      <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      </svg>
+    ),
+    color: 'bg-purple-500',
+  },
+  {
+    id: 'dailyChecklist',
+    name: 'Checklists',
+    description: 'Complete daily operational checklists',
+    href: '/dashboard/checklists',
+    icon: (
+      <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+      </svg>
+    ),
+    color: 'bg-teal-500',
+  },
+]
 
-export default function DashboardPage() {
-  const [analytics, setAnalytics] = useState<Analytics | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+export default async function DashboardPage() {
+  const user = await getSession()
 
-  // Mock user and facility - in production this would come from session
-  const user = {
-    firstName: 'Demo',
-    lastName: 'User',
-    facilityName: 'Demo Ice Rink',
-    roleName: 'General Manager',
-  }
-  const facilityId = 'facility-demo'
-
-  useEffect(() => {
-    fetchAnalytics()
-  }, [])
-
-  const fetchAnalytics = async () => {
-    try {
-      const response = await fetch(`/api/analytics?facilityId=${facilityId}`)
-      if (!response.ok) {
-        throw new Error('Failed to fetch analytics')
-      }
-      const result = await response.json()
-      setAnalytics(result.analytics)
-    } catch (error) {
-      console.error('Error fetching analytics:', error)
-    } finally {
-      setIsLoading(false)
-    }
+  if (!user) {
+    return null
   }
 
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="border-b border-wolf-200 pb-4">
-          <h1 className="text-3xl font-bold text-navy">Dashboard</h1>
-          <p className="text-wolf-600 mt-2">Loading your facility overview...</p>
-        </div>
-      </div>
-    )
-  }
+  const permissions = getUserPermissions(user)
+
+  // Filter modules based on user permissions
+  const accessibleModules = modules.filter((module) => {
+    const modulePermissions = permissions[module.id as keyof typeof permissions]
+    return modulePermissions && modulePermissions.access
+  })
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="border-b border-wolf-200 pb-4">
-        <h1 className="text-3xl font-bold text-navy">
-          Welcome back, {user.firstName}!
+    <div>
+      <div className="text-center mb-10">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          Welcome, {user.firstName}!
         </h1>
-        <p className="text-wolf-600 mt-2">
-          {user.facilityName} • {user.roleName}
+        <p className="text-gray-600">
+          Select a module to get started
         </p>
       </div>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-wolf-600">Total Reports</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-navy">{analytics?.overview.totalSubmissions || 0}</div>
-            <p className="text-xs text-wolf-500 mt-1">
-              {analytics?.overview.draftSubmissions || 0} drafts, {analytics?.overview.submittedCount || 0} submitted
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-wolf-600">Incidents</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-navy">{analytics?.overview.totalIncidents || 0}</div>
-            <p className="text-xs text-wolf-500 mt-1">
-              {analytics?.overview.recentIncidents || 0} in last 30 days
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-wolf-600">Schedule Coverage</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-navy">{analytics?.schedule.coverageRate || 0}%</div>
-            <p className="text-xs text-wolf-500 mt-1">
-              {analytics?.schedule.filledShifts || 0} of {analytics?.schedule.totalEntries || 0} shifts filled
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-wolf-600">Active Users</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-navy">{analytics?.overview.activeUsers || 0}</div>
-            <p className="text-xs text-wolf-500 mt-1">
-              of {analytics?.overview.totalUsers || 0} total users
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Alerts Section */}
-      {(analytics?.schedule.emergencyShifts || 0) > 0 && (
-        <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
-          <div className="flex items-center">
-            <span className="text-2xl mr-3">🚨</span>
-            <div>
-              <h3 className="font-semibold text-red-800">Emergency Shifts Need Coverage</h3>
-              <p className="text-sm text-red-700">
-                {analytics.schedule.emergencyShifts} emergency {analytics.schedule.emergencyShifts === 1 ? 'shift needs' : 'shifts need'} immediate coverage.{' '}
-                <Link href="/dashboard/open-shifts" className="underline font-medium">
-                  View open shifts
-                </Link>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {accessibleModules.map((module) => (
+          <Link
+            key={module.id}
+            href={module.href}
+            className="group block"
+          >
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 transition-all duration-200 hover:shadow-lg hover:border-gray-300 hover:-translate-y-1">
+              <div className={`${module.color} w-16 h-16 rounded-xl flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform`}>
+                {module.icon}
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                {module.name}
+              </h3>
+              <p className="text-sm text-gray-500">
+                {module.description}
               </p>
             </div>
-          </div>
+          </Link>
+        ))}
+      </div>
+
+      {accessibleModules.length === 0 && (
+        <div className="text-center py-12">
+          <p className="text-gray-500">
+            No modules available. Please contact your administrator.
+          </p>
         </div>
       )}
 
-      {(analytics?.schedule.openShifts || 0) > 0 && (
-        <div className="bg-orange-50 border-l-4 border-orange-500 p-4 rounded">
-          <div className="flex items-center">
-            <span className="text-2xl mr-3">📢</span>
-            <div>
-              <h3 className="font-semibold text-orange-800">Open Shifts Available</h3>
-              <p className="text-sm text-orange-700">
-                {analytics.schedule.openShifts} open {analytics.schedule.openShifts === 1 ? 'shift is' : 'shifts are'} available to claim.{' '}
-                <Link href="/dashboard/open-shifts" className="underline font-medium">
-                  Claim a shift
-                </Link>
-              </p>
-            </div>
-          </div>
+      {/* Admin Link - Only show if user has admin access */}
+      {permissions.admin?.access && (
+        <div className="mt-10 text-center">
+          <Link
+            href="/dashboard/admin"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            Admin Settings
+          </Link>
         </div>
-      )}
-
-      {/* Reports Overview */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Report Modules</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <Link href="/dashboard/ice-depth" className="flex items-center justify-between p-3 rounded-lg hover:bg-wolf-50 transition-colors border border-wolf-200">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <span className="text-xl">❄️</span>
-                  </div>
-                  <div>
-                    <p className="font-medium text-navy">Ice Depth</p>
-                    <p className="text-xs text-wolf-500">{analytics?.submissions.iceDepth || 0} reports</p>
-                  </div>
-                </div>
-                <Badge variant="default">{analytics?.submissions.iceDepth || 0}</Badge>
-              </Link>
-
-              <Link href="/dashboard/refrigeration" className="flex items-center justify-between p-3 rounded-lg hover:bg-wolf-50 transition-colors border border-wolf-200">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <span className="text-xl">🌡️</span>
-                  </div>
-                  <div>
-                    <p className="font-medium text-navy">Refrigeration</p>
-                    <p className="text-xs text-wolf-500">{analytics?.submissions.refrigeration || 0} reports</p>
-                  </div>
-                </div>
-                <Badge variant="default">{analytics?.submissions.refrigeration || 0}</Badge>
-              </Link>
-
-              <Link href="/dashboard/air-quality" className="flex items-center justify-between p-3 rounded-lg hover:bg-wolf-50 transition-colors border border-wolf-200">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                    <span className="text-xl">💨</span>
-                  </div>
-                  <div>
-                    <p className="font-medium text-navy">Air Quality</p>
-                    <p className="text-xs text-wolf-500">{analytics?.submissions.airQuality || 0} reports</p>
-                  </div>
-                </div>
-                <Badge variant="default">{analytics?.submissions.airQuality || 0}</Badge>
-              </Link>
-
-              <Link href="/dashboard/incidents" className="flex items-center justify-between p-3 rounded-lg hover:bg-wolf-50 transition-colors border border-wolf-200">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-                    <span className="text-xl">⚠️</span>
-                  </div>
-                  <div>
-                    <p className="font-medium text-navy">Incidents</p>
-                    <p className="text-xs text-wolf-500">{analytics?.submissions.incidents || 0} reports</p>
-                  </div>
-                </div>
-                <Badge variant="destructive">{analytics?.submissions.incidents || 0}</Badge>
-              </Link>
-
-              <Link href="/dashboard/checklists" className="flex items-center justify-between p-3 rounded-lg hover:bg-wolf-50 transition-colors border border-wolf-200">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                    <span className="text-xl">✅</span>
-                  </div>
-                  <div>
-                    <p className="font-medium text-navy">Daily Checklists</p>
-                    <p className="text-xs text-wolf-500">{analytics?.submissions.dailyChecklist || 0} completed</p>
-                  </div>
-                </div>
-                <Badge variant="success">{analytics?.submissions.dailyChecklist || 0}</Badge>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <Link href="/dashboard/ice-depth" className="flex items-center p-3 rounded-lg hover:bg-action-green hover:text-white transition-colors border border-wolf-200 hover:border-action-green">
-                <span className="text-xl mr-3">📝</span>
-                <span className="font-medium">Submit Ice Depth Report</span>
-              </Link>
-
-              <Link href="/dashboard/incidents" className="flex items-center p-3 rounded-lg hover:bg-action-green hover:text-white transition-colors border border-wolf-200 hover:border-action-green">
-                <span className="text-xl mr-3">🚨</span>
-                <span className="font-medium">Report an Incident</span>
-              </Link>
-
-              <Link href="/dashboard/checklists" className="flex items-center p-3 rounded-lg hover:bg-action-green hover:text-white transition-colors border border-wolf-200 hover:border-action-green">
-                <span className="text-xl mr-3">✅</span>
-                <span className="font-medium">Complete Daily Checklist</span>
-              </Link>
-
-              <Link href="/dashboard/schedule" className="flex items-center p-3 rounded-lg hover:bg-action-green hover:text-white transition-colors border border-wolf-200 hover:border-action-green">
-                <span className="text-xl mr-3">📅</span>
-                <span className="font-medium">View Schedule</span>
-              </Link>
-
-              <Link href="/dashboard/open-shifts" className="flex items-center p-3 rounded-lg hover:bg-action-green hover:text-white transition-colors border border-wolf-200 hover:border-action-green">
-                <span className="text-xl mr-3">🤝</span>
-                <span className="font-medium">Claim Open Shifts</span>
-              </Link>
-
-              <Link href="/dashboard/notifications" className="flex items-center p-3 rounded-lg hover:bg-action-green hover:text-white transition-colors border border-wolf-200 hover:border-action-green">
-                <span className="text-xl mr-3">🔔</span>
-                <span className="font-medium">View Notifications</span>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Recent Activity Trend */}
-      {analytics?.trends.submissions && analytics.trends.submissions.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Submission Activity (Last 7 Days)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-end gap-2 h-32">
-              {analytics.trends.submissions.map((day: any, index: number) => {
-                const maxCount = Math.max(...analytics.trends.submissions.map((d: any) => d.count))
-                const height = maxCount > 0 ? (day.count / maxCount) * 100 : 0
-
-                return (
-                  <div key={index} className="flex-1 flex flex-col items-center">
-                    <div
-                      className="w-full bg-action-green rounded-t transition-all hover:bg-navy"
-                      style={{ height: `${height}%`, minHeight: day.count > 0 ? '10%' : '0%' }}
-                    />
-                    <p className="text-xs text-wolf-600 mt-2">{new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' })}</p>
-                    <p className="text-xs font-semibold text-navy">{day.count}</p>
-                  </div>
-                )
-              })}
-            </div>
-          </CardContent>
-        </Card>
       )}
     </div>
   )
