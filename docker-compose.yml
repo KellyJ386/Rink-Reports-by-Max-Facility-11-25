@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:16-alpine
+    container_name: mfo-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-mfo_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mfo_password}
+      POSTGRES_DB: ${POSTGRES_DB:-mfo_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mfo_user} -d ${POSTGRES_DB:-mfo_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Next.js Application (Development)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: mfo-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-mfo_user}:${POSTGRES_PASSWORD:-mfo_password}@db:5432/${POSTGRES_DB:-mfo_db}?schema=public
+      - JWT_SECRET=${JWT_SECRET:-development-jwt-secret-change-in-production}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
+      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      - NODE_ENV=development
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      db:
+        condition: service_healthy
+    command: sh -c "npx prisma migrate deploy && npx prisma db seed && npm run dev"
+
+  # Prisma Studio (Database GUI)
+  prisma-studio:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: mfo-prisma-studio
+    ports:
+      - "5555:5555"
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-mfo_user}:${POSTGRES_PASSWORD:-mfo_password}@db:5432/${POSTGRES_DB:-mfo_db}?schema=public
+    depends_on:
+      db:
+        condition: service_healthy
+    command: npx prisma studio
+    profiles:
+      - tools
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  default:
+    name: mfo-network
