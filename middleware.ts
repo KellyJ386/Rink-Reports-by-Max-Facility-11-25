@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { verifyToken } from './lib/auth'
 
 // Routes that don't require authentication
 const publicRoutes = ['/login', '/api/auth/login']

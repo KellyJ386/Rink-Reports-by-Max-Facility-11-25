@@ -3,6 +3,9 @@ import { getSession } from '@/lib/auth'
 import { getUserPermissions } from '@/lib/permissions'
 import DashboardHeader from '@/components/layout/DashboardHeader'
 
+// Force dynamic rendering - this layout requires database access
+export const dynamic = 'force-dynamic'
+
 export default async function DashboardLayout({
   children,
 }: {
