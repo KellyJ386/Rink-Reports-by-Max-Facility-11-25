@@ -1,7 +1,16 @@
 import type { User, Role, ModuleType, ModulePermissions, PermissionSet } from '@/types'
 
+// User type for permissions (compatible with Prisma User)
+interface UserWithRole {
+  id: string
+  permissionOverrides?: unknown
+  role: {
+    permissions: unknown
+  }
+}
+
 export function getUserPermissions(
-  user: User & { role: Role }
+  user: UserWithRole
 ): PermissionSet {
   // Type assertions for JSON fields from Prisma
   const basePermissions = user.role.permissions as unknown as PermissionSet
@@ -27,7 +36,7 @@ export function getUserPermissions(
 }
 
 export function canUserAccess(
-  user: User & { role: Role },
+  user: UserWithRole,
   module: ModuleType,
   action: keyof ModulePermissions
 ): boolean {
@@ -42,7 +51,7 @@ export function canUserAccess(
 }
 
 export function requirePermission(
-  user: User & { role: Role },
+  user: UserWithRole,
   module: ModuleType,
   action: keyof ModulePermissions
 ): void {
@@ -52,7 +61,7 @@ export function requirePermission(
 }
 
 export function getAccessibleModules(
-  user: User & { role: Role }
+  user: UserWithRole
 ): ModuleType[] {
   const permissions = getUserPermissions(user)
   const modules: ModuleType[] = []

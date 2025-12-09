@@ -29,6 +29,7 @@ model Facility {
   users          User[]
   formTemplates  FormTemplate[]
   shifts         ShiftDefinition[]
+  programs       Program[]
   settings       FacilitySettings?
   notifications  Notification[]
   smsLogs        SMSLog[]
@@ -56,6 +57,23 @@ model FacilitySettings {
   no2WarningPpm          Float   @default(0.3)
   no2EvacuationPpm       Float   @default(2.0)
   enableAirQualityAlerts Boolean @default(true)
+
+  // Refrigeration thresholds (customizable per facility)
+  suctionPressureMinWarning  Float   @default(20)
+  suctionPressureMaxWarning  Float   @default(45)
+  suctionPressureMinCritical Float   @default(15)
+  suctionPressureMaxCritical Float   @default(50)
+  dischargePressureMinWarning Float  @default(150)
+  dischargePressureMaxWarning Float  @default(250)
+  dischargePressureMinCritical Float @default(120)
+  dischargePressureMaxCritical Float @default(300)
+  compressorTempWarning      Float   @default(200)
+  compressorTempCritical     Float   @default(250)
+  brineTempMinWarning        Float   @default(14)
+  brineTempMaxWarning        Float   @default(28)
+  brineTempMinCritical       Float   @default(10)
+  brineTempMaxCritical       Float   @default(32)
+  enableRefrigerationAlerts  Boolean @default(true)
 
   // SMS Settings
   smsEnabled         Boolean @default(false)
@@ -86,6 +104,8 @@ model Rink {
   // Relations
   submissions           Submission[]
   iceDepthConfiguration IceDepthConfiguration?
+  scheduleEntries       ScheduleEntry[]
+  iceDepthReadings      IceDepthReading[]
 
   @@map("rinks")
 }
@@ -115,9 +135,12 @@ model User {
   permissionOverrides Json?
 
   // Relations
-  submissions     Submission[]
-  auditLogs       AuditLog[]
-  scheduleEntries ScheduleEntry[]
+  submissions          Submission[]
+  auditLogs            AuditLog[]
+  scheduleEntries      ScheduleEntry[]
+  availability         EmployeeAvailability[]
+  timeOffRequests      TimeOffRequest[]
+  iceDepthReadings     IceDepthReading[]
 
   // Schedule relations
   timeOffRequests       TimeOffRequest[]
@@ -268,6 +291,24 @@ enum AttachmentType {
   DOCUMENT
 }
 
+// ==================== PROGRAMS ====================
+
+model Program {
+  id          String   @id @default(cuid())
+  facilityId  String
+  facility    Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  name        String   // "Learn to Skate", "Public Skate", "Open Figure", etc.
+  description String?
+  color       String?  // For calendar/UI display
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([facilityId])
+  @@index([facilityId, isActive])
+  @@map("programs")
+}
+
 // ==================== SCHEDULE ====================
 
 model ShiftDefinition {
@@ -291,6 +332,18 @@ model ShiftDefinition {
   scheduleEntries ScheduleEntry[]
   recurringShifts RecurringShift[]
 
+  // Staffing requirements
+  minStaffRequired  Int @default(1)
+  maxStaffAllowed   Int @default(5)
+
+  // Relations
+  scheduleEntries ScheduleEntry[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([facilityId])
+  @@index([facilityId, isActive])
   @@map("shift_definitions")
 }
 
@@ -316,6 +369,8 @@ model ScheduleEntry {
   createdById   String
   publishedAt   DateTime?
   publishedById String?
+  claimedAt     DateTime? // When an open shift was claimed
+  claimedById   String?   // Who claimed the shift
 
   // Conflict tracking
   hasConflict   Boolean        @default(false)
@@ -328,6 +383,49 @@ model ScheduleEntry {
   @@index([facilityId, date])
   @@index([userId, date])
   @@map("schedule_entries")
+}
+
+// Employee availability for scheduling
+model EmployeeAvailability {
+  id         String          @id @default(cuid())
+  userId     String
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dayOfWeek  Int             // 0=Sunday, 1=Monday, etc.
+  startTime  String?         // null means not available
+  endTime    String?
+  isAvailable Boolean        @default(true)
+  notes      String?
+
+  @@unique([userId, dayOfWeek])
+  @@index([userId])
+  @@map("employee_availability")
+}
+
+// Time-off requests
+model TimeOffRequest {
+  id          String            @id @default(cuid())
+  userId      String
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  startDate   DateTime          @db.Date
+  endDate     DateTime          @db.Date
+  reason      String?
+  status      TimeOffStatus     @default(PENDING)
+  reviewedById String?
+  reviewedAt  DateTime?
+  reviewNotes String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@index([userId, status])
+  @@index([startDate, endDate])
+  @@map("time_off_requests")
+}
+
+enum TimeOffStatus {
+  PENDING
+  APPROVED
+  DENIED
+  CANCELLED
 }
 
 enum ScheduleStatus {
