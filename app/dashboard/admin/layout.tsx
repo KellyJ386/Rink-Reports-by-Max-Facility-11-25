@@ -3,6 +3,8 @@ import { getSession } from '@/lib/auth'
 import { canUserAccess } from '@/lib/permissions'
 import Link from 'next/link'
 
+export const dynamic = 'force-dynamic'
+
 export default async function AdminLayout({
   children,
 }: {
@@ -22,6 +24,10 @@ export default async function AdminLayout({
     { label: 'Forms', href: '/dashboard/admin/forms', icon: '📝' },
     { label: 'Users', href: '/dashboard/admin/users', icon: '👥' },
     { label: 'Roles', href: '/dashboard/admin/roles', icon: '🔐' },
+    { label: 'Rinks', href: '/dashboard/admin/rinks', icon: '🏟️' },
+    { label: 'Shifts', href: '/dashboard/admin/shifts', icon: '🕐' },
+    { label: 'Ice Depth', href: '/dashboard/admin/ice-depth', icon: '❄️' },
+    { label: 'Audit Log', href: '/dashboard/admin/audit-log', icon: '📋' },
     { label: 'Settings', href: '/dashboard/admin/settings', icon: '⚙️' },
   ]
 

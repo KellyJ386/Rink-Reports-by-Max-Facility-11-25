@@ -5,6 +5,8 @@ import { checkRateLimit, RATE_LIMITS, getRateLimitKey } from '@/lib/rateLimit'
 
 export const dynamic = 'force-dynamic'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: NextRequest) {
   try {
     // Get client IP for rate limiting

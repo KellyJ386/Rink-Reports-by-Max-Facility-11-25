@@ -14,7 +14,7 @@ interface Role {
 }
 
 const MODULES = [
-  { key: 'admin', label: 'Admin', permissions: ['access', 'editForms', 'editUsers', 'editSettings'] },
+  { key: 'admin', label: 'Admin', permissions: ['access', 'edit', 'delete', 'createTemplates'], description: 'Manage users, roles, forms, and settings' },
   { key: 'iceDepth', label: 'Ice Depth', permissions: ['access', 'submit', 'viewOwn', 'viewAll', 'edit', 'delete', 'export'] },
   { key: 'iceOperations', label: 'Ice Operations', permissions: ['access', 'submit', 'viewOwn', 'viewAll', 'edit', 'delete', 'export'] },
   { key: 'refrigeration', label: 'Refrigeration', permissions: ['access', 'submit', 'viewOwn', 'viewAll', 'edit', 'delete', 'export'] },
@@ -29,16 +29,21 @@ const PERMISSION_LABELS: Record<string, string> = {
   submit: 'Submit Reports',
   viewOwn: 'View Own',
   viewAll: 'View All',
-  edit: 'Edit',
+  edit: 'Edit Users/Roles',
   delete: 'Delete',
   export: 'Export',
   approve: 'Approve',
   create: 'Create',
   publish: 'Publish',
-  editForms: 'Edit Forms',
-  editUsers: 'Edit Users',
-  editSettings: 'Edit Settings',
-  createTemplates: 'Create Templates',
+  createTemplates: 'Manage Forms',
+}
+
+// Admin-specific permission labels
+const ADMIN_PERMISSION_LABELS: Record<string, string> = {
+  access: 'Access Admin Area',
+  edit: 'Edit Users & Roles',
+  delete: 'Delete Users & Roles',
+  createTemplates: 'Manage Form Templates',
 }
 
 export default function RoleDetailPage() {
@@ -50,6 +55,7 @@ export default function RoleDetailPage() {
   const [role, setRole] = useState<Role | null>(null)
   const [loading, setLoading] = useState(!isNew)
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState('')
 
   const [name, setName] = useState('')
@@ -74,15 +80,15 @@ export default function RoleDetailPage() {
 
   const fetchRole = async () => {
     try {
-      const response = await fetch('/api/roles')
+      const response = await fetch(`/api/roles/${roleId}`)
       const data = await response.json()
-      const foundRole = data.roles?.find((r: Role) => r.id === roleId)
 
-      if (!foundRole) {
-        setError('Role not found')
+      if (!response.ok) {
+        setError(data.error || 'Role not found')
         return
       }
 
+      const foundRole = data.role
       setRole(foundRole)
       setName(foundRole.name)
       setDescription(foundRole.description || '')
@@ -135,6 +141,39 @@ export default function RoleDetailPage() {
       setError(err instanceof Error ? err.message : 'Failed to save role')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!role) return
+
+    if (role._count.users > 0) {
+      setError(`Cannot delete role with ${role._count.users} assigned user(s). Reassign users first.`)
+      return
+    }
+
+    if (!confirm(`Are you sure you want to delete "${role.name}"? This action cannot be undone.`)) {
+      return
+    }
+
+    setDeleting(true)
+    setError('')
+
+    try {
+      const response = await fetch(`/api/roles/${roleId}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to delete role')
+      }
+
+      router.push('/dashboard/admin/roles')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete role')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -234,7 +273,12 @@ export default function RoleDetailPage() {
                             className="h-4 w-4 rounded border-gray-300 text-blue-600"
                             disabled={isReadOnly}
                           />
-                          <span className="text-sm text-gray-600">{PERMISSION_LABELS[perm] || perm}</span>
+                          <span className="text-sm text-gray-600">
+                            {mod.key === 'admin'
+                              ? (ADMIN_PERMISSION_LABELS[perm] || perm)
+                              : (PERMISSION_LABELS[perm] || perm)
+                            }
+                          </span>
                         </label>
                       ))}
                     </div>
@@ -247,13 +291,24 @@ export default function RoleDetailPage() {
 
         {/* Actions */}
         {!isReadOnly && (
-          <div className="flex justify-end gap-3">
-            <Link href="/dashboard/admin/roles" className="btn btn-secondary">
-              Cancel
-            </Link>
-            <button onClick={handleSave} disabled={saving} className="btn btn-primary">
-              {saving ? 'Saving...' : isNew ? 'Create Role' : 'Save Changes'}
-            </button>
+          <div className="flex justify-between">
+            {!isNew && (
+              <button
+                onClick={handleDelete}
+                disabled={deleting || saving}
+                className="btn btn-secondary text-red-600 hover:bg-red-50 disabled:opacity-50"
+              >
+                {deleting ? 'Deleting...' : 'Delete Role'}
+              </button>
+            )}
+            <div className={`flex gap-3 ${isNew ? 'ml-auto' : ''}`}>
+              <Link href="/dashboard/admin/roles" className="btn btn-secondary">
+                Cancel
+              </Link>
+              <button onClick={handleSave} disabled={saving || deleting} className="btn btn-primary">
+                {saving ? 'Saving...' : isNew ? 'Create Role' : 'Save Changes'}
+              </button>
+            </div>
           </div>
         )}
       </div>

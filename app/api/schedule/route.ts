@@ -3,6 +3,20 @@ import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
 import { canUserAccess } from '@/lib/permissions'
 
+export const dynamic = 'force-dynamic'
+
+// Validate time format (HH:MM) and return true if valid
+function isValidTimeFormat(time: string): boolean {
+  const timeRegex = /^([01]?[0-9]|2[0-3]):([0-5][0-9])$/
+  return timeRegex.test(time)
+}
+
+// Convert time string to minutes for comparison
+function timeToMinutes(time: string): number {
+  const [hours, minutes] = time.split(':').map(Number)
+  return hours * 60 + minutes
+}
+
 // GET /api/schedule - List schedule entries
 export async function GET(request: NextRequest) {
   try {
@@ -132,6 +146,26 @@ export async function POST(request: NextRequest) {
           { error: 'User not found in this facility' },
           { status: 400 }
         )
+      }
+    }
+
+    // Verify rink belongs to same facility
+    if (rinkId) {
+      const rink = await prisma.rink.findFirst({
+        where: { id: rinkId, facilityId: user.facilityId },
+      })
+      if (!rink) {
+        return NextResponse.json({ error: 'Rink not found' }, { status: 404 })
+      }
+    }
+
+    // Verify shift belongs to same facility if provided
+    if (shiftId) {
+      const shift = await prisma.shiftDefinition.findFirst({
+        where: { id: shiftId, facilityId: user.facilityId },
+      })
+      if (!shift) {
+        return NextResponse.json({ error: 'Shift not found' }, { status: 404 })
       }
     }
 

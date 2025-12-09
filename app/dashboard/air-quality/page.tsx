@@ -272,6 +272,13 @@ export default function AirQualityPage() {
     )
   }
 
+  const displayedSubmissions = submissions.slice(0, displayCount)
+  const hasMore = displayCount < submissions.length || submissions.length < total
+
+  if (loading) {
+    return <div className="text-center py-12 text-gray-500">Loading...</div>
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}

@@ -70,6 +70,34 @@ export default function EditFormPage() {
     }
   }
 
+  const handleArchive = async () => {
+    if (!form) return
+
+    if (!confirm(`Are you sure you want to archive "${form.name}"? It will no longer be available for new submissions.`)) {
+      return
+    }
+
+    setIsArchiving(true)
+    setError('')
+
+    try {
+      const response = await fetch(`/api/forms/${formId}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to archive form')
+      }
+
+      router.push('/dashboard/admin/forms')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to archive form')
+    } finally {
+      setIsArchiving(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">

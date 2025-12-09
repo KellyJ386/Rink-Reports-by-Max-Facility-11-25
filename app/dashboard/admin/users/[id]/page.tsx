@@ -30,11 +30,13 @@ export default function UserDetailPage() {
   const [roles, setRoles] = useState<Role[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [deactivating, setDeactivating] = useState(false)
   const [error, setError] = useState('')
 
   const [formData, setFormData] = useState({
     email: '',
     password: '',
+    confirmPassword: '',
     firstName: '',
     lastName: '',
     phone: '',
@@ -67,6 +69,7 @@ export default function UserDetailPage() {
         setFormData({
           email: userData.user.email,
           password: '',
+          confirmPassword: '',
           firstName: userData.user.firstName,
           lastName: userData.user.lastName,
           phone: userData.user.phone || '',
@@ -91,6 +94,25 @@ export default function UserDetailPage() {
 
     if (isNew && !formData.password) {
       setError('Password is required for new users')
+      return
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(formData.email)) {
+      setError('Please enter a valid email address')
+      return
+    }
+
+    // Validate password strength if provided
+    if (formData.password && formData.password.length < 8) {
+      setError('Password must be at least 8 characters')
+      return
+    }
+
+    // Validate password confirmation
+    if (formData.password && formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match')
       return
     }
 
@@ -128,6 +150,36 @@ export default function UserDetailPage() {
       setError(err instanceof Error ? err.message : 'Failed to save user')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleDeactivate = async () => {
+    if (!user) return
+
+    if (!confirm(`Are you sure you want to deactivate "${user.firstName} ${user.lastName}"? They will no longer be able to log in.`)) {
+      return
+    }
+
+    setDeactivating(true)
+    setError('')
+
+    try {
+      const response = await fetch(`/api/users/${userId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: false }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to deactivate user')
+      }
+
+      router.push('/dashboard/admin/users')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to deactivate user')
+    } finally {
+      setDeactivating(false)
     }
   }
 
@@ -195,18 +247,33 @@ export default function UserDetailPage() {
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Password {isNew && <span className="text-red-500">*</span>}
-          </label>
-          <input
-            type="password"
-            value={formData.password}
-            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            className="input"
-            placeholder={isNew ? 'Enter password' : 'Leave blank to keep current'}
-            required={isNew}
-          />
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Password {isNew && <span className="text-red-500">*</span>}
+            </label>
+            <input
+              type="password"
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              className="input"
+              placeholder={isNew ? 'Enter password' : 'Leave blank to keep current'}
+              required={isNew}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Confirm Password {(isNew || formData.password) && <span className="text-red-500">*</span>}
+            </label>
+            <input
+              type="password"
+              value={formData.confirmPassword}
+              onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+              className="input"
+              placeholder="Confirm password"
+              required={isNew || !!formData.password}
+            />
+          </div>
         </div>
 
         <div>
@@ -254,13 +321,25 @@ export default function UserDetailPage() {
           </div>
         )}
 
-        <div className="flex justify-end gap-3 pt-4">
-          <Link href="/dashboard/admin/users" className="btn btn-secondary">
-            Cancel
-          </Link>
-          <button type="submit" disabled={saving} className="btn btn-primary">
-            {saving ? 'Saving...' : isNew ? 'Create User' : 'Save Changes'}
-          </button>
+        <div className="flex justify-between pt-4">
+          {!isNew && formData.isActive && (
+            <button
+              type="button"
+              onClick={handleDeactivate}
+              disabled={deactivating || saving}
+              className="btn btn-secondary text-red-600 hover:bg-red-50 disabled:opacity-50"
+            >
+              {deactivating ? 'Deactivating...' : 'Deactivate User'}
+            </button>
+          )}
+          <div className={`flex gap-3 ${isNew || !formData.isActive ? 'ml-auto' : ''}`}>
+            <Link href="/dashboard/admin/users" className="btn btn-secondary">
+              Cancel
+            </Link>
+            <button type="submit" disabled={saving || deactivating} className="btn btn-primary">
+              {saving ? 'Saving...' : isNew ? 'Create User' : 'Save Changes'}
+            </button>
+          </div>
         </div>
       </form>
     </div>

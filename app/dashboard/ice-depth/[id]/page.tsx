@@ -145,7 +145,7 @@ export default function IceDepthViewPage({ params }: { params: Promise<{ id: str
     )
   }
 
-  if (error || !submission) {
+  if (error && !submission) {
     return (
       <div className="p-6">
         <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">

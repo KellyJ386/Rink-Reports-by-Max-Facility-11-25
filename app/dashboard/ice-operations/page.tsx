@@ -246,6 +246,10 @@ export default function IceOperationsPage() {
     return lastSaved.toLocaleTimeString()
   }
 
+  // Weekly count from all loaded submissions (best estimate)
+  const weekAgo = new Date(Date.now() - 7 * 86400000)
+  const weeklyCount = submissions.filter((s) => new Date(s.submittedAt) >= weekAgo).length
+
   return (
     <div className="space-y-6">
       {/* Page Header */}

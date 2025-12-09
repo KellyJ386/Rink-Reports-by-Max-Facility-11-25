@@ -24,7 +24,7 @@ export async function GET(_request: NextRequest) {
       },
     })
 
-    return NextResponse.json({ rinks })
+    return NextResponse.json({ rink }, { status: 201 })
   } catch (error) {
     console.error('Error fetching rinks:', error)
     return NextResponse.json(

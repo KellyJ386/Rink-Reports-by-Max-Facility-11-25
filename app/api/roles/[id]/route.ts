@@ -3,8 +3,65 @@ import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
 import { canUserAccess } from '@/lib/permissions'
 
+export const dynamic = 'force-dynamic'
+
+// Valid permission modules and actions for validation
+const VALID_MODULES = ['admin', 'iceDepth', 'iceOperations', 'refrigeration', 'airQuality', 'incidents', 'schedule', 'dailyChecklist']
+const VALID_ACTIONS = ['access', 'submit', 'viewOwn', 'viewAll', 'edit', 'delete', 'export', 'approve', 'createTemplates', 'create', 'publish']
+
+function validatePermissions(permissions: any): boolean {
+  if (typeof permissions !== 'object' || permissions === null) return false
+
+  for (const module of Object.keys(permissions)) {
+    if (!VALID_MODULES.includes(module)) return false
+    const modulePerms = permissions[module]
+    if (typeof modulePerms !== 'object' || modulePerms === null) return false
+
+    for (const action of Object.keys(modulePerms)) {
+      if (!VALID_ACTIONS.includes(action)) return false
+      if (typeof modulePerms[action] !== 'boolean') return false
+    }
+  }
+  return true
+}
+
 interface RouteParams {
   params: Promise<{ id: string }>
+}
+
+// GET /api/roles/[id] - Get a specific role
+export async function GET(request: NextRequest, { params }: RouteParams) {
+  try {
+    const user = await getSession()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    if (!canUserAccess(user, 'admin', 'access')) {
+      return NextResponse.json({ error: 'Admin permission required' }, { status: 403 })
+    }
+
+    const { id } = await params
+
+    const role = await prisma.role.findFirst({
+      where: {
+        id,
+        OR: [{ facilityId: user.facilityId }, { isSystemDefault: true }],
+      },
+      include: {
+        _count: { select: { users: true } },
+      },
+    })
+
+    if (!role) {
+      return NextResponse.json({ error: 'Role not found' }, { status: 404 })
+    }
+
+    return NextResponse.json({ role })
+  } catch (error) {
+    console.error('Error fetching role:', error)
+    return NextResponse.json({ error: 'Failed to fetch role' }, { status: 500 })
+  }
 }
 
 // PUT /api/roles/[id] - Update a role
@@ -37,6 +94,19 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     if (existingRole.isSystemDefault) {
       return NextResponse.json({ error: 'Cannot modify system default roles' }, { status: 403 })
+    }
+
+    // Validate input lengths
+    if (name && name.length > 100) {
+      return NextResponse.json({ error: 'Role name must be 100 characters or less' }, { status: 400 })
+    }
+    if (description && description.length > 500) {
+      return NextResponse.json({ error: 'Description must be 500 characters or less' }, { status: 400 })
+    }
+
+    // Validate permissions structure
+    if (permissions && !validatePermissions(permissions)) {
+      return NextResponse.json({ error: 'Invalid permissions structure' }, { status: 400 })
     }
 
     const updatedRole = await prisma.role.update({

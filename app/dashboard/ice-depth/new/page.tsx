@@ -180,6 +180,11 @@ export default function NewIceDepthPage() {
       return
     }
 
+    if (!formTemplateId) {
+      setError('No form template configured for ice depth. Please contact an administrator.')
+      return
+    }
+
     setSubmitting(true)
     setError(null)
 

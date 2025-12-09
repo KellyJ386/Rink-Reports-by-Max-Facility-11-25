@@ -228,6 +228,16 @@ export default function IncidentViewPage({ params }: { params: Promise<{ id: str
             Escalate
           </Button>
         </div>
+        {canEdit && !isEditing && (
+          <div className="flex gap-2">
+            <button onClick={() => setIsEditing(true)} className="btn btn-secondary">
+              Edit
+            </button>
+            <button onClick={handleDelete} className="btn btn-secondary text-red-600 hover:bg-red-50">
+              Delete
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Escalation Banner */}

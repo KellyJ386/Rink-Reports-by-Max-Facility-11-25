@@ -136,6 +136,10 @@ export default function SchedulePage() {
     }
   }
 
+  if (loading) {
+    return <div className="text-center py-12 text-gray-500">Loading...</div>
+  }
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">

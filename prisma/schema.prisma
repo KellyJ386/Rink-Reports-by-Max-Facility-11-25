@@ -781,6 +781,12 @@ model IceDepthConfiguration {
   presetType        IceDepthPreset? // RINK_25, RINK_35, RINK_47, CUSTOM
   measurementPoints Json // Array of {id, x, y, label}
   backgroundImage   String?
+
+  // Target depth thresholds (configurable per rink)
+  targetDepth       Float           @default(1.25)  // Target ice depth in inches
+  optimalTolerance  Float           @default(0.125) // Tolerance for "optimal" range
+  warningTolerance  Float           @default(0.25)  // Tolerance for "warning" range
+
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 
