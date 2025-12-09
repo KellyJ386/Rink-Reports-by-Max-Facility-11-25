@@ -15,34 +15,23 @@ datasource db {
 model Facility {
   id        String   @id @default(cuid())
   name      String
-  address   String?
-  city      String?
-  state     String?
-  zipCode   String?
+  address   String
+  city      String
+  state     String
+  zipCode   String
   country   String   @default("US")
-  phone     String?
-  email     String?
   timezone  String   @default("America/New_York")
-
-  // Subscription management (SaaS)
-  subscriptionTier   String  @default("TRIAL") // TRIAL, BASIC, ENTERPRISE
-  subscriptionStatus String  @default("ACTIVE") // ACTIVE, PAST_DUE, CANCELLED, SUSPENDED
-  maxUsers           Int     @default(10)
-  maxRinks           Int     @default(2)
-  isActive           Boolean @default(true)
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
-  rinks            Rink[]
-  users            User[]
-  formTemplates    FormTemplate[]
-  shifts           ShiftDefinition[]
-  settings         FacilitySettings?
-  notifications    Notification[]
-  smsLogs          SMSLog[]
-  scheduledReports ScheduledReport[]
+  rinks          Rink[]
+  users          User[]
+  formTemplates  FormTemplate[]
+  shifts         ShiftDefinition[]
+  settings       FacilitySettings?
+  notifications  Notification[]
+  smsLogs        SMSLog[]
 
   @@map("facilities")
 }
@@ -129,6 +118,15 @@ model User {
   submissions     Submission[]
   auditLogs       AuditLog[]
   scheduleEntries ScheduleEntry[]
+
+  // Schedule relations
+  timeOffRequests       TimeOffRequest[]
+  timeOffReviewed       TimeOffRequest[]     @relation("TimeOffReviewer")
+  swapRequestsMade      ShiftSwapRequest[]   @relation("SwapRequester")
+  swapRequestsReceived  ShiftSwapRequest[]   @relation("SwapTarget")
+  swapRequestsManaged   ShiftSwapRequest[]   @relation("SwapManager")
+  availability          EmployeeAvailability[]
+  recurringShifts       RecurringShift[]
 
   @@map("users")
 }
@@ -273,28 +271,42 @@ enum AttachmentType {
 // ==================== SCHEDULE ====================
 
 model ShiftDefinition {
-  id         String   @id @default(cuid())
-  facilityId String
-  facility   Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
-  rinkId     String? // null = facility-wide, or specific rink
-  name       String // "Morning", "Evening", "Overnight"
-  startTime  String // "06:00" (24hr format)
-  endTime    String // "14:00"
-  color      String? // For UI display
-  isActive   Boolean  @default(true)
+  id          String   @id @default(cuid())
+  facilityId  String
+  facility    Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  rinkId      String? // null = facility-wide, or specific rink
+  name        String // "Morning", "Evening", "Overnight"
+  startTime   String // "06:00" (24hr format)
+  endTime     String // "14:00"
+  color       String? // For UI display
+  breakMinutes Int     @default(0) // Unpaid break duration
+  minEmployees Int     @default(1) // Minimum staff needed
+  maxEmployees Int?    // Maximum staff allowed (null = unlimited)
+  description  String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  scheduleEntries ScheduleEntry[]
+  recurringShifts RecurringShift[]
 
   @@map("shift_definitions")
 }
 
 model ScheduleEntry {
   id            String         @id @default(cuid())
-  userId        String
-  user          User           @relation(fields: [userId], references: [id])
+  userId        String?        // null if open shift
+  user          User?          @relation(fields: [userId], references: [id])
   shiftId       String?
+  shift         ShiftDefinition? @relation(fields: [shiftId], references: [id])
   rinkId        String?
+  facilityId    String
   date          DateTime       @db.Date
   startTime     String
   endTime       String
+  breakMinutes  Int            @default(0)
+  notes         String?
   isOpenShift   Boolean        @default(false)
   isEmergency   Boolean        @default(false)
   status        ScheduleStatus @default(DRAFT)
@@ -305,6 +317,16 @@ model ScheduleEntry {
   publishedAt   DateTime?
   publishedById String?
 
+  // Conflict tracking
+  hasConflict   Boolean        @default(false)
+  conflictNotes String?
+
+  // Relations
+  swapRequests  ShiftSwapRequest[] @relation("OriginalShift")
+  swapTargets   ShiftSwapRequest[] @relation("TargetShift")
+
+  @@index([facilityId, date])
+  @@index([userId, date])
   @@map("schedule_entries")
 }
 
@@ -315,33 +337,244 @@ enum ScheduleStatus {
   CANCELLED
 }
 
+// ==================== TIME OFF REQUESTS ====================
+
+model TimeOffRequest {
+  id          String           @id @default(cuid())
+  userId      String
+  user        User             @relation(fields: [userId], references: [id])
+  facilityId  String
+  startDate   DateTime         @db.Date
+  endDate     DateTime         @db.Date
+  requestType TimeOffType
+  reason      String?
+  status      TimeOffStatus    @default(PENDING)
+
+  // Review info
+  reviewedById String?
+  reviewedBy   User?           @relation("TimeOffReviewer", fields: [reviewedById], references: [id])
+  reviewedAt   DateTime?
+  reviewNotes  String?
+
+  // Hours tracking
+  hoursRequested Float?
+  hoursPaid      Float?
+
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([facilityId, status])
+  @@index([userId, startDate])
+  @@map("time_off_requests")
+}
+
+enum TimeOffType {
+  VACATION
+  SICK
+  PERSONAL
+  BEREAVEMENT
+  JURY_DUTY
+  UNPAID
+  OTHER
+}
+
+enum TimeOffStatus {
+  PENDING
+  APPROVED
+  DENIED
+  CANCELLED
+}
+
+// ==================== SHIFT SWAP REQUESTS ====================
+
+model ShiftSwapRequest {
+  id              String           @id @default(cuid())
+  requesterId     String
+  requester       User             @relation("SwapRequester", fields: [requesterId], references: [id])
+  originalShiftId String
+  originalShift   ScheduleEntry    @relation("OriginalShift", fields: [originalShiftId], references: [id])
+
+  // Target can be specific shift or open request
+  targetShiftId   String?
+  targetShift     ScheduleEntry?   @relation("TargetShift", fields: [targetShiftId], references: [id])
+  targetUserId    String?          // User being asked to swap
+  targetUser      User?            @relation("SwapTarget", fields: [targetUserId], references: [id])
+
+  swapType        SwapType
+  reason          String?
+  status          SwapStatus       @default(PENDING_PEER)
+
+  // Approval workflow
+  peerApprovedAt  DateTime?
+  managerApprovedById String?
+  managerApprovedBy   User?        @relation("SwapManager", fields: [managerApprovedById], references: [id])
+  managerApprovedAt   DateTime?
+  managerNotes    String?
+
+  facilityId      String
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@index([facilityId, status])
+  @@map("shift_swap_requests")
+}
+
+enum SwapType {
+  SWAP          // Exchange shifts with another employee
+  GIVEAWAY      // Give shift to someone else
+  PICKUP        // Pick up an open/dropped shift
+}
+
+enum SwapStatus {
+  PENDING_PEER     // Waiting for other employee to accept
+  PENDING_MANAGER  // Waiting for manager approval
+  APPROVED
+  DENIED_PEER      // Other employee declined
+  DENIED_MANAGER   // Manager denied
+  CANCELLED
+  EXPIRED
+}
+
+// ==================== EMPLOYEE AVAILABILITY ====================
+
+model EmployeeAvailability {
+  id          String          @id @default(cuid())
+  userId      String
+  user        User            @relation(fields: [userId], references: [id])
+  facilityId  String
+
+  // Day of week (0 = Sunday, 6 = Saturday)
+  dayOfWeek   Int
+  startTime   String          // "06:00"
+  endTime     String          // "22:00"
+  isAvailable Boolean         @default(true) // false = blocked time
+
+  // For recurring patterns
+  effectiveFrom DateTime?     @db.Date
+  effectiveTo   DateTime?     @db.Date
+
+  // Preference level (for shift auto-assignment)
+  preferenceLevel AvailabilityPreference @default(AVAILABLE)
+
+  notes       String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@unique([userId, dayOfWeek, startTime, effectiveFrom])
+  @@index([facilityId, dayOfWeek])
+  @@map("employee_availability")
+}
+
+enum AvailabilityPreference {
+  PREFERRED     // Employee prefers to work this time
+  AVAILABLE     // Employee can work this time
+  UNAVAILABLE   // Employee cannot work this time
+}
+
+// ==================== SCHEDULE TEMPLATES ====================
+
+model ScheduleTemplate {
+  id          String   @id @default(cuid())
+  facilityId  String
+  name        String   // "Summer Schedule", "Holiday Week"
+  description String?
+  isActive    Boolean  @default(true)
+
+  // Template configuration stored as JSON
+  // Array of { dayOfWeek, shiftId, userId?, minStaff, maxStaff }
+  templateData Json
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String
+
+  // Relations
+  recurringShifts RecurringShift[]
+
+  @@map("schedule_templates")
+}
+
+// ==================== RECURRING SHIFTS ====================
+
+model RecurringShift {
+  id          String           @id @default(cuid())
+  facilityId  String
+  templateId  String?
+  template    ScheduleTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  shiftId     String
+  shift       ShiftDefinition  @relation(fields: [shiftId], references: [id])
+  userId      String?          // null = open shift
+  user        User?            @relation(fields: [userId], references: [id])
+
+  // Recurrence pattern
+  dayOfWeek   Int              // 0-6
+  startDate   DateTime         @db.Date
+  endDate     DateTime?        @db.Date // null = indefinite
+
+  // Override times if different from shift definition
+  startTime   String?
+  endTime     String?
+
+  isActive    Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  createdById String
+
+  @@index([facilityId, dayOfWeek])
+  @@map("recurring_shifts")
+}
+
+// ==================== SCHEDULE PERIOD ====================
+
+model SchedulePeriod {
+  id          String           @id @default(cuid())
+  facilityId  String
+  name        String           // "Week of Jan 6, 2025"
+  startDate   DateTime         @db.Date
+  endDate     DateTime         @db.Date
+  status      SchedulePeriodStatus @default(DRAFT)
+
+  // Publishing info
+  publishedAt   DateTime?
+  publishedById String?
+
+  // Lock prevents further edits
+  isLocked    Boolean          @default(false)
+  lockedAt    DateTime?
+  lockedById  String?
+
+  notes       String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([facilityId, startDate])
+  @@map("schedule_periods")
+}
+
+enum SchedulePeriodStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
 // ==================== AUDIT & NOTIFICATIONS ====================
 
 model AuditLog {
   id            String      @id @default(cuid())
-  userId        String?     // Nullable for system actions
-  user          User?       @relation(fields: [userId], references: [id])
-  facilityId    String?     // Track which facility for multi-tenant security
+  userId        String
+  user          User        @relation(fields: [userId], references: [id])
   action        AuditAction
-  entityType    String      // "Submission", "FormTemplate", "User", "Facility", etc.
+  entityType    String // "Submission", "FormTemplate", etc.
   entityId      String
-  previousValue Json?       // Before state (for UPDATE, DELETE)
-  newValue      Json?       // After state (for CREATE, UPDATE)
+  previousValue Json?
+  newValue      Json?
   ipAddress     String?
   userAgent     String?
-  metadata      Json?       // Additional context (request ID, session ID, etc.)
-  success       Boolean     @default(true) // Track failed attempts
-  errorMessage  String?     // Capture errors for failed actions
   createdAt     DateTime    @default(now())
 
   submissionId String?
   submission   Submission? @relation(fields: [submissionId], references: [id])
 
-  @@index([userId])
-  @@index([facilityId])
-  @@index([entityType, entityId])
-  @@index([action])
-  @@index([createdAt])
   @@map("audit_logs")
 }
 
@@ -354,14 +587,13 @@ enum AuditAction {
   REJECT
   LOGIN
   LOGOUT
-  LOGIN_FAILED
-  PASSWORD_CHANGE
-  PASSWORD_RESET
-  PERMISSION_CHANGE
-  EXPORT
-  IMPORT
-  SHARE
-  ACCESS_DENIED
+  PUBLISH
+  SWAP_REQUEST
+  SWAP_APPROVE
+  SWAP_DENY
+  TIME_OFF_REQUEST
+  TIME_OFF_APPROVE
+  TIME_OFF_DENY
 }
 
 model Notification {
@@ -394,6 +626,17 @@ enum NotificationType {
   SCHEDULE_PUBLISHED
   SHIFT_OPEN
   SHIFT_EMERGENCY
+  SHIFT_ASSIGNED
+  SHIFT_REMOVED
+  SHIFT_REMINDER
+  TIME_OFF_REQUESTED
+  TIME_OFF_APPROVED
+  TIME_OFF_DENIED
+  SWAP_REQUESTED
+  SWAP_APPROVED
+  SWAP_DENIED
+  SWAP_PEER_RESPONSE
+  SCHEDULE_CONFLICT
   REPORT_REMINDER
   SYSTEM
 }
@@ -452,26 +695,4 @@ enum IceDepthPreset {
   RINK_35 // 35 measurement points
   RINK_47 // 47 measurement points
   CUSTOM // Fully custom (up to 5 additional points)
-}
-
-// ==================== SCHEDULED REPORTS ====================
-
-model ScheduledReport {
-  id          String   @id @default(cuid())
-  facilityId  String
-  facility    Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
-  name        String
-  reportType  String // 'incident-summary', 'air-quality-compliance', 'safety-metrics', etc.
-  format      String   @default("pdf") // 'pdf', 'xlsx', 'csv'
-  frequency   String // 'daily', 'weekly', 'monthly', 'quarterly'
-  recipients  Json // Array of email addresses
-  isActive    Boolean  @default(true)
-  lastRunAt   DateTime?
-  nextRunAt   DateTime?
-  config      Json? // Additional configuration (date ranges, filters, etc.)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  createdBy   String
-
-  @@map("scheduled_reports")
 }
