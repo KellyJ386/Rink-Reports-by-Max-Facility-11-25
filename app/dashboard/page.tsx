@@ -103,12 +103,70 @@ const moduleConfig = [
   },
 ]
 
-export default async function DashboardPage() {
-  const user = await getSession()
+import { useState, useEffect } from 'react'
+import Link from 'next/link'
+import {
+  Thermometer,
+  Wind,
+  Droplets,
+  Activity,
+  AlertTriangle,
+  Clock,
+  Users,
+  FileText,
+  CheckCircle,
+  XCircle,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  Calendar,
+  Bell,
+  Settings,
+  ChevronRight,
+  RefreshCw,
+  Snowflake,
+  Gauge,
+  Zap,
+  Wrench,
+  ClipboardList,
+  BarChart3,
+  PlusCircle,
+  Eye,
+  ArrowUpRight,
+  ArrowDownRight,
+  Timer,
+  User,
+  MapPin,
+} from 'lucide-react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  DashboardMetrics,
+  Alert,
+  ActivityItem,
+  StaffMember,
+  generateMockDashboardData,
+  generateIceDepthTrends,
+  generateAirQualityTrends,
+  IceDepthTrend,
+  AirQualityTrend,
+} from '@/types/dashboard'
 
-  if (!user) {
-    return null
+// Trend indicator component
+const TrendIndicator = ({ trend, size = 'sm' }: { trend: 'up' | 'down' | 'stable' | 'rising' | 'falling'; size?: 'sm' | 'md' }) => {
+  const iconSize = size === 'sm' ? 'h-3 w-3' : 'h-4 w-4'
+  if (trend === 'up' || trend === 'rising') {
+    return <TrendingUp className={`${iconSize} text-red-500`} />
   }
+  if (trend === 'down' || trend === 'falling') {
+    return <TrendingDown className={`${iconSize} text-green-500`} />
+  }
+  return <Minus className={`${iconSize} text-gray-400`} />
+}
 
   const permissions = getUserPermissions(user)
 

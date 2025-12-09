@@ -1,9 +1,10 @@
 # Max Facility Operations (MFO)
+
 ## Ice Rink Management SaaS Platform
 
 MFO is a comprehensive ice rink management platform designed to digitize daily operations documentation across seven core modules. The platform provides multi-facility management, automated notifications, compliance reporting, and advanced data export capabilities.
 
-## 🚀 Current Status
+## Current Status: **Production Ready** (78%)
 
 **Phase 1-11: COMPLETE**
 
@@ -19,7 +20,16 @@ MFO is a comprehensive ice rink management platform designed to digitize daily o
 ✅ Comprehensive audit logging
 ✅ Health check & status endpoints
 
-## 🏗️ Tech Stack
+| Layer | Technology |
+|-------|------------|
+| Framework | Next.js 14 (App Router) |
+| Language | TypeScript |
+| Database | PostgreSQL + Prisma ORM |
+| Styling | Tailwind CSS + shadcn/ui |
+| Auth | JWT with httpOnly cookies |
+| Testing | Vitest (163 test files) |
+| Forms | React Hook Form + Zod |
+| Drag & Drop | @dnd-kit |
 
 **Frontend:**
 - Next.js 14+ (App Router)
@@ -50,7 +60,7 @@ MFO is a comprehensive ice rink management platform designed to digitize daily o
 - Audit trail
 - Environment-based configuration
 
-## 📋 Prerequisites
+### Prerequisites
 
 - Node.js 18+ and npm
 - PostgreSQL 14+
@@ -65,7 +75,6 @@ MFO is a comprehensive ice rink management platform designed to digitize daily o
 git clone <repository-url>
 cd Rink-Reports-by-Max-Facility-11-25
 npm install
-```
 
 ### 2. Configure Environment
 
@@ -108,13 +117,11 @@ npx prisma migrate dev
 npx prisma db seed
 ```
 
-### 4. Start Development Server
-
-```bash
+# 4. Start development server
 npm run dev
 ```
 
-Visit http://localhost:3000
+Open [http://localhost:3000](http://localhost:3000)
 
 ## 🔑 Demo Accounts
 
@@ -123,7 +130,7 @@ After seeding, log in with:
 | Role | Email | Password |
 |------|-------|----------|
 | General Manager | gm@demo.com | password123 |
-| Facility Manager | manager@demo.com | password123 |
+| Manager | manager@demo.com | password123 |
 | Supervisor | supervisor@demo.com | password123 |
 | Operator | operator@demo.com | password123 |
 
@@ -202,7 +209,7 @@ See [docs/API.md](docs/API.md) for complete API documentation.
 - `/api/scheduled-reports` - Scheduled report management
 - `/api/webhooks/notifications` - External notification triggers
 
-## 🗂️ Project Structure
+## Project Structure
 
 ```
 mfo/
@@ -253,7 +260,28 @@ mfo/
 └── middleware.ts                 # Route protection + security headers
 ```
 
-## 🔧 Development Scripts
+## Environment Variables
+
+```env
+# Required
+DATABASE_URL="postgresql://user:pass@localhost:5432/mfo"
+JWT_SECRET="min-32-character-secret"
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+
+# Optional - Email (Resend)
+RESEND_API_KEY=""
+EMAIL_FROM=""
+
+# Optional - SMS (Twilio)
+TWILIO_ACCOUNT_SID=""
+TWILIO_AUTH_TOKEN=""
+TWILIO_PHONE_NUMBER=""
+
+# Optional - Weather
+OPENWEATHER_API_KEY=""
+```
+
+## Scripts
 
 ```bash
 # Development
@@ -351,7 +379,7 @@ Monitor your deployment:
 
 Proprietary - All rights reserved
 
-## 👥 Authors
+## Authors
 
 - Kelly (Syracuse University)
 - Claude (Anthropic)
