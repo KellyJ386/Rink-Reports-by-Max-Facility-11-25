@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { getSession } from '@/lib/auth'
 import { getUserPermissions } from '@/lib/permissions'
 import DashboardHeader from '@/components/layout/DashboardHeader'
+import OfflineIndicator from '@/components/layout/OfflineIndicator'
 
 // Force dynamic rendering - this layout requires database access
 export const dynamic = 'force-dynamic'
@@ -40,6 +41,7 @@ export default async function DashboardLayout({
       <main className="container mx-auto px-4 py-8">
         {children}
       </main>
+      <OfflineIndicator />
     </div>
   )
 }

@@ -5,8 +5,8 @@ import OfflineIndicator from "@/components/OfflineIndicator";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 
 export const metadata: Metadata = {
-  title: "MFO - Max Facility Operations",
-  description: "Ice Rink Management SaaS Platform",
+  title: "Rink Reports by Max Facility",
+  description: "Ice Rink Management Platform",
   manifest: "/manifest.json",
   themeColor: "#2563eb",
   viewport: {

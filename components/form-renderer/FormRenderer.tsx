@@ -206,50 +206,6 @@ function FieldRenderer({ field, value, onChange, error, disabled }: FieldRendere
           </div>
         )}
 
-        {field.type === 'photo' && (
-          <div className={`border-2 border-dashed rounded-lg p-8 text-center ${
-            error ? 'border-red-300 bg-red-50' : 'border-gray-300'
-          }`}>
-            {value ? (
-              <div>
-                <span className="text-green-600">Photo added</span>
-                {!isDisabled && (
-                  <button
-                    type="button"
-                    onClick={() => onChange(null)}
-                    className="ml-2 text-red-500 hover:text-red-700"
-                  >
-                    Remove
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div>
-                <input
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0]
-                    if (file) onChange(file.name)
-                  }}
-                  disabled={isDisabled}
-                  className="hidden"
-                  id={`photo-${field.id}`}
-                />
-                <label
-                  htmlFor={`photo-${field.id}`}
-                  className={`cursor-pointer text-blue-600 hover:text-blue-800 ${
-                    isDisabled ? 'pointer-events-none text-gray-400' : ''
-                  }`}
-                >
-                  Add photo
-                </label>
-              </div>
-            )}
-          </div>
-        )}
-
         {field.type === 'calculated' && (
           <div className="px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-gray-700">
             <span className="text-xs bg-yellow-200 px-1 rounded mr-2">fx</span>
@@ -514,15 +470,6 @@ export default function FormRenderer({
       )
       if (!hasSignature) {
         newErrors['_form'] = 'Signature is required'
-      }
-    }
-
-    if (schema.settings.requirePhoto) {
-      const hasPhoto = Object.entries(values).some(([key, val]) =>
-        key.includes('photo') && val
-      )
-      if (!hasPhoto) {
-        newErrors['_form'] = 'Photo is required'
       }
     }
 

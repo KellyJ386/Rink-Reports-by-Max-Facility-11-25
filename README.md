@@ -67,7 +67,7 @@ MFO is a comprehensive ice rink management platform designed to digitize daily o
 - (Optional) SMTP server for email notifications
 - (Optional) Twilio account for SMS notifications
 
-## 🛠️ Setup Instructions
+## Setup Instructions
 
 ### 1. Clone and Install
 
@@ -133,6 +133,7 @@ After seeding, log in with:
 | Manager | manager@demo.com | password123 |
 | Supervisor | supervisor@demo.com | password123 |
 | Operator | operator@demo.com | password123 |
+| Worker | worker@demo.com | password123 |
 
 ## 📊 Key Features
 
@@ -284,7 +285,6 @@ OPENWEATHER_API_KEY=""
 ## Scripts
 
 ```bash
-# Development
 npm run dev              # Start dev server
 npm run build            # Build for production
 npm run start            # Start production server
