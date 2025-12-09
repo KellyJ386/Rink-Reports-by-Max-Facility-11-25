@@ -4,25 +4,37 @@ import { prisma } from '@/lib/prisma'
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
+  const startTime = Date.now()
+
   const healthCheck = {
     status: 'healthy',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     environment: process.env.NODE_ENV || 'development',
-    version: process.env.npm_package_version || '0.1.0',
+    version: process.env.npm_package_version || '1.0.0',
     checks: {
-      database: 'unknown',
+      database: { status: 'unknown', responseTime: 0 },
+      api: { status: 'healthy', responseTime: 0 },
       memory: 'unknown',
     },
   }
 
+  // Database health check
   try {
-    // Check database connection
+    const dbStartTime = Date.now()
     await prisma.$queryRaw`SELECT 1`
-    healthCheck.checks.database = 'healthy'
+    const dbResponseTime = Date.now() - dbStartTime
+
+    healthCheck.checks.database = {
+      status: dbResponseTime < 1000 ? 'healthy' : 'degraded',
+      responseTime: dbResponseTime,
+    }
   } catch (error) {
-    healthCheck.checks.database = 'unhealthy'
-    healthCheck.status = 'degraded'
+    healthCheck.status = 'unhealthy'
+    healthCheck.checks.database = {
+      status: 'unhealthy',
+      responseTime: 0,
+    }
   }
 
   // Check memory usage
@@ -38,6 +50,9 @@ export async function GET() {
   } else {
     healthCheck.checks.memory = 'healthy'
   }
+
+  // API response time
+  healthCheck.checks.api.responseTime = Date.now() - startTime
 
   const statusCode = healthCheck.status === 'healthy' ? 200 : 503
 

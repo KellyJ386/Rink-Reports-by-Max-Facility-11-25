@@ -15,23 +15,34 @@ datasource db {
 model Facility {
   id        String   @id @default(cuid())
   name      String
-  address   String
-  city      String
-  state     String
-  zipCode   String
+  address   String?
+  city      String?
+  state     String?
+  zipCode   String?
   country   String   @default("US")
+  phone     String?
+  email     String?
   timezone  String   @default("America/New_York")
+
+  // Subscription management (SaaS)
+  subscriptionTier   String  @default("TRIAL") // TRIAL, BASIC, ENTERPRISE
+  subscriptionStatus String  @default("ACTIVE") // ACTIVE, PAST_DUE, CANCELLED, SUSPENDED
+  maxUsers           Int     @default(10)
+  maxRinks           Int     @default(2)
+  isActive           Boolean @default(true)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
-  rinks          Rink[]
-  users          User[]
-  formTemplates  FormTemplate[]
-  shifts         ShiftDefinition[]
-  settings       FacilitySettings?
-  notifications  Notification[]
-  smsLogs        SMSLog[]
+  rinks            Rink[]
+  users            User[]
+  formTemplates    FormTemplate[]
+  shifts           ShiftDefinition[]
+  settings         FacilitySettings?
+  notifications    Notification[]
+  smsLogs          SMSLog[]
+  scheduledReports ScheduledReport[]
 
   @@map("facilities")
 }
@@ -308,20 +319,29 @@ enum ScheduleStatus {
 
 model AuditLog {
   id            String      @id @default(cuid())
-  userId        String
-  user          User        @relation(fields: [userId], references: [id])
+  userId        String?     // Nullable for system actions
+  user          User?       @relation(fields: [userId], references: [id])
+  facilityId    String?     // Track which facility for multi-tenant security
   action        AuditAction
-  entityType    String // "Submission", "FormTemplate", etc.
+  entityType    String      // "Submission", "FormTemplate", "User", "Facility", etc.
   entityId      String
-  previousValue Json?
-  newValue      Json?
+  previousValue Json?       // Before state (for UPDATE, DELETE)
+  newValue      Json?       // After state (for CREATE, UPDATE)
   ipAddress     String?
   userAgent     String?
+  metadata      Json?       // Additional context (request ID, session ID, etc.)
+  success       Boolean     @default(true) // Track failed attempts
+  errorMessage  String?     // Capture errors for failed actions
   createdAt     DateTime    @default(now())
 
   submissionId String?
   submission   Submission? @relation(fields: [submissionId], references: [id])
 
+  @@index([userId])
+  @@index([facilityId])
+  @@index([entityType, entityId])
+  @@index([action])
+  @@index([createdAt])
   @@map("audit_logs")
 }
 
@@ -334,6 +354,14 @@ enum AuditAction {
   REJECT
   LOGIN
   LOGOUT
+  LOGIN_FAILED
+  PASSWORD_CHANGE
+  PASSWORD_RESET
+  PERMISSION_CHANGE
+  EXPORT
+  IMPORT
+  SHARE
+  ACCESS_DENIED
 }
 
 model Notification {
@@ -424,4 +452,26 @@ enum IceDepthPreset {
   RINK_35 // 35 measurement points
   RINK_47 // 47 measurement points
   CUSTOM // Fully custom (up to 5 additional points)
+}
+
+// ==================== SCHEDULED REPORTS ====================
+
+model ScheduledReport {
+  id          String   @id @default(cuid())
+  facilityId  String
+  facility    Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  name        String
+  reportType  String // 'incident-summary', 'air-quality-compliance', 'safety-metrics', etc.
+  format      String   @default("pdf") // 'pdf', 'xlsx', 'csv'
+  frequency   String // 'daily', 'weekly', 'monthly', 'quarterly'
+  recipients  Json // Array of email addresses
+  isActive    Boolean  @default(true)
+  lastRunAt   DateTime?
+  nextRunAt   DateTime?
+  config      Json? // Additional configuration (date ranges, filters, etc.)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   String
+
+  @@map("scheduled_reports")
 }

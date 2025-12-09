@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { authenticate, generateToken, setAuthCookie } from '@/lib/auth'
+import { authenticate, generateTokens, setAuthCookies } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
 export async function POST(request: NextRequest) {
@@ -23,16 +23,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Generate JWT token
-    const token = generateToken({
-      userId: user.id,
-      email: user.email,
-      facilityId: user.facilityId,
-      roleId: user.roleId,
-    })
+    // Generate JWT tokens (access + refresh)
+    const { accessToken, refreshToken } = await generateTokens(user.id)
 
-    // Set cookie
-    await setAuthCookie(token)
+    // Set auth cookies
+    await setAuthCookies(accessToken, refreshToken)
 
     // Log the login
     await prisma.auditLog.create({

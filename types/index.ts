@@ -42,12 +42,12 @@ export type ModuleType =
 
 export interface JWTPayload {
   userId: string
-  email: string
-  facilityId: string
-  roleId: string
 }
 
 export interface AuthSession {
   user: UserWithRole
   token: string
 }
+
+// Export form types
+export * from './forms'
