@@ -1,27 +1,56 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getSession } from '@/lib/auth'
+import { canUserAccess } from '@/lib/permissions'
 
-// GET /api/schedule - List schedule entries with filters
+// GET /api/schedule - List schedule entries
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const userId = searchParams.get('userId')
-    const rinkId = searchParams.get('rinkId')
+    const user = await getSession()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    if (!canUserAccess(user, 'schedule', 'access')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    const searchParams = request.nextUrl.searchParams
     const startDate = searchParams.get('startDate')
     const endDate = searchParams.get('endDate')
+    const userId = searchParams.get('userId')
     const status = searchParams.get('status')
 
-    const where: any = {}
+    // Build where clause
+    const where: any = {
+      user: {
+        facilityId: user.facilityId,
+      },
+    }
 
-    if (userId) where.userId = userId
-    if (rinkId) where.rinkId = rinkId
-    if (status) where.status = status
+    if (startDate && endDate) {
+      where.date = {
+        gte: new Date(startDate),
+        lte: new Date(endDate),
+      }
+    } else if (startDate) {
+      where.date = {
+        gte: new Date(startDate),
+      }
+    }
 
-    // Date range filter
-    if (startDate || endDate) {
-      where.date = {}
-      if (startDate) where.date.gte = new Date(startDate)
-      if (endDate) where.date.lte = new Date(endDate)
+    // If user can only view their own, filter by their user ID
+    if (!canUserAccess(user, 'schedule', 'viewAll')) {
+      where.OR = [
+        { userId: user.id },
+        { isOpenShift: true, status: 'PUBLISHED' },
+      ]
+    } else if (userId) {
+      where.userId = userId
+    }
+
+    if (status) {
+      where.status = status
     }
 
     const entries = await prisma.scheduleEntry.findMany({
@@ -39,16 +68,28 @@ export async function GET(request: NextRequest) {
       orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
     })
 
-    return NextResponse.json({ entries })
+    return NextResponse.json(entries)
   } catch (error) {
     console.error('Error fetching schedule:', error)
-    return NextResponse.json({ error: 'Failed to fetch schedule' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Failed to fetch schedule' },
+      { status: 500 }
+    )
   }
 }
 
 // POST /api/schedule - Create a new schedule entry
 export async function POST(request: NextRequest) {
   try {
+    const user = await getSession()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    if (!canUserAccess(user, 'schedule', 'create')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     const body = await request.json()
     const {
       userId,
@@ -59,37 +100,53 @@ export async function POST(request: NextRequest) {
       endTime,
       isOpenShift,
       isEmergency,
-      createdById,
+      status,
     } = body
 
-    if (!userId || !date || !startTime || !endTime || !createdById) {
+    if (!date || !startTime || !endTime) {
       return NextResponse.json(
-        { error: 'userId, date, startTime, endTime, and createdById are required' },
+        { error: 'Date, start time, and end time are required' },
         { status: 400 }
       )
     }
 
-    // Validate time format
-    const timeRegex = /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/
-    if (!timeRegex.test(startTime) || !timeRegex.test(endTime)) {
+    // For open shifts, userId is optional
+    if (!isOpenShift && !userId) {
       return NextResponse.json(
-        { error: 'startTime and endTime must be in HH:MM format (24-hour)' },
+        { error: 'User ID is required for assigned shifts' },
         { status: 400 }
       )
+    }
+
+    // Verify the assigned user is in the same facility
+    if (userId) {
+      const assignedUser = await prisma.user.findFirst({
+        where: {
+          id: userId,
+          facilityId: user.facilityId,
+        },
+      })
+
+      if (!assignedUser) {
+        return NextResponse.json(
+          { error: 'User not found in this facility' },
+          { status: 400 }
+        )
+      }
     }
 
     const entry = await prisma.scheduleEntry.create({
       data: {
-        userId,
-        shiftId,
-        rinkId,
+        userId: userId || user.id, // Default to creator for open shifts
+        shiftId: shiftId || null,
+        rinkId: rinkId || null,
         date: new Date(date),
         startTime,
         endTime,
         isOpenShift: isOpenShift || false,
         isEmergency: isEmergency || false,
-        status: 'DRAFT',
-        createdById,
+        status: status || 'DRAFT',
+        createdById: user.id,
       },
       include: {
         user: {
@@ -103,9 +160,12 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    return NextResponse.json({ entry }, { status: 201 })
+    return NextResponse.json(entry, { status: 201 })
   } catch (error) {
     console.error('Error creating schedule entry:', error)
-    return NextResponse.json({ error: 'Failed to create schedule entry' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Failed to create schedule entry' },
+      { status: 500 }
+    )
   }
 }

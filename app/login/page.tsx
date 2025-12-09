@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Image from 'next/image'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -41,27 +40,26 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100">
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-lg shadow-lg p-8">
+    <div className="min-h-screen flex items-center justify-center bg-navy">
+      <div className="w-full max-w-md px-4">
+        <div className="bg-white rounded-2xl shadow-2xl p-8">
+          {/* Logo */}
           <div className="text-center mb-8">
-            <div className="flex justify-center mb-4">
-              <Image
-                src="/logo.svg"
-                alt="Max Facility - Rink Reports"
-                width={180}
-                height={126}
-                priority
-              />
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-action rounded-xl mb-4">
+              <span className="text-3xl font-bold text-white">M</span>
             </div>
-            <p className="text-sm text-gray-500">Ice Rink Management</p>
+            <h1 className="text-3xl font-bold text-navy mb-2">
+              MFO
+            </h1>
+            <p className="text-grey-600">Max Facility Operations</p>
+            <p className="text-sm text-grey-500 mt-1">Ice Rink Management</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-navy mb-1"
               >
                 Email
               </label>
@@ -70,7 +68,7 @@ export default function LoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="input"
+                className="input-field"
                 placeholder="you@example.com"
                 required
                 autoComplete="email"
@@ -80,7 +78,7 @@ export default function LoginPage() {
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-navy mb-1"
               >
                 Password
               </label>
@@ -89,7 +87,7 @@ export default function LoginPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="input"
+                className="input-field"
                 placeholder="••••••••"
                 required
                 autoComplete="current-password"
@@ -105,17 +103,17 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full btn btn-primary py-3 text-base"
+              className="w-full bg-action hover:bg-action-600 text-white font-semibold py-3 px-4 rounded-lg transition-colors disabled:opacity-50"
             >
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
 
           <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              Demo accounts available (password: <code className="bg-gray-100 px-1 rounded">password123</code>)
+            <p className="text-sm text-grey-600">
+              Demo accounts (password: <code className="bg-grey-100 px-1 rounded text-navy">password123</code>)
             </p>
-            <div className="mt-2 text-xs text-gray-500 space-y-1">
+            <div className="mt-2 text-xs text-grey-500 space-y-1">
               <div>GM: gm@demo.com</div>
               <div>Manager: manager@demo.com</div>
               <div>Supervisor: supervisor@demo.com</div>
@@ -123,6 +121,11 @@ export default function LoginPage() {
             </div>
           </div>
         </div>
+
+        {/* Footer */}
+        <p className="text-center text-grey-400 text-sm mt-6">
+          Powered by Seattle Seahawks colors
+        </p>
       </div>
     </div>
   )

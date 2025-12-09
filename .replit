@@ -1,0 +1,17 @@
+run = "npm run dev"
+entrypoint = "app/page.tsx"
+
+[nix]
+channel = "stable-24_05"
+
+[env]
+NODE_ENV = "development"
+
+[deployment]
+run = ["sh", "-c", "npm run build && npm run start"]
+deploymentTarget = "cloudrun"
+build = ["sh", "-c", "npm install && npx prisma generate && npx prisma migrate deploy"]
+
+[[ports]]
+localPort = 3000
+externalPort = 80
