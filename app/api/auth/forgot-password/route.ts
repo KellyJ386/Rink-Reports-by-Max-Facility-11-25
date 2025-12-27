@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import jwt from 'jsonwebtoken'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key'
+const JWT_SECRET = process.env.JWT_SECRET
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required')
+}
 const RESET_TOKEN_EXPIRES = '1h' // Reset tokens expire in 1 hour
 
 export async function POST(request: NextRequest) {
@@ -45,9 +48,8 @@ export async function POST(request: NextRequest) {
     // In production, you would send an email here with a link like:
     // https://yourapp.com/reset-password?token=${resetToken}
 
-    // For development/demo purposes, we'll log the token and return it
-    // REMOVE THIS IN PRODUCTION - only return the success message
-    console.log(`Password reset token for ${user.email}:`, resetToken)
+    // In production, send email with reset link
+    // For now, dev_reset_link is returned only in non-production environments
 
     // Create audit log
     await prisma.auditLog.create({

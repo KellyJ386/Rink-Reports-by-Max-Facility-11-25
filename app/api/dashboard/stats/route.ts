@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
         ? prisma.scheduleEntry.count({
             where: {
               facilityId: user.facilityId,
-              isOpen: true,
+              isOpenShift: true,
               date: { gte: today }
             }
           })
@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
       permissions.schedule?.access
         ? prisma.scheduleEntry.count({
             where: {
-              assignedUserId: user.id,
+              userId: user.id,
               date: { gte: today }
             }
           })
@@ -167,8 +167,8 @@ export async function GET(request: NextRequest) {
         orderBy: { shift: { startTime: 'asc' } }
       })
 
-      const filledShifts = todayEntries.filter((e: typeof todayEntries[number]) => e.assignedUserId && !e.isOpen).length
-      const openCount = todayEntries.filter((e: typeof todayEntries[number]) => e.isOpen).length
+      const filledShifts = todayEntries.filter((e: typeof todayEntries[number]) => e.userId && !e.isOpenShift).length
+      const openCount = todayEntries.filter((e: typeof todayEntries[number]) => e.isOpenShift).length
 
       scheduleToday = {
         total: todayEntries.length,

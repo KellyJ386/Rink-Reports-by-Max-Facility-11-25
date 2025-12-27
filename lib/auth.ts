@@ -4,7 +4,10 @@ import { cookies } from 'next/headers'
 import { prisma } from './prisma'
 import type { JWTPayload, UserWithRole } from '@/types'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key'
+const JWT_SECRET = process.env.JWT_SECRET
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required')
+}
 const JWT_EXPIRES_IN: SignOptions['expiresIn'] = (process.env.JWT_EXPIRES_IN || '7d') as SignOptions['expiresIn']
 
 export async function hashPassword(password: string): Promise<string> {

@@ -3,7 +3,10 @@ import { prisma } from '@/lib/prisma'
 import { hashPassword } from '@/lib/auth'
 import jwt from 'jsonwebtoken'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key'
+const JWT_SECRET = process.env.JWT_SECRET
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required')
+}
 
 interface ResetTokenPayload {
   userId: string
