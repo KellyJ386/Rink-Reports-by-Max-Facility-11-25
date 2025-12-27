@@ -95,6 +95,12 @@ export default function ScheduleDashboardPage() {
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
         <div className="flex flex-wrap gap-3">
           <Link
+            href="/dashboard/schedule/weekly"
+            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            Weekly Schedule Grid
+          </Link>
+          <Link
             href="/dashboard/schedule/my-schedule"
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
